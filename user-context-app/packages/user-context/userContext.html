@@ -1,3 +1,13 @@
+<template name="userContext">
+  <div id="user-context" class="bordered">
+  {{#if currentUser}}
+    {{> contextContent}}
+  {{else}}
+    Please sign in to use user context.
+  {{/if}}
+  </div>
+</template>
+
 <template name="contextContent">
   <h3>User context</h3>
   <form class="set-context">

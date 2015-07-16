@@ -1,3 +1,0 @@
-Template.userContext.helpers({
-  
-});

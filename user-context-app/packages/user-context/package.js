@@ -12,7 +12,13 @@ Package.describe({
 
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
-  api.addFiles('user-context.js');
+
+  api.use('templating', 'client');
+  api.addFiles([
+      'userContext.html',
+      'userContext.css',
+      'userContext.js'
+    ], 'client');
 });
 
 Package.onTest(function(api) {
