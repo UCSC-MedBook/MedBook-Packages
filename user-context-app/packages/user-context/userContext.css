@@ -1,0 +1,25 @@
+#user-context {
+  padding: 10px;
+  margin: 10px;
+  display: inline-block;
+  border-radius: 2px;
+  border: 1px solid #000;
+}
+
+#user-context h3 {
+  margin: 0px;
+}
+
+#user-context ul {
+  list-style-type: none;
+  padding: 0px;
+  margin: 10px;
+}
+
+#user-context li {
+  margin: 2px;
+}
+
+#user-context input {
+  font-size: 12px;
+}
