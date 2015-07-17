@@ -1,8 +1,8 @@
 Package.describe({
-  name: 'ucsc-medbook:user-context',
+  name: 'medbook:report-schemas',
   version: '0.0.1',
   // Brief, one-line summary of the package.
-  summary: 'Provides a UI for MedBook user context (selected patients, genes, etc.)',
+  summary: 'Report collection schemas for MedBook',
   // URL to the Git repository containing the source code for this package.
   git: '',
   // By default, Meteor will default to using README.md for documentation.
@@ -13,16 +13,18 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
-  api.use('templating', 'client');
-  api.addFiles([
-      'userContext.html',
-      'userContext.css',
-      'userContext.js'
-    ], 'client');
+  api.use('aldeed:simple-schema');
+
+  api.addFiles('report_schemas.js');
+
+  api.export('PatientReports');
+  api.export('SignatureReports');
+  api.export('PathwayReports');
+  api.export('GeneReports');
 });
 
 Package.onTest(function(api) {
   api.use('tinytest');
-  api.use('medbook:user-context');
-  api.addFiles('user-context-tests.js');
+  api.use('report-schemas');
+  api.addFiles('report-schemas-tests.js');
 });
