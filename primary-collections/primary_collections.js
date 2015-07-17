@@ -1,13 +1,5 @@
-// sorry for having everything in one file...
 
-Schemas = {};
-
-// Schemas.patientReportItem = new SimpleSchema({
-//   "created_at": { type: Date },
-//   "patient_report_id": { type: String }
-// });
-
-Schemas.patients = new SimpleSchema({
+var patients = new SimpleSchema({
   // hidden from user
   "_id": { type: Meteor.ObjectID },
   "patient_label": { type: String }, // Patient_ID, ex. DTB-056
@@ -47,9 +39,14 @@ Schemas.patients = new SimpleSchema({
   // We're never going to view a page with all of the patient information
   // (aka it should structured more like a SQL database than a Mongo database)
   // "patient_report_ids": { type: [Schemas.patientReportItem] }, // refers to "patient_reports" collection
+
+  // Schemas.patientReportItem = new SimpleSchema({
+  //   "created_at": { type: Date },
+  //   "patient_report_id": { type: String }
+  // });
 });
 
-Schemas.samples = new SimpleSchema({
+var samples = new SimpleSchema({
   "_id": { type: Meteor.ObjectID },
   "sample_label": { type: String }, // Sample_ID
   "site_of_metastasis" : { type: String, optional: true },
@@ -66,7 +63,7 @@ Schemas.samples = new SimpleSchema({
   "gene_sets": { type: [Schemas.geneSet], optional: true },
 });
 
-Schemas.treatments = new SimpleSchema({
+var treatments = new SimpleSchema({
   // if day 3, they started 3 days after starting the trial
   "start_day": { type: Number, optional: true },
   // if null --> still on treatment
@@ -79,7 +76,7 @@ Schemas.treatments = new SimpleSchema({
   "category": { type: String, optional: true }, // ex. "Clinical Trial"
 })
 
-Schemas.bloodLabs = new SimpleSchema({
+var bloodLabs = new SimpleSchema({
   "_id": { type: Meteor.ObjectID },
   "patient_id": { type: Meteor.ObjectID },
   "patient_label": { type: String },
@@ -90,12 +87,16 @@ Schemas.bloodLabs = new SimpleSchema({
   // TODO: ./run_variety.sh "Blood_Labs_V2"
 });
 
-Schemas.studies = new SimpleSchema({
+var studies = new SimpleSchema({
   "_id": { type: Meteor.ObjectID },
   "study_label": { type: String },
   "study_sites": { type: [String] },
   "patient_ids": { type: [Meteor.ObjectID] },
 });
+
+//
+// TODO: do signatureAlgorithm primary collection schema
+//
 
 // Schemas.pathwayReportLink = new SimpleSchema({
 //   "pathway_id": { type: String },
@@ -127,16 +128,16 @@ Schemas.studies = new SimpleSchema({
 // });
 
 Patients = new Meteor.Collection("patients");
-Patients.attachSchema(Schemas.patients);
+Patients.attachSchema(patients);
 
 Samples = new Meteor.Collection("samples");
-Samples.attachSchema(Schemas.samples);
+Samples.attachSchema(samples);
 
 Treatments = new Meteor.Collection("treatments");
-Treatments.attachSchema(Schemas.treatments);
+Treatments.attachSchema(treatments);
 
 BloodLabs = new Meteor.Collection("blood_labs");
-BloodLabs.attachSchema(Schemas.bloodLabs);
+BloodLabs.attachSchema(bloodLabs);
 
 Studies = new Meteor.Collection("studies");
-Studies.attachSchema(Schemas.studies);
+Studies.attachSchema(studies);

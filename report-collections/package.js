@@ -1,8 +1,8 @@
 Package.describe({
-  name: 'medbook:primary-schemas',
-  version: '0.0.2',
+  name: 'medbook:report-collections',
+  version: '0.0.1',
   // Brief, one-line summary of the package.
-  summary: 'Primary collection schemas for MedBook',
+  summary: 'Report collection schemas for MedBook',
   // URL to the Git repository containing the source code for this package.
   git: '',
   // By default, Meteor will default to using README.md for documentation.
@@ -15,18 +15,16 @@ Package.onUse(function(api) {
 
   api.use('aldeed:simple-schema');
 
-  api.addFiles('primary_schemas.js');
+  api.addFiles('report_collections.js');
 
-  // symbol exports
-  api.export('Patients');
-  api.export('Samples');
-  api.export('Treatments');
-  api.export('BloodLabs');
-  api.export('Studies');
+  api.export('PatientReports');
+  api.export('SignatureReports');
+  api.export('PathwayReports');
+  api.export('GeneReports');
 });
 
 Package.onTest(function(api) {
   api.use('tinytest');
-  api.use('medbook:primary-schemas');
-  api.addFiles('primary-schemas-tests.js');
+  api.use('report-collections');
+  api.addFiles('report_collections_tests.js');
 });
