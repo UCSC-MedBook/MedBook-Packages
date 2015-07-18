@@ -71,6 +71,14 @@ var patientsSchema = new SimpleSchema({
         "study_site": { type: String, optional: true },
         "site_of_biopsy" : { type: String, optional: true }, // changed from site_of_metastasis
         "procedure_day": { type: Number, optional: true },
+        "gene_expression": {
+          type: [
+            new SimpleSchema({
+              "gene_label": { type: String },
+              "value": { type: Number }
+            })
+          ]
+        }
         // // where are we going to store this stuff?
         // "pathways": {
         //   type: [Schemas.samplePathway],
