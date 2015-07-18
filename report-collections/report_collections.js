@@ -1,36 +1,5 @@
 // sorry for having everything in one file...
 
-Schemas = {};
-
-// for waterfall plots
-Schemas.patientValuePair = new SimpleSchema({
-  "patient_id": { type: String },
-  "patient_label": { type: String },
-  "value": { type: Number }
-});
-
-Schemas.thresholdColors = new SimpleSchema({
-  "lower_than_threshold": { type: String },
-  "higher_than_threshold": { type: String },
-  "between_thresholds": { type: String },
-});
-
-Schemas.signature = new SimpleSchema({
-  "signature_label": { type: String },
-  "upper_significance_value": { type: Number },
-  "lower_significance_value": { type: Number },
-  "patient_values": { type: [Schemas.patientValuePair] }, // contains data
-
-  // text to the left of the vertical axis
-  "vertical_axis_text": { type: String, optional: true },
-  "colors": { type: Schemas.thresholdColors, optional: true },
-
-  // for if the charts within an algorithm should share scales
-  "lowest_value_for_algorithm": { type: Number, optional: true },
-  "highest_value_for_algorithm": { type: Number, optional: true },
-
-});
-
 Schemas.mutation = new SimpleSchema({
   "gene_label": { type: String },
   "gene_id": { type: String },
@@ -100,73 +69,8 @@ Schemas.signatureReports = new SimpleSchema({
 });
 
 
-
-
-
 // note on "_day" fields:
 // These are numbers as counted from patient.on_study_date
-
-//////////////////
-// Schemas.samples
-//////////////////
-
-var signatureType = new SimpleSchema({
-  "type": { type: String },
-  "description": { type: String },
-  "signature_algorithms": { type: [
-    new SimpleSchema({
-      "signature_algorithm_report_id": { type: String }, // "signature_algorithm_report"
-      "signature_algorithm_label": { type: String }, // eg. small-cell
-      "value_type": { type: String }, // ex. kinase_viper
-      "individual_signatures": { type: [Schemas.signature] },
-      "job_id": { type: Meteor.ObjectID }, // refers to "jobs" collection (what generated this signatureReport)
-      "version_number": { type: String }
-      // we'll know the current patient from the top-level object
-    })
-  ] }
-});
-
-var sampleReport = new SimpleSchema({
-  "sample_id": { type: Meteor.ObjectID }, // refers to "samples" collection
-  "sample_label": { type: String }, // Sample_ID
-  "site_of_metastasis" : { type: String, optional: true },
-  "procedure_day": { type: Number, optional: true },
-  "pathways": {
-    type: [
-      new SimpleSchema({
-        "pathway_id": { type: String },
-        "pathway_label": { type: String }, // ex. cell cycle
-        "members": { type: [
-          new SimpleSchema({
-            "name": { type: String },
-            "gene_id": { type: String, optional: true },
-            "events": { type: [String] }
-          })
-        ] }
-      })
-    ],
-    optional: true
-  },
-  "signature_types": {
-    type: [signatureType],
-    optional: true
-  },
-  "mutations": { type: [Schemas.mutation], optional: true },
-  "gene_sets": { type: [
-    new SimpleSchema({
-      "gene_set_label": { type: String },
-      "members": { type: [
-        new SimpleSchema({
-          "gene_label": { type: String },
-          "gene_id": { type: String },
-          // possibly other information
-        })
-      ] },
-    })
-  ],
-  optional: true }
-});
-
 
 Schemas.patientReports = new SimpleSchema({
   // hidden from user
@@ -201,15 +105,27 @@ Schemas.patientReports = new SimpleSchema({
   "psa_nadir" : { type: Number, optional: true },
   "psa_nadir_days" : { type: Number, optional: true },
 
-  // treatments
-  "psa_levels": { type: [
+  // timeline
+  "drug_resistance": {
+    type: [
+      new SimpleSchema({
+        "date": { type: Date },
+        "drug_name": { type: String },
+        "resistance": { type: String },
+      })
+    ],
+    optional: true
+  },
+  "psa_levels": {
+    type: [
       new SimpleSchema({
         "day": { type: Number },
         "value": { type: Number },
         "blood_lab_id": { type: Meteor.ObjectID },
       })
     ],
-    optional: true },
+    optional: true
+  },
   "treatments": {
     type: [
       new SimpleSchema({
@@ -218,16 +134,112 @@ Schemas.patientReports = new SimpleSchema({
         // if null --> still on treatment
         "end_day": { type: Number, optional: true },
         "description": { type: String, optional: true },
-        "drug_name": { type: String, optional: true },
+        "drug_names": { type: [String], optional: true },
         "category": { type: String, optional: true }, // ex. "Clinical Trial"
       })
     ],
     optional: true
   },
+  // stuff they got after starting the trial
+  "subsequent_treatments": { type: [String], optional: true }
 
-  // samples
   "samples": {
-    type: [sampleReport],
+    type: [
+      new SimpleSchema({
+        "sample_id": { type: Meteor.ObjectID }, // refers to "samples" collection
+        "sample_label": { type: String }, // Sample_ID
+        "site_of_biopsy" : { type: String, optional: true }, // changed from site_of_metastasis
+        "procedure_day": { type: Number, optional: true },
+        "pathways": {
+          type: [
+            new SimpleSchema({
+              "pathway_id": { type: String },
+              "pathway_label": { type: String }, // ex. cell cycle
+              "members": { type: [
+                new SimpleSchema({
+                  "name": { type: String },
+                  "gene_id": { type: String, optional: true },
+                  "events": { type: [String] }
+                })
+              ] }
+            })
+          ],
+          optional: true
+        },
+        "signature_types": {
+          type: [
+            new SimpleSchema({
+              "type": { type: String },
+              "description": { type: String },
+              "signature_algorithms": {
+                type: [
+                  new SimpleSchema({
+                    "signature_algorithm_report_id": { type: String }, // "signature_algorithm_report"
+                    "signature_algorithm_label": { type: String }, // eg. small-cell
+                    "value_type": { type: String }, // ex. kinase_viper
+                    "individual_signatures": {
+                      type: [
+                        // almost the same as signatureScoresSchema in medbook:primary-collections
+                        new SimpleSchema({
+                          "signature_label": { type: String },
+                          "upper_threshold_value": { type: Number },
+                          "lower_threshold_value": { type: Number },
+                          "patient_values": {
+                            type: [
+                              new SimpleSchema({
+                                "patient_id": { type: String },
+                                "patient_label": { type: String },
+                                "value": { type: Number }
+                              })
+                            ]
+                          }, // contains data
+
+                          // text to the left of the vertical axis
+                          "vertical_axis_text": { type: String, optional: true },
+                          "colors": {
+                            type: new SimpleSchema({
+                              "lower_than_threshold": { type: String },
+                              "higher_than_threshold": { type: String },
+                              "between_thresholds": { type: String },
+                            }),
+                            optional: true
+                          },
+
+                          // for if the charts within an algorithm should share scales
+                          "lowest_value_for_algorithm": { type: Number, optional: true },
+                          "highest_value_for_algorithm": { type: Number, optional: true },
+
+                        })
+                      ]
+                    },
+                    "job_id": { type: Meteor.ObjectID }, // refers to "jobs" collection (what generated this signatureReport)
+                    "version_number": { type: String }
+                    // we'll know the current patient from the top-level object
+                  })
+                ]
+              }
+            })
+          ],
+          optional: true
+        },
+        "mutations": { type: [Schemas.mutation], optional: true },
+        "gene_sets": {
+          type: [
+            new SimpleSchema({
+              "gene_set_label": { type: String },
+              "members": { type: [
+                new SimpleSchema({
+                  "gene_label": { type: String },
+                  "gene_id": { type: String },
+                  // possibly other information
+                })
+              ] },
+            })
+          ],
+          optional: true
+        }
+      })
+    ],
     optional: true
   },
 });

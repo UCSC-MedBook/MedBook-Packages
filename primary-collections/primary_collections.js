@@ -1,11 +1,10 @@
 
-var patients = new SimpleSchema({
+var patientsSchema = new SimpleSchema({
   // hidden from user
   "_id": { type: Meteor.ObjectID },
   "patient_label": { type: String }, // Patient_ID, ex. DTB-056
   "study_id": { type: Meteor.ObjectID },
   "study_label": { type: String },
-  "study_site": { type: String },
 
   "on_study_date": { type: Date },
   "off_study_date": { type: Date, optional: true }, // if null, still on study
@@ -31,63 +30,107 @@ var patients = new SimpleSchema({
   "psa_nadir" : { type: Number, optional: true },
   "psa_nadir_days" : { type: Number, optional: true },
 
-  // links elsewhere
-  "blood_lab_ids": { type: [Meteor.ObjectID], optional: true },
-  "treatment_ids": { type: [Meteor.ObjectID],  optional: true },
-  "sample_ids": { type: [Meteor.ObjectID], optional: true },
-
-  // We're never going to view a page with all of the patient information
-  // (aka it should structured more like a SQL database than a Mongo database)
-  // "patient_report_ids": { type: [Schemas.patientReportItem] }, // refers to "patient_reports" collection
-
-  // Schemas.patientReportItem = new SimpleSchema({
-  //   "created_at": { type: Date },
-  //   "patient_report_id": { type: String }
-  // });
-});
-
-var samples = new SimpleSchema({
-  "_id": { type: Meteor.ObjectID },
-  "sample_label": { type: String }, // Sample_ID
-  "site_of_metastasis" : { type: String, optional: true },
-  "procedure_day": { type: Number, optional: true },
-  "pathways": {
-    type: [Schemas.samplePathway],
+  "treatments": {
+    type: [
+      new SimpleSchema({
+        // if day 3, they started 3 days after starting the trial
+        "start_day": { type: Number, optional: true },
+        "end_day": { type: Number, optional: true }, // if null --> still on treatment
+        "description": { type: String, optional: true },
+        "drug_names": { type: [String], optional: true },
+        "reason_for_stop": { type: String, optional: true },
+        "psa_response": { type: String, optional: true },
+        "recist_response": { type: String, optional: true },
+        "bone_response": { type: String, optional: true },
+        "response": { type: String, optional: true }, // could be resistant
+        "category": { type: String, optional: true }, // ex. "Clinical Trial"
+      })
+    ],
     optional: true
   },
-  "signature_types": {
-    type: [Schemas.signatureType],
+
+  "blood_labs": {
+    type: [
+      new SimpleSchema({
+        "_id": { type: Meteor.ObjectID },
+        "patient_id": { type: Meteor.ObjectID },
+        "patient_label": { type: String },
+        "study_id": { type: Meteor.ObjectID },
+        "visit_date": { type: Date },
+        "psa_level": { type: Number }, // optional?
+        // TODO: ./run_variety.sh "Blood_Labs_V2"
+      });
+    ],
+    optional: true
+  }
+
+  "samples": { // should we rename this biopsies?
+    type: [
+      new SimpleSchema({
+        "sample_label": { type: String }, // Sample_ID
+        "study_site": { type: String, optional: true },
+        "site_of_biopsy" : { type: String, optional: true }, // changed from site_of_metastasis
+        "procedure_day": { type: Number, optional: true },
+        // // where are we going to store this stuff?
+        // "pathways": {
+        //   type: [Schemas.samplePathway],
+        //   optional: true
+        // },
+        // "signature_types": {
+        //   type: [Schemas.signatureType],
+        //   optional: true
+        // },
+        // "mutations": { type: [Schemas.mutation], optional: true },
+        // "gene_sets": { type: [Schemas.geneSet], optional: true },
+      })
+    ],
+    optional: true
+  }
+});
+
+var geneValuePair = new SimpleSchema({
+  "gene_id": { type: String },
+  "value": { type: Number }
+});
+
+var signaturesSchema = new SimpleSchema({
+  "signature_label": { type: String },
+  "dense_weights": { type: [geneValuePair], optional: true },
+  "sparse_weights": { type: [geneValuePair], optional: true },
+  "version": { type: Number }
+});
+
+var signatureScoresSchema = new SimpleSchema({
+  "signature_id": { type: Meteor.ObjectID },
+  "upper_threshold_value": { type: Number },
+  "lower_threshold_value": { type: Number },
+  "patient_values": { // contains data
+    type: [
+      new SimpleSchema({
+        "patient_id": { type: String },
+        "patient_label": { type: String },
+        "value": { type: Number }
+      })
+    ]
+  },
+
+  // text to the left of the vertical axis
+  "vertical_axis_text": { type: String, optional: true },
+  "colors": {
+    type: new SimpleSchema({
+      "lower_than_threshold": { type: String },
+      "higher_than_threshold": { type: String },
+      "between_thresholds": { type: String },
+    }),
     optional: true
   },
-  "mutations": { type: [Schemas.mutation], optional: true },
-  "gene_sets": { type: [Schemas.geneSet], optional: true },
+
+  // for if the charts within an algorithm should share scales
+  "lowest_value_for_algorithm": { type: Number, optional: true },
+  "highest_value_for_algorithm": { type: Number, optional: true },
 });
 
-var treatments = new SimpleSchema({
-  // if day 3, they started 3 days after starting the trial
-  "start_day": { type: Number, optional: true },
-  // if null --> still on treatment
-  "end_day": { type: Number, optional: true },
-  "description": { type: String, optional: true },
-  "drug_name": { type: String, optional: true },
-  "reason_for_stop": { type: String, optional: true },
-  "psa_response": { type: String, optional: true },
-  "bone_response": { type: String, optional: true },
-  "category": { type: String, optional: true }, // ex. "Clinical Trial"
-})
-
-var bloodLabs = new SimpleSchema({
-  "_id": { type: Meteor.ObjectID },
-  "patient_id": { type: Meteor.ObjectID },
-  "patient_label": { type: String },
-  "study_id": { type: Meteor.ObjectID },
-  "visit_date": { type: Date },
-  "psa_level": { type: Number }, // optional?
-
-  // TODO: ./run_variety.sh "Blood_Labs_V2"
-});
-
-var studies = new SimpleSchema({
+var studiesSchema = new SimpleSchema({
   "_id": { type: Meteor.ObjectID },
   "study_label": { type: String },
   "study_sites": { type: [String] },
@@ -128,16 +171,13 @@ var studies = new SimpleSchema({
 // });
 
 Patients = new Meteor.Collection("patients");
-Patients.attachSchema(patients);
-
-Samples = new Meteor.Collection("samples");
-Samples.attachSchema(samples);
-
-Treatments = new Meteor.Collection("treatments");
-Treatments.attachSchema(treatments);
-
-BloodLabs = new Meteor.Collection("blood_labs");
-BloodLabs.attachSchema(bloodLabs);
+Patients.attachSchema(patientsSchema);
 
 Studies = new Meteor.Collection("studies");
-Studies.attachSchema(studies);
+Studies.attachSchema(studiesSchema);
+
+Signatures = new Meteor.Collection("signatures");
+Signatures.attachSchema(signaturesSchema);
+
+SignatureScores = new Meteor.Collection("signature_scores");
+SignatureScores.attachSchema(signatureScoresSchema);

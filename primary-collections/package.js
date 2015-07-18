@@ -19,10 +19,9 @@ Package.onUse(function(api) {
 
   // symbol exports
   api.export('Patients');
-  api.export('Samples');
-  api.export('Treatments');
-  api.export('BloodLabs');
   api.export('Studies');
+  api.export('Signatures');
+  api.export('SignatureScores');
 });
 
 Package.onTest(function(api) {

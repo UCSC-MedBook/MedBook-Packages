@@ -2,7 +2,7 @@ Package.describe({
   name: 'medbook:report-collections',
   version: '0.0.1',
   // Brief, one-line summary of the package.
-  summary: 'Report collection schemas for MedBook',
+  summary: 'Report collections and schemas for MedBook',
   // URL to the Git repository containing the source code for this package.
   git: '',
   // By default, Meteor will default to using README.md for documentation.
