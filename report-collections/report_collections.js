@@ -33,7 +33,7 @@ var geneReportSchema = new SimpleSchema({
   },
   "high_low_activity_samples": { type: [
     new SimpleSchema({
-      "sample_id": { type: String },
+      "patient_id": { type: String },
       "sample_label": { type: String },
       "value": { type: Number },
     })
@@ -161,6 +161,7 @@ var patientReportSchema = new SimpleSchema({
         "description": { type: String, optional: true },
         "drug_name": { type: String, optional: true },
         "category": { type: String, optional: true }, // ex. "Clinical Trial"
+        // pull from primary_collections
       })
     ],
     optional: true
@@ -210,7 +211,7 @@ var patientReportSchema = new SimpleSchema({
                           "patient_values": {
                             type: [
                               new SimpleSchema({
-                                "sample_id": { type: String },
+                                "patient_id": { type: String },
                                 "sample_label": { type: String },
                                 "value": { type: Number, decimal: true }
                               })
@@ -221,13 +222,15 @@ var patientReportSchema = new SimpleSchema({
                           "vertical_axis_text": { type: String, optional: true },
                           "colors": {
                             type: new SimpleSchema({
-                              "lower_than_threshold": { type: String },
-                              "higher_than_threshold": { type: String },
-                              "between_thresholds": { type: String },
-                              "current_sample": { type: String },
+                              "lower_than_threshold": { type: String, optional: true },
+                              "higher_than_threshold": { type: String, optional: true },
+                              "between_thresholds": { type: String, optional: true },
+                              "highlighted_samples": { type: String, optional: true },
+                              "current_sample": { type: String, optional: true },
                             }),
                             optional: true
                           },
+                          "current_sample_label": { type: String }, // the one colored current_sample
 
                           // for if the charts within an algorithm should share scales
                           "lowest_value_for_algorithm": { type: Number, optional: true },

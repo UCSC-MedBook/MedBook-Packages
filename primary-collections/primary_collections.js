@@ -118,7 +118,7 @@ var signatureScoresSchema = new SimpleSchema({
   "patient_values": { // contains data
     type: [
       new SimpleSchema({
-        "sample_id": { type: String },
+        "patient_id": { type: String },
         "sample_label": { type: String },
         "value": { type: Number, decimal: true }
       })
@@ -159,7 +159,7 @@ var studiesSchema = new SimpleSchema({
 // });
 //
 // Schemas.sampleInTrainingSet = new SimpleSchema({
-//   "sample_id": { type: String },
+//   patient_id": { type: String },
 //   "sample_label": { type: String }
 // });
 //
@@ -219,7 +219,8 @@ Studies.attachSchema(studiesSchema);
 Signatures = new Meteor.Collection("signatures");
 Signatures.attachSchema(signaturesSchema);
 
-SignatureScores = new Meteor.Collection("signature_scores");
+// TODO: change to signature_scores when we transition
+SignatureScores = new Meteor.Collection("signature_scores_3");
 SignatureScores.attachSchema(signatureScoresSchema);
 
 Pathways = new Meteor.Collection("pathways");

@@ -1,5 +1,5 @@
 Package.describe({
-  name: 'ucsc-medbook:user-context',
+  name: 'medbook:user-context',
   version: '0.0.1',
   // Brief, one-line summary of the package.
   summary: 'Provides a UI for MedBook user context (selected patients, genes, etc.)',
