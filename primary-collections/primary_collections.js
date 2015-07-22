@@ -1,7 +1,6 @@
 
 var patientsSchema = new SimpleSchema({
   // hidden from user
-  "_id": { type: Meteor.ObjectID },
   "patient_label": { type: String }, // Patient_ID, ex. DTB-056
   "study_id": { type: Meteor.ObjectID },
   "study_label": { type: String },
@@ -59,12 +58,12 @@ var patientsSchema = new SimpleSchema({
         "visit_date": { type: Date },
         "psa_level": { type: Number }, // optional?
         // TODO: ./run_variety.sh "Blood_Labs_V2"
-      });
+      })
     ],
     optional: true
-  }
+  },
 
-  "samples": { // should we rename this biopsies?
+  "samples": {
     type: [
       new SimpleSchema({
         "sample_label": { type: String }, // Sample_ID
@@ -77,7 +76,8 @@ var patientsSchema = new SimpleSchema({
               "gene_label": { type: String },
               "value": { type: Number }
             })
-          ]
+          ],
+          optional: true
         }
         // // where are we going to store this stuff?
         // "pathways": {
@@ -105,19 +105,21 @@ var signaturesSchema = new SimpleSchema({
   "signature_label": { type: String },
   "dense_weights": { type: [geneValuePair], optional: true },
   "sparse_weights": { type: [geneValuePair], optional: true },
-  "version": { type: Number }
+  "version": { type: Number, optional: true }
 });
 
 var signatureScoresSchema = new SimpleSchema({
   "signature_id": { type: Meteor.ObjectID },
-  "upper_threshold_value": { type: Number },
-  "lower_threshold_value": { type: Number },
+  "signature_label": { type: String },
+  "description": { type: String, optional: true },
+  "upper_threshold_value": { type: Number, decimal: true },
+  "lower_threshold_value": { type: Number, decimal: true },
   "patient_values": { // contains data
     type: [
       new SimpleSchema({
-        "patient_id": { type: String },
-        "patient_label": { type: String },
-        "value": { type: Number }
+        "sample_id": { type: String },
+        "sample_label": { type: String },
+        "value": { type: Number, decimal: true }
       })
     ]
   },
@@ -178,6 +180,34 @@ var studiesSchema = new SimpleSchema({
 //   "training_set": { type: Schemas.trainingSet }
 // });
 
+//
+// pathways
+//
+
+var pathwayElement = new SimpleSchema({
+  name: { type: String },
+  type: { type: String },
+});
+
+var pathwayInteraction = new SimpleSchema({
+  source: { type: String },
+  target: { type: String },
+  type: { type: String },
+  strength: { type: Number },
+});
+
+var pathwaySchema = new SimpleSchema({
+  pathway_label: { type: String },
+  version: { type: Number, decimal: true },
+  source: { type: String, optional: true }, // URL
+  elements: { type: [pathwayElement]},
+  interactions: { type: [pathwayInteraction] },
+});
+
+//
+// declare the collections
+//
+
 Patients = new Meteor.Collection("patients");
 Patients.attachSchema(patientsSchema);
 
@@ -189,3 +219,6 @@ Signatures.attachSchema(signaturesSchema);
 
 SignatureScores = new Meteor.Collection("signature_scores");
 SignatureScores.attachSchema(signatureScoresSchema);
+
+Pathways = new Meteor.Collection("pathways");
+Pathways.attachSchema(pathwaySchema);

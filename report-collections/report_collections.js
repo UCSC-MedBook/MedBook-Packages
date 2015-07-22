@@ -1,6 +1,6 @@
 // sorry for having everything in one file...
 
-Schemas.mutation = new SimpleSchema({
+var mutationSchema = new SimpleSchema({
   "gene_label": { type: String },
   "gene_id": { type: String },
   "protein_change": { type: String, optional: true },
@@ -14,7 +14,7 @@ Schemas.mutation = new SimpleSchema({
   "MA_FIS": { type: Number, optional: true }
 });
 
-Schemas.geneReports = new SimpleSchema({
+var geneReportSchema = new SimpleSchema({
   "created_at": { type: Date },
   "study_label": { type: String },
   "study_id": { type: String },
@@ -28,7 +28,7 @@ Schemas.geneReports = new SimpleSchema({
   "interaction_url": { type: String, optional: true },
   "mutations": {
     "label": "Common mutations",
-    "type": [Schemas.mutation],
+    "type": [mutationSchema],
     "optional": true
   },
   "high_low_activity_samples": { type: [
@@ -46,14 +46,14 @@ Schemas.geneReports = new SimpleSchema({
 });
 
 
-Schemas.signatureWeights = new SimpleSchema({
+var signatureWeightSchema = new SimpleSchema({
   "gene_id": { type: String },
   "gene_label": { type: String },
   "weight": { type: String }, // not optional
   "pval": { type: String, optional: true } // do we need a p-value?
 });
 
-Schemas.signatureReports = new SimpleSchema({
+var signatureReportSchema = new SimpleSchema({
   "created_at": { type: Date },
   "signature_algorithm_id": { type: String },
   "signature_algorithm_label": { type: String },
@@ -63,18 +63,43 @@ Schemas.signatureReports = new SimpleSchema({
     })
   },
   "value_type": { type: String },
-  "sparse_weights": { type: [Schemas.signatureWeights] },
-  "dense_weights": { type: [Schemas.signatureWeights] },
+  "sparse_weights": { type: [signatureWeightSchema] },
+  "dense_weights": { type: [signatureWeightSchema] },
 
 });
 
+//
+// pathway report
+//
+
+var pathwayElement = new SimpleSchema({
+  name: { type: String },
+  type: { type: String },
+});
+
+var pathwayInteraction = new SimpleSchema({
+  source: { type: String },
+  target: { type: String },
+  type: { type: String },
+  strength: { type: Number },
+});
+
+var pathwayReportSchema = new SimpleSchema({
+  pathway_label: { type: String },
+  version: { type: Number, decimal: true },
+  source: { type: String, optional: true }, // URL
+  elements: { type: [pathwayElement]},
+  interactions: { type: [pathwayInteraction] },
+});
+
+//
+// patient report
+//
 
 // note on "_day" fields:
-// These are numbers as counted from patient.on_study_date
-
-Schemas.patientReports = new SimpleSchema({
+// These are numbers as counted from patient.n_study_date
+var patientReportSchema = new SimpleSchema({
   // hidden from user
-  "_id": { type: Meteor.ObjectID },
   "created_at": { type: Date },
   "patient_id": { type: Meteor.ObjectID }, // refers to "patients" collection
   "patient_label": { type: String }, // Patient_ID, ex. DTB-056
@@ -134,19 +159,16 @@ Schemas.patientReports = new SimpleSchema({
         // if null --> still on treatment
         "end_day": { type: Number, optional: true },
         "description": { type: String, optional: true },
-        "drug_names": { type: [String], optional: true },
+        "drug_name": { type: String, optional: true },
         "category": { type: String, optional: true }, // ex. "Clinical Trial"
       })
     ],
     optional: true
   },
-  // stuff they got after starting the trial
-  "subsequent_treatments": { type: [String], optional: true }
 
   "samples": {
     type: [
       new SimpleSchema({
-        "sample_id": { type: Meteor.ObjectID }, // refers to "samples" collection
         "sample_label": { type: String }, // Sample_ID
         "site_of_biopsy" : { type: String, optional: true }, // changed from site_of_metastasis
         "procedure_day": { type: Number, optional: true },
@@ -187,9 +209,9 @@ Schemas.patientReports = new SimpleSchema({
                           "patient_values": {
                             type: [
                               new SimpleSchema({
-                                "patient_id": { type: String },
-                                "patient_label": { type: String },
-                                "value": { type: Number }
+                                "sample_id": { type: String },
+                                "sample_label": { type: String },
+                                "value": { type: Number, decimal: true }
                               })
                             ]
                           }, // contains data
@@ -222,7 +244,7 @@ Schemas.patientReports = new SimpleSchema({
           ],
           optional: true
         },
-        "mutations": { type: [Schemas.mutation], optional: true },
+        "mutations": { type: [mutationSchema], optional: true },
         "gene_sets": {
           type: [
             new SimpleSchema({
@@ -244,15 +266,18 @@ Schemas.patientReports = new SimpleSchema({
   },
 });
 
+//
+// declare the collections
+//
 
 PatientReports = new Meteor.Collection("patient_reports");
-PatientReports.attachSchema(Schemas.patientReports);
+PatientReports.attachSchema(patientReportSchema);
 
 SignatureReports = new Meteor.Collection("signature_reports");
-SignatureReports.attachSchema(Schemas.signatureReports);
+SignatureReports.attachSchema(signatureReportSchema);
 
 PathwayReports = new Meteor.Collection("pathway_reports");
-PathwayReports.attachSchema(Schemas.pathwayReports);
+PathwayReports.attachSchema(pathwayReportSchema);
 
 GeneReports = new Meteor.Collection("gene_reports");
-GeneReports.attachSchema(Schemas.geneReports);
+GeneReports.attachSchema(geneReportSchema);
