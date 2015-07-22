@@ -204,8 +204,9 @@ var patientReportSchema = new SimpleSchema({
                         // almost the same as signatureScoresSchema in medbook:primary-collections
                         new SimpleSchema({
                           "signature_label": { type: String },
-                          "upper_threshold_value": { type: Number },
-                          "lower_threshold_value": { type: Number },
+                          "description": { type: String },
+                          "upper_threshold_value": { type: Number, decimal: true },
+                          "lower_threshold_value": { type: Number, decimal: true },
                           "patient_values": {
                             type: [
                               new SimpleSchema({
@@ -223,6 +224,7 @@ var patientReportSchema = new SimpleSchema({
                               "lower_than_threshold": { type: String },
                               "higher_than_threshold": { type: String },
                               "between_thresholds": { type: String },
+                              "current_sample": { type: String },
                             }),
                             optional: true
                           },

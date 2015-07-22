@@ -103,6 +103,7 @@ var geneValuePair = new SimpleSchema({
 
 var signaturesSchema = new SimpleSchema({
   "signature_label": { type: String },
+  "description": { type: String },
   "dense_weights": { type: [geneValuePair], optional: true },
   "sparse_weights": { type: [geneValuePair], optional: true },
   "version": { type: Number, optional: true }
@@ -131,6 +132,7 @@ var signatureScoresSchema = new SimpleSchema({
       "lower_than_threshold": { type: String },
       "higher_than_threshold": { type: String },
       "between_thresholds": { type: String },
+      "current_sample": { type: String },
     }),
     optional: true
   },
