@@ -65,7 +65,6 @@ var signatureReportSchema = new SimpleSchema({
   "value_type": { type: String },
   "sparse_weights": { type: [signatureWeightSchema] },
   "dense_weights": { type: [signatureWeightSchema] },
-
 });
 
 //
@@ -129,6 +128,7 @@ var patientReportSchema = new SimpleSchema({
   "baseline_psa" : { type: Number, optional: true },
   "psa_nadir" : { type: Number, optional: true },
   "psa_nadir_days" : { type: Number, optional: true },
+  "histological_call" : { type: String, optional: true },
 
   // timeline
   "drug_resistance": {
@@ -153,15 +153,22 @@ var patientReportSchema = new SimpleSchema({
   },
   "treatments": {
     type: [
+      // pull from medbook:primary-collections
       new SimpleSchema({
         // if day 3, they started 3 days after starting the trial
         "start_day": { type: Number, optional: true },
-        // if null --> still on treatment
         "end_day": { type: Number, optional: true },
+        "treatment_ongoing": { type: Boolean, optional: true },
+        "sample_label": { type: String, optional: true },
         "description": { type: String, optional: true },
-        "drug_name": { type: String, optional: true },
-        "category": { type: String, optional: true }, // ex. "Clinical Trial"
-        // pull from primary_collections
+        "drug_name": { type: [String], optional: true },
+        "reason_for_stop": { type: String, optional: true },
+        "psa_response": { type: String, optional: true },
+        "recist_response": { type: String, optional: true },
+        "bone_response": { type: String, optional: true },
+        "responder": { type: String, optional: true }, // could be resistant
+        "treatment_category": { type: String, optional: true }, // ex. "Clinical Trial"
+        "progressive_disease_type": { type: String, optional: true },
       })
     ],
     optional: true
@@ -192,7 +199,7 @@ var patientReportSchema = new SimpleSchema({
         "signature_types": {
           type: [
             new SimpleSchema({
-              "type": { type: String },
+              "signature_type_label": { type: String },
               "description": { type: String },
               "signature_algorithms": {
                 type: [
@@ -202,13 +209,13 @@ var patientReportSchema = new SimpleSchema({
                     "value_type": { type: String }, // ex. kinase_viper
                     "individual_signatures": {
                       type: [
-                        // almost the same as signatureScoresSchema in medbook:primary-collections
                         new SimpleSchema({
                           "signature_label": { type: String },
                           "description": { type: String },
+
                           "upper_threshold_value": { type: Number, decimal: true },
                           "lower_threshold_value": { type: Number, decimal: true },
-                          "patient_values": {
+                          "sample_values": { // contains data to make waterfall plot
                             type: [
                               new SimpleSchema({
                                 "patient_id": { type: String },
@@ -216,39 +223,37 @@ var patientReportSchema = new SimpleSchema({
                                 "value": { type: Number, decimal: true }
                               })
                             ]
-                          }, // contains data
+                          },
 
                           // text to the left of the vertical axis
                           "vertical_axis_text": { type: String, optional: true },
                           "colors": {
                             type: new SimpleSchema({
-                              "lower_than_threshold": { type: String, optional: true },
-                              "higher_than_threshold": { type: String, optional: true },
-                              "between_thresholds": { type: String, optional: true },
-                              "highlighted_samples": { type: String, optional: true },
-                              "current_sample": { type: String, optional: true },
+                              "lower_than_threshold": { type: String },
+                              "higher_than_threshold": { type: String },
+                              "between_thresholds": { type: String },
+                              "highlighted_samples": { type: String },
+                              "current_sample": { type: String },
                             }),
                             optional: true
                           },
                           "current_sample_label": { type: String }, // the one colored current_sample
 
                           // for if the charts within an algorithm should share scales
-                          "lowest_value_for_algorithm": { type: Number, optional: true },
-                          "highest_value_for_algorithm": { type: Number, optional: true },
+                          "lowest_value_for_algorithm": { type: Number, decimal: true, optional: true },
+                          "highest_value_for_algorithm": { type: Number, decimal: true, optional: true },
 
                         })
-                      ]
-                    },
-                    "job_id": { type: Meteor.ObjectID }, // refers to "jobs" collection (what generated this signatureReport)
-                    "version_number": { type: String }
-                    // we'll know the current patient from the top-level object
+                      ],
+                      optional: true
+                    }, // individual_signatures
+                    "version_number": { type: String },
                   })
                 ]
-              }
+              } // signature_algorithms
             })
-          ],
-          optional: true
-        },
+          ]
+        }, // signature_algorithms
         "mutations": { type: [mutationSchema], optional: true },
         "gene_sets": {
           type: [
@@ -278,6 +283,7 @@ var patientReportSchema = new SimpleSchema({
 PatientReports = new Meteor.Collection("patient_reports");
 PatientReports.attachSchema(patientReportSchema);
 
+// what are we doing here?
 SignatureReports = new Meteor.Collection("signature_reports");
 SignatureReports.attachSchema(signatureReportSchema);
 

@@ -13,6 +13,7 @@ var patientsSchema = new SimpleSchema({
   "gender": { type: String, optional: true },
   "race" : { type: String, optional: true },
   "ethnicity" : { type: String, optional: true },
+  "study_site": { type: String, optional: true },
 
   // clinical information
   "last_known_survival_status" : { type: String, optional: true },
@@ -28,21 +29,25 @@ var patientsSchema = new SimpleSchema({
   "baseline_psa" : { type: Number, optional: true },
   "psa_nadir" : { type: Number, optional: true },
   "psa_nadir_days" : { type: Number, optional: true },
+  "histological_call" : { type: String, optional: true }, // Trichotomy from Histological_Research
 
   "treatments": {
     type: [
       new SimpleSchema({
         // if day 3, they started 3 days after starting the trial
         "start_day": { type: Number, optional: true },
-        "end_day": { type: Number, optional: true }, // if null --> still on treatment
+        "end_day": { type: Number, optional: true },
+        "treatment_ongoing": { type: Boolean, optional: true },
+        "sample_label": { type: String, optional: true },
         "description": { type: String, optional: true },
-        "drug_names": { type: [String], optional: true },
+        "drug_name": { type: [String], optional: true },
         "reason_for_stop": { type: String, optional: true },
         "psa_response": { type: String, optional: true },
         "recist_response": { type: String, optional: true },
         "bone_response": { type: String, optional: true },
-        "response": { type: String, optional: true }, // could be resistant
-        "category": { type: String, optional: true }, // ex. "Clinical Trial"
+        "responder": { type: String, optional: true }, // could be resistant
+        "treatment_category": { type: String, optional: true }, // ex. "Clinical Trial"
+        "progressive_disease_type": { type: String, optional: true },
       })
     ],
     optional: true
@@ -57,7 +62,6 @@ var patientsSchema = new SimpleSchema({
         "study_id": { type: Meteor.ObjectID },
         "visit_date": { type: Date },
         "psa_level": { type: Number }, // optional?
-        // TODO: ./run_variety.sh "Blood_Labs_V2"
       })
     ],
     optional: true
@@ -67,7 +71,6 @@ var patientsSchema = new SimpleSchema({
     type: [
       new SimpleSchema({
         "sample_label": { type: String }, // Sample_ID
-        "study_site": { type: String, optional: true },
         "site_of_biopsy" : { type: String, optional: true }, // changed from site_of_metastasis
         "procedure_day": { type: Number, optional: true },
         "gene_expression": {
@@ -79,17 +82,6 @@ var patientsSchema = new SimpleSchema({
           ],
           optional: true
         }
-        // // where are we going to store this stuff?
-        // "pathways": {
-        //   type: [Schemas.samplePathway],
-        //   optional: true
-        // },
-        // "signature_types": {
-        //   type: [Schemas.signatureType],
-        //   optional: true
-        // },
-        // "mutations": { type: [Schemas.mutation], optional: true },
-        // "gene_sets": { type: [Schemas.geneSet], optional: true },
       })
     ],
     optional: true
@@ -115,7 +107,7 @@ var signatureScoresSchema = new SimpleSchema({
   "description": { type: String, optional: true },
   "upper_threshold_value": { type: Number, decimal: true },
   "lower_threshold_value": { type: Number, decimal: true },
-  "patient_values": { // contains data
+  "sample_values": { // contains data
     type: [
       new SimpleSchema({
         "patient_id": { type: String },
