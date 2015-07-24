@@ -128,7 +128,6 @@ var patientReportSchema = new SimpleSchema({
   "baseline_psa" : { type: Number, optional: true },
   "psa_nadir" : { type: Number, optional: true },
   "psa_nadir_days" : { type: Number, optional: true },
-  "histological_call" : { type: String, optional: true },
 
   // timeline
   "drug_resistance": {
@@ -180,6 +179,7 @@ var patientReportSchema = new SimpleSchema({
         "sample_label": { type: String }, // Sample_ID
         "site_of_biopsy" : { type: String, optional: true }, // changed from site_of_metastasis
         "procedure_day": { type: Number, optional: true },
+        "histological_call" : { type: String, optional: true },
         "pathways": {
           type: [
             new SimpleSchema({
@@ -252,7 +252,8 @@ var patientReportSchema = new SimpleSchema({
                 ]
               } // signature_algorithms
             })
-          ]
+          ],
+          optional: true
         }, // signature_algorithms
         "mutations": { type: [mutationSchema], optional: true },
         "gene_sets": {
