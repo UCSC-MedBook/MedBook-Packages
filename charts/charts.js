@@ -22,7 +22,13 @@ var chartSchema = new SimpleSchema({
         type: [
           new SimpleSchema({
             // TODO: define schema for this
-            "onClick": { type: String, optional: true },
+            "onClick": {
+              type: new SimpleSchema({
+                "method": { type: String },
+                "arguments": { type: Object }, // wait before being too specific
+              }),
+              optional: true
+            },
             "value": { type: Number, decimal: true },
           })
         ]

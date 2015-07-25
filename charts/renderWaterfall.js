@@ -126,8 +126,9 @@ renderWaterfall = function (theData, chart_id) {
         // });
         console.log("clicked on the waterfall plot!");
         console.log(object);
-        if (object.method && object.arguments) {
-          Meteor.call(object.method, object.arguments);
+        if (object.onClick) {
+          console.log("calling meteor method with arguemnts");
+          Meteor.call(object.onClick.method, object.onClick.arguments);
         }
       })
       .attr("cursor", "pointer"); // cursor looks like a link
