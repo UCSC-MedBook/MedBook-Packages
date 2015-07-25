@@ -37,11 +37,13 @@ renderWaterfall = function (theData, chart_id) {
   // numbers to be on the left side, also where the tick marks are
   var leftAxisNumbers = valuesToPixel.ticks(5); // mind blown
 
+  //console.log("before");
   var svg = d3.select("#" + chart_id)
               .append("svg")
               .attr("width", WIDTH)
               .attr("height", HEIGHT)
               .selectAll("d"); // I have to do this to get it to work
+  //console.log("after");
 
   // show left axis title (ex. "Model Score")
   // "Model Score" = default
@@ -118,12 +120,6 @@ renderWaterfall = function (theData, chart_id) {
         d3.select(this).style({ opacity: '1' });
       })
       .on("click", function (object, index) {
-        // change to .append("a") after issue is fixed
-        // https://github.com/iron-meteor/iron-router/issues/1392
-        // patientReportGo({
-        //   "patient_id": object.patient_id,
-        //   "sample_label": object.sample_label,
-        // });
         console.log("clicked on the waterfall plot!");
         console.log(object);
         if (object.onClick) {

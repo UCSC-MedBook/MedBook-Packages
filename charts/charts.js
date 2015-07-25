@@ -25,7 +25,7 @@ var chartSchema = new SimpleSchema({
             "onClick": {
               type: new SimpleSchema({
                 "method": { type: String },
-                "arguments": { type: Object }, // wait before being too specific
+                "argument": { type: Object }, // wait before being too specific
               }),
               optional: true
             },
