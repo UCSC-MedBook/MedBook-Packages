@@ -101,12 +101,10 @@ var signaturesSchema = new SimpleSchema({
   "version": { type: Number, optional: true }
 });
 
-var signatureScoresSchema = new SimpleSchema({
+var cohortSignatureSchema = new SimpleSchema({
   "signature_id": { type: Meteor.ObjectID },
   "signature_label": { type: String },
   "description": { type: String, optional: true },
-  "upper_threshold_value": { type: Number, decimal: true },
-  "lower_threshold_value": { type: Number, decimal: true },
   "sample_values": { // contains data
     type: [
       new SimpleSchema({
@@ -117,21 +115,7 @@ var signatureScoresSchema = new SimpleSchema({
     ]
   },
 
-  // text to the left of the vertical axis
-  "vertical_axis_text": { type: String, optional: true },
-  "colors": {
-    type: new SimpleSchema({
-      "lower_than_threshold": { type: String },
-      "higher_than_threshold": { type: String },
-      "between_thresholds": { type: String },
-      "current_sample": { type: String },
-    }),
-    optional: true
-  },
-
-  // for if the charts within an algorithm should share scales
-  "lowest_value_for_algorithm": { type: Number, optional: true },
-  "highest_value_for_algorithm": { type: Number, optional: true },
+  "chart_id": { type: Meteor.ObjectID },
 });
 
 var studiesSchema = new SimpleSchema({
@@ -211,9 +195,8 @@ Studies.attachSchema(studiesSchema);
 Signatures = new Meteor.Collection("signatures");
 Signatures.attachSchema(signaturesSchema);
 
-// TODO: change to signature_scores when we transition
-SignatureScores = new Meteor.Collection("signature_scores_3");
-SignatureScores.attachSchema(signatureScoresSchema);
+CohortSignatures = new Meteor.Collection("cohort_signatures"); // TODO: change to signature_scores
+CohortSignatures.attachSchema(cohortSignatureSchema);
 
 Pathways = new Meteor.Collection("pathways");
 Pathways.attachSchema(pathwaySchema);

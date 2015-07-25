@@ -179,7 +179,7 @@ var patientReportSchema = new SimpleSchema({
         "sample_label": { type: String }, // Sample_ID
         "site_of_biopsy" : { type: String, optional: true }, // changed from site_of_metastasis
         "procedure_day": { type: Number, optional: true },
-        "histological_call" : { type: String, optional: true },
+        "trichotomy_call" : { type: String, optional: true },
         "pathways": {
           type: [
             new SimpleSchema({
@@ -196,65 +196,26 @@ var patientReportSchema = new SimpleSchema({
           ],
           optional: true
         },
-        "signature_types": {
+        "hello_world": {
+          type: String,
+          optional: true
+        },
+        "cohort_signatures": {
           type: [
             new SimpleSchema({
-              "signature_type_label": { type: String },
+              "signature_id": { type: String },
+              "signature_label": { type: String },
               "description": { type: String },
-              "signature_algorithms": {
-                type: [
-                  new SimpleSchema({
-                    "signature_algorithm_report_id": { type: String }, // "signature_algorithm_report"
-                    "signature_algorithm_label": { type: String }, // eg. small-cell
-                    "value_type": { type: String }, // ex. kinase_viper
-                    "individual_signatures": {
-                      type: [
-                        new SimpleSchema({
-                          "signature_label": { type: String },
-                          "description": { type: String },
 
-                          "upper_threshold_value": { type: Number, decimal: true },
-                          "lower_threshold_value": { type: Number, decimal: true },
-                          "sample_values": { // contains data to make waterfall plot
-                            type: [
-                              new SimpleSchema({
-                                "patient_id": { type: String },
-                                "sample_label": { type: String },
-                                "value": { type: Number, decimal: true }
-                              })
-                            ]
-                          },
+              // deal with UI on its own (keep object flat: no nesting)
+              "signature_type": { type: String },
+              "signature_algorithm": { type: String },
 
-                          // text to the left of the vertical axis
-                          "vertical_axis_text": { type: String, optional: true },
-                          "colors": {
-                            type: new SimpleSchema({
-                              "lower_than_threshold": { type: String },
-                              "higher_than_threshold": { type: String },
-                              "between_thresholds": { type: String },
-                              "highlighted_samples": { type: String },
-                              "current_sample": { type: String },
-                            }),
-                            optional: true
-                          },
-                          "current_sample_label": { type: String }, // the one colored current_sample
-
-                          // for if the charts within an algorithm should share scales
-                          "lowest_value_for_algorithm": { type: Number, decimal: true, optional: true },
-                          "highest_value_for_algorithm": { type: Number, decimal: true, optional: true },
-
-                        })
-                      ],
-                      optional: true
-                    }, // individual_signatures
-                    "version_number": { type: String },
-                  })
-                ]
-              } // signature_algorithms
+              "chart_id": { type: Meteor.ObjectID },
             })
           ],
           optional: true
-        }, // signature_algorithms
+        },
         "mutations": { type: [mutationSchema], optional: true },
         "gene_sets": {
           type: [

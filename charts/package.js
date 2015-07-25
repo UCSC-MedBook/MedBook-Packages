@@ -1,8 +1,8 @@
 Package.describe({
-  name: 'medbook:primary-collections',
-  version: '0.0.2',
+  name: 'medbook:charts',
+  version: '0.0.1',
   // Brief, one-line summary of the package.
-  summary: 'Primary collections and schemas for MedBook',
+  summary: '',
   // URL to the Git repository containing the source code for this package.
   git: '',
   // By default, Meteor will default to using README.md for documentation.
@@ -16,18 +16,26 @@ Package.onUse(function(api) {
   api.use('aldeed:simple-schema');
   api.use('aldeed:collection2');
 
-  api.addFiles('primary_collections.js');
+  api.use('templating', 'client');
 
-  // symbol exports
-  api.export('Patients');
-  api.export('Studies');
-  api.export('Signatures');
-  api.export('CohortSignatures');
+  api.addFiles('charts.js');
+
+  api.addFiles([
+      // functions to render charts
+      'renderWaterfall.js',
+    ], 'client');
+
+  api.addFiles([
+    'renderChart.html',
+    'renderChart.js',
+  ], 'client');
+
+  api.export('Charts');
+  api.export('MedBook');
 });
 
 Package.onTest(function(api) {
-  // I've never used this
   api.use('tinytest');
-  api.use('medbook:-collections');
-  api.addFiles('primary_collections_tests.js');
+  api.use('medbook:charts');
+  api.addFiles('charts-tests.js');
 });
