@@ -196,10 +196,6 @@ var patientReportSchema = new SimpleSchema({
           ],
           optional: true
         },
-        "hello_world": {
-          type: String,
-          optional: true
-        },
         "cohort_signatures": {
           type: [
             new SimpleSchema({
@@ -212,6 +208,17 @@ var patientReportSchema = new SimpleSchema({
               "signature_algorithm": { type: String },
 
               "chart_id": { type: Meteor.ObjectID },
+              "dom_element_id": {
+                type: String,
+                autoValue: function () {
+                  //console.log(this.siblingField('current_sample_label'));
+                  return "waterfall-"
+                      + this.siblingField("current_sample_label").value
+                      + "-"
+                      + this.siblingField("signature_id").value;
+                }
+              },
+              "current_sample_label": { type: String, optional: true },
             })
           ],
           optional: true

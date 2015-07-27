@@ -12,7 +12,7 @@ var chartValidator = function (first, second) {
 }
 
 var chartSchema = new SimpleSchema({
-  "type": { type: String }, // ex. waterfall
+  "type": { type: String }, // ex. waterfall ; can't start with a number
   "data": {
     type: new SimpleSchema({
       "upper_threshold_value": { type: Number, decimal: true },
@@ -29,11 +29,13 @@ var chartSchema = new SimpleSchema({
               }),
               optional: true
             },
+            "sample_label": { type: String },
             "value": { type: Number, decimal: true },
           })
         ]
       },
 
+      // optional stuff
       "vertical_axis_text": { type: String, optional: true }, // to the left of vertical axis
       "colors": {
         type: new SimpleSchema({
@@ -45,7 +47,6 @@ var chartSchema = new SimpleSchema({
         }),
         optional: true
       },
-
       // for if the charts within an algorithm should share scales
       "lowest_value_for_algorithm": { type: Number, decimal: true, optional: true },
       "highest_value_for_algorithm": { type: Number, decimal: true, optional: true },

@@ -102,7 +102,7 @@ var signaturesSchema = new SimpleSchema({
 });
 
 var cohortSignatureSchema = new SimpleSchema({
-  "signature_id": { type: Meteor.ObjectID },
+  "signature_id": { type: Meteor.ObjectID, optional: true }, // should it be optional?
   "signature_label": { type: String },
   "description": { type: String, optional: true },
   "sample_values": { // contains data
@@ -115,7 +115,7 @@ var cohortSignatureSchema = new SimpleSchema({
     ]
   },
 
-  "chart_id": { type: Meteor.ObjectID },
+  "chart_id": { type: Meteor.ObjectID, optional: true },
 });
 
 var studiesSchema = new SimpleSchema({

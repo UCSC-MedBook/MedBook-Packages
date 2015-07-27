@@ -1,5 +1,12 @@
 // note: global
-renderWaterfall = function (theData, chart_id) {
+renderWaterfall = function (theData, domSelector, current_sample_label) {
+
+  //console.log(domSelector + " (renderWaterfall.js)");
+
+  // console.log("rendering theData :: current_sample_label :: ");
+  // console.log(theData);
+  // console.log(current_sample_label);
+
   var HEIGHT = 150;
   var WIDTH = 200;
   var LEFT_AXIS_WIDTH = 50;
@@ -38,7 +45,7 @@ renderWaterfall = function (theData, chart_id) {
   var leftAxisNumbers = valuesToPixel.ticks(5); // mind blown
 
   //console.log("before");
-  var svg = d3.select("#" + chart_id)
+  var svg = d3.select(domSelector)
               .append("svg")
               .attr("width", WIDTH)
               .attr("height", HEIGHT)
@@ -104,14 +111,16 @@ renderWaterfall = function (theData, chart_id) {
       })
       .attr("fill", function (object, index) {
         var colors = object.colors;
-        if (object.sample_label === theData.current_sample_label) {
-          return colors ? colors.current_sample : "#B97D4B";
+        // console.log("object :: ");
+        // console.log(object);
+        if (object.sample_label === current_sample_label) {
+          return colors ? colors.current_sample : "red";//"#B97D4B";
         } else if (object.value >= theData.upper_threshold_value) {
-          return colors ? colors.higher_than_threshold : "#B97D4B";
+          return colors ? colors.higher_than_threshold : "maroon";//"#B97D4B";
         } else if (object.value <= theData.lower_threshold_value) {
-          return colors ? colors.lower_than_threshold : "steelblue";
+          return colors ? colors.lower_than_threshold : "darkblue";
         }
-        return colors ? colors.between_thresholds : "#AAAAAA";
+        return colors ? colors.between_thresholds : "#AAAAAA"; // lightish gray
       })
       .on("mouseover", function (object, indext) {
         d3.select(this).style({ opacity: '0.7' });
@@ -120,11 +129,12 @@ renderWaterfall = function (theData, chart_id) {
         d3.select(this).style({ opacity: '1' });
       })
       .on("click", function (object, index) {
-        console.log("clicked on the waterfall plot!");
+        console.log("clicked on the waterfall plot! object ::");
         console.log(object);
         if (object.onClick) {
-          console.log("calling meteor method with arguemnts");
-          Meteor.call(object.onClick.method, object.onClick.arguments);
+          // this will cause a 404 with Meteor.call
+          // TODO: we should move this to MedBook.go or something
+          Meteor.call(object.onClick.method, object.onClick.argument);
         }
       })
       .attr("cursor", "pointer"); // cursor looks like a link
