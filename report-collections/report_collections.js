@@ -1,6 +1,6 @@
 // sorry for having everything in one file...
 
-var mutationSchema = new SimpleSchema({
+var mutationSchema = new SimpleSchema({ // used in PatientReports, GeneReports
   "gene_label": { type: String },
   "gene_id": { type: String },
   "protein_change": { type: String, optional: true },
@@ -16,28 +16,40 @@ var mutationSchema = new SimpleSchema({
 
 var geneReportSchema = new SimpleSchema({
   "created_at": { type: Date },
-  "study_label": { type: String },
-  "study_id": { type: String },
+  // "study_label": { type: String },
+  // "study_id": { type: String },
   "gene_label": { type: String },
   "status": { type: String }, // ex. Approved / Symbol Withdrawn
-  "description": { type: String, optional: true },
-  "previous": { type: [String], optional: true }, // need to send to client?
-  "synonym": { type: [String], optional: true }, // need to send to client?
-  "genome_browser_url": { type: String, optional: true },
-  "gene_cards_url": { type: String, optional: true },
-  "interaction_url": { type: String, optional: true },
-  "mutations": {
-    "label": "Common mutations",
-    "type": [mutationSchema],
-    "optional": true
+
+  "neighbors": {
+    type: [
+      new SimpleSchema({
+        "element1": { type: String },
+        "element2": { type: String },
+        "relation": { type: String },
+      }),
+    ],
+    optional: true
   },
-  "high_low_activity_samples": { type: [
-    new SimpleSchema({
-      "patient_id": { type: String },
-      "sample_label": { type: String },
-      "value": { type: Number },
-    })
-  ], optional: true }
+
+
+  // "description": { type: String, optional: true },
+  // "previous": { type: [String], optional: true }, // need to send to client?
+  // "synonym": { type: [String], optional: true }, // need to send to client?
+  // "genome_browser_url": { type: String, optional: true },
+  // "gene_cards_url": { type: String, optional: true },
+  // "interaction_url": { type: String, optional: true },
+  // "mutations": { // common mutations
+  //   type: [mutationSchema],
+  //   optional: true
+  // },
+  // "high_low_activity_samples": { type: [
+  //   new SimpleSchema({
+  //     "patient_id": { type: String },
+  //     "sample_label": { type: String },
+  //     "value": { type: Number },
+  //   })
+  // ], optional: true }
 
   // Lollipop (cbio or xena)
   // Gene-omics view (see next slide)
@@ -71,24 +83,28 @@ var signatureReportSchema = new SimpleSchema({
 // pathway report
 //
 
-var pathwayElement = new SimpleSchema({
-  name: { type: String },
-  type: { type: String },
-});
-
-var pathwayInteraction = new SimpleSchema({
-  source: { type: String },
-  target: { type: String },
-  type: { type: String },
-  strength: { type: Number },
-});
-
 var pathwayReportSchema = new SimpleSchema({
   pathway_label: { type: String },
   version: { type: Number, decimal: true },
   source: { type: String, optional: true }, // URL
-  elements: { type: [pathwayElement]},
-  interactions: { type: [pathwayInteraction] },
+  elements: {
+    type: [
+      new SimpleSchema({
+        name: { type: String },
+        type: { type: String },
+      })
+    ]
+  },
+  interactions: {
+    type: [
+      new SimpleSchema({
+        source: { type: String },
+        target: { type: String },
+        type: { type: String },
+        strength: { type: Number },
+      })
+    ]
+  },
 });
 
 //

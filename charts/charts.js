@@ -21,11 +21,15 @@ var chartSchema = new SimpleSchema({
       "values": { // contains data to make waterfall plot
         type: [
           new SimpleSchema({
-            // TODO: define schema for this
             "onClick": {
               type: new SimpleSchema({
                 "method": { type: String },
-                "argument": { type: Object }, // wait before being too specific
+                "argument": {
+                  type: new SimpleSchema({
+                    "patient_id": { type: Meteor.ObjectID },
+                    "sample_label": { type: String },
+                  })
+                },
               }),
               optional: true
             },

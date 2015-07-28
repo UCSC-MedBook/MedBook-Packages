@@ -29,7 +29,8 @@ var patientsSchema = new SimpleSchema({
   "baseline_psa" : { type: Number, optional: true },
   "psa_nadir" : { type: Number, optional: true },
   "psa_nadir_days" : { type: Number, optional: true },
-  "histological_call" : { type: String, optional: true }, // Trichotomy from Histological_Research
+  "abiraterone_prior_to_study" : { type: String, optional: true },
+  "enzaglutamide_prior_to_study" : { type: String, optional: true },
 
   "treatments": {
     type: [
@@ -174,6 +175,7 @@ var pathwayInteraction = new SimpleSchema({
   strength: { type: Number },
 });
 
+// get from report_collections: is it the same?
 var pathwaySchema = new SimpleSchema({
   pathway_label: { type: String },
   version: { type: Number, decimal: true },
@@ -185,6 +187,8 @@ var pathwaySchema = new SimpleSchema({
 //
 // declare the collections
 //
+
+// we should have genes (already defined well)
 
 Patients = new Meteor.Collection("patients");
 Patients.attachSchema(patientsSchema);

@@ -116,7 +116,7 @@ renderWaterfall = function (theData, domSelector, current_sample_label) {
         if (object.sample_label === current_sample_label) {
           return colors ? colors.current_sample : "red";//"#B97D4B";
         } else if (object.value >= theData.upper_threshold_value) {
-          return colors ? colors.higher_than_threshold : "maroon";//"#B97D4B";
+          return colors ? colors.higher_than_threshold : "darkblue";//"#B97D4B";
         } else if (object.value <= theData.lower_threshold_value) {
           return colors ? colors.lower_than_threshold : "darkblue";
         }
