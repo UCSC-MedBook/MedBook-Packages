@@ -21,15 +21,37 @@ var geneReportSchema = new SimpleSchema({
   "gene_label": { type: String },
   "status": { type: String }, // ex. Approved / Symbol Withdrawn
 
-  "neighbors": {
-    type: [
-      new SimpleSchema({
-        "element1": { type: String },
-        "element2": { type: String },
-        "relation": { type: String },
-      }),
-    ],
-    optional: true
+  "network": {
+    type: new SimpleSchema({
+      "name": { type: String },
+      "version": { type: Number, optional: true },
+      // source url
+      "elements": {
+        type: [
+          new SimpleSchema({
+            "name": { type: String, },
+            "type": { type: String },
+            "position": {
+                type: new SimpleSchema({
+                    "x": { type: Number },
+                    "y": { type: Number }
+                }),
+                optional: true
+            },
+          })
+        ]
+      },
+      "interactions": {
+          type: [
+            new SimpleSchema({
+              "source": { type: String },
+              "target": { type: String },
+              "type": { type: String },
+              "score": { type: Number, optional: true }
+          })
+        ]
+      },
+    }),
   },
 
 
@@ -87,24 +109,7 @@ var pathwayReportSchema = new SimpleSchema({
   pathway_label: { type: String },
   version: { type: Number, decimal: true },
   source: { type: String, optional: true }, // URL
-  elements: {
-    type: [
-      new SimpleSchema({
-        name: { type: String },
-        type: { type: String },
-      })
-    ]
-  },
-  interactions: {
-    type: [
-      new SimpleSchema({
-        source: { type: String },
-        target: { type: String },
-        type: { type: String },
-        strength: { type: Number },
-      })
-    ]
-  },
+
 });
 
 //
@@ -127,23 +132,23 @@ var patientReportSchema = new SimpleSchema({
   // demographics
   "age": { type: Number, optional: true },
   "gender": { type: String, optional: true },
-  "race" : { type: String, optional: true },
-  "ethnicity" : { type: String, optional: true },
+  "race": { type: String, optional: true },
+  "ethnicity": { type: String, optional: true },
 
   // clinical information
-  "last_known_survival_status" : { type: String, optional: true },
-  "neoplasm_disease_stage" : { type: String, optional: true },
-  "pathology_T_stage" : { type: String, optional: true },
-  "pathology_N_stage" : { type: String, optional: true },
-  "pathology_M_stage" : { type: String, optional: true },
-  "radiation_therapy" : { type: String, optional: true },
-  "radiation_regimen_indication" : { type: String, optional: true },
-  "completeness_of_resection" : { type: String, optional: true },
-  "number_of_lymph_nodes" : { type: Number, optional: true },
-  "gleason_grade" : { type: String, optional: true },
-  "baseline_psa" : { type: Number, optional: true },
-  "psa_nadir" : { type: Number, optional: true },
-  "psa_nadir_days" : { type: Number, optional: true },
+  "last_known_survival_status": { type: String, optional: true },
+  "neoplasm_disease_stage": { type: String, optional: true },
+  "pathology_T_stage": { type: String, optional: true },
+  "pathology_N_stage": { type: String, optional: true },
+  "pathology_M_stage": { type: String, optional: true },
+  "radiation_therapy": { type: String, optional: true },
+  "radiation_regimen_indication": { type: String, optional: true },
+  "completeness_of_resection": { type: String, optional: true },
+  "number_of_lymph_nodes": { type: Number, optional: true },
+  "gleason_grade": { type: String, optional: true },
+  "baseline_psa": { type: Number, optional: true },
+  "psa_nadir": { type: Number, optional: true },
+  "psa_nadir_days": { type: Number, optional: true },
 
   // timeline
   "drug_resistance": {
@@ -193,9 +198,9 @@ var patientReportSchema = new SimpleSchema({
     type: [
       new SimpleSchema({
         "sample_label": { type: String }, // Sample_ID
-        "site_of_biopsy" : { type: String, optional: true }, // changed from site_of_metastasis
+        "site_of_biopsy": { type: String, optional: true }, // changed from site_of_metastasis
         "procedure_day": { type: Number, optional: true },
-        "trichotomy_call" : { type: String, optional: true },
+        "trichotomy_call": { type: String, optional: true },
         "pathways": {
           type: [
             new SimpleSchema({
@@ -277,3 +282,6 @@ PathwayReports.attachSchema(pathwayReportSchema);
 
 GeneReports = new Meteor.Collection("gene_reports");
 GeneReports.attachSchema(geneReportSchema);
+
+// nooooooo
+expression2 = new Meteor.Collection("expression2");
