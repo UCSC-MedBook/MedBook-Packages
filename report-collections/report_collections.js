@@ -217,33 +217,6 @@ var patientReportSchema = new SimpleSchema({
           ],
           optional: true
         },
-        "cohort_signatures": {
-          type: [
-            new SimpleSchema({
-              "signature_id": { type: String },
-              "signature_label": { type: String },
-              "description": { type: String },
-
-              // deal with UI on its own (keep object flat: no nesting)
-              "signature_type": { type: String },
-              "signature_algorithm": { type: String },
-
-              "chart_id": { type: Meteor.ObjectID },
-              "dom_element_id": {
-                type: String,
-                autoValue: function () {
-                  //console.log(this.siblingField('current_sample_label'));
-                  return "waterfall-"
-                      + this.siblingField("current_sample_label").value
-                      + "-"
-                      + this.siblingField("signature_id").value;
-                }
-              },
-              "current_sample_label": { type: String, optional: true },
-            })
-          ],
-          optional: true
-        },
         "mutations": { type: [mutationSchema], optional: true },
         "gene_sets": {
           type: [
@@ -264,6 +237,7 @@ var patientReportSchema = new SimpleSchema({
     ],
     optional: true
   },
+  "cohort_signature_ids": { type: [Meteor.ObjectID], optional: true },
 });
 
 //
