@@ -18,20 +18,10 @@ Package.onUse(function(api) {
 
   api.use('templating', 'client');
 
-  api.addFiles('charts.js');
-
   api.addFiles([
       // functions to render charts
       'renderWaterfall.js',
     ], 'client');
-
-  api.addFiles([
-    'renderChart.html',
-    'renderChart.js',
-  ], 'client');
-
-  api.export('Charts');
-  api.export('MedBook');
 });
 
 Package.onTest(function(api) {

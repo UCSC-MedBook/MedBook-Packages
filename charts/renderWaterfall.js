@@ -1,11 +1,11 @@
 // note: global
-renderWaterfall = function (theData, domSelector, current_sample_label) {
+renderWaterfall = function (theData, context) {
 
-  //console.log(domSelector + " (renderWaterfall.js)");
+  //console.log(context.dom_selector + " (renderWaterfall.js)");
 
-  // console.log("rendering theData :: current_sample_label :: ");
+  // console.log("rendering theData :: context.current_sample_label :: ");
   // console.log(theData);
-  // console.log(current_sample_label);
+  // console.log(context.current_sample_label);
 
   var HEIGHT = 150;
   var WIDTH = 200;
@@ -45,7 +45,7 @@ renderWaterfall = function (theData, domSelector, current_sample_label) {
   var leftAxisNumbers = valuesToPixel.ticks(5); // mind blown
 
   //console.log("before");
-  var svg = d3.select(domSelector)
+  var svg = d3.select(context.dom_selector)
               .append("svg")
               .attr("width", WIDTH)
               .attr("height", HEIGHT)
@@ -113,7 +113,7 @@ renderWaterfall = function (theData, domSelector, current_sample_label) {
         var colors = object.colors;
         // console.log("object :: ");
         // console.log(object);
-        if (object.sample_label === current_sample_label) {
+        if (object.sample_label === context.current_sample_label) {
           return colors ? colors.current_sample : "red";//"#B97D4B";
         } else if (object.value >= theData.upper_threshold_value) {
           return colors ? colors.higher_than_threshold : "darkblue";//"#B97D4B";
@@ -157,3 +157,28 @@ renderWaterfall = function (theData, domSelector, current_sample_label) {
         return "5, 5";
       });
 }
+
+// Template.renderWaterfall.rendered = function () {
+//
+//   var chart_id = this.data.chart_id;
+//   var outerThis = this;
+//
+//   Deps.autorun(function (first) {
+//     var chart = Charts.findOne({ "_id": chart_id }); // get the chart
+//
+//     if (chart) { // is it loaded yet?
+//       switch (chart.type) {
+//         case "waterfall":
+//           //console.log(outerThis.data['dom_element_id'] + " found a waterfall");
+//           renderWaterfall(chart.data,
+//               "#" + outerThis.data['dom_element_id'],
+//               outerThis.data["current_sample_label"]);
+//           break;
+//         default:
+//           console.log("unknown chart type");
+//       }
+//       // stop the autorun so it doesn't render multiple times
+//       first.stop();
+//     }
+//   });
+// };
