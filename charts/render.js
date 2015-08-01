@@ -29,16 +29,6 @@ Charts.render = function (theData, context) {
     return;
   }
 
-  // set margins
-  if (context.margin === undefined) {
-    context.margin = {};
-  }
-  _.defaults(context.margin, {top: 0, right: 8, bottom: 0, left: 8});
-
-  // pretend it's only so big
-  context.width += -context.margin.left - context.margin.right;
-  context.height += -context.margin.top - context.margin.bottom;
-
   // make sure the data are sorted (for pulling min/max values)
   theData = theData.sort(function (a, b) {
     return a.value - b.value;
@@ -50,15 +40,15 @@ Charts.render = function (theData, context) {
   }
   if (context.maximum_value === undefined) {
     context.maximum_value = theData[0];
+    console.log('asdf');
   }
 
   var svg = d3.select("#" + context.dom_selector)
       .append("svg")
-      .attr("width", context.width + context.margin.left + context.margin.right)
-      .attr("height", context.height + context.margin.top + context.margin.bottom)
+      .attr("width", context.width)
+      .attr("height", context.height)
     .append("g")
-      .attr("transform", "translate(" + context.margin.left
-          + "," + context.margin.top + ")");
+      .attr("class", context.chart_type);
 
   Charts.definitions[context.chart_type](svg, theData, context);
 }
