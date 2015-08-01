@@ -4,6 +4,10 @@ if (typeof Charts === "undefined") {
 
 Charts.renderBoxAndWhisker = function(svg, theData, context) {
 
+  Charts.helpers.setMargins(svg, context, {
+    top: 0, right: 8, bottom: 0, left: 8
+  });
+
   var valuesScale = d3.scale.linear() // converts data values to pixel values
       .domain([context.minimum_value, context.maximum_value])
       .range([0, context.width]);
@@ -12,7 +16,7 @@ Charts.renderBoxAndWhisker = function(svg, theData, context) {
     var xAxis = d3.svg.axis()
         .scale(valuesScale)
         .orient("top") // the data is below
-        .ticks(context.width / 35); // how many ticks there are
+        .ticks(context.width / 35); // how many ticks there are (every 35px)
 
     svg.append("g")
         .attr("class", "x axis")
@@ -21,7 +25,6 @@ Charts.renderBoxAndWhisker = function(svg, theData, context) {
       .selectAll("text")
         .attr("y", -12.5) // where the text is in relation to the tick
         .attr("x", 0);
-        //.style("text-anchor", "middle");
   }
 
   function valueAtPercent(array, percent) {
@@ -107,16 +110,6 @@ Charts.renderBoxAndWhisker = function(svg, theData, context) {
             + 1.5 * interquartileRange)[0]
       ].value;
 
-  function significanceClass(firstValue, secondValue) {
-    var value = (firstValue + secondValue) / 2;
-
-    if (value < context.lower_threshold_value
-        || value > context.higher_threshold_value) {
-      return "outside-threshold";
-    }
-    return "inside-threshold";
-  }
-
   function positionVerticalLine(selection) {
     selection
         .attr("y1", boxMiddle - boxHeight / 2)
@@ -131,25 +124,32 @@ Charts.renderBoxAndWhisker = function(svg, theData, context) {
       .attr("x2", valuesScale)
       .call(positionVerticalLine)
       .attr("class", function (value, index) {
-        return significanceClass(value, value);
+        return Charts.helpers.getSignificanceClass(value, value, context);
       });
 
   // horizontal lines
   function drawLine(firstValue, secondValue) {
     if (firstValue < secondValue) {
+      console.log('drawLine in if');
       boxplot.data([0]).enter()
           .append("line")
           .attr("x1", valuesScale(firstValue))
           .attr("x2", valuesScale(secondValue))
           .attr("y1", boxMiddle)
           .attr("y2", boxMiddle)
-          .attr("class", significanceClass(firstValue, secondValue));
+          .attr("class", Charts.helpers.getSignificanceClass(firstValue
+              , secondValue, context));
     }
   }
-  drawLine(leftWhiskerValue, context.lower_threshold_value); // left
-  drawLine(Math.max(context.lower_threshold_value, leftWhiskerValue)
-      , Math.min(context.higher_threshold_value, rightWhiskerValue)); // middle
-  drawLine(context.higher_threshold_value, rightWhiskerValue); // right
+  if (context.lower_threshold_value === undefined
+      || context.upper_threshold_value === undefined) {
+    drawLine(leftWhiskerValue, rightWhiskerValue);
+  } else {
+    drawLine(leftWhiskerValue, context.lower_threshold_value); // left
+    drawLine(Math.max(context.lower_threshold_value, leftWhiskerValue)
+        , Math.min(context.upper_threshold_value, rightWhiskerValue)); // middle
+    drawLine(context.upper_threshold_value, rightWhiskerValue); // right
+  }
 
   // boxes
   function drawBox(firstValue, secondValue) {
@@ -160,13 +160,19 @@ Charts.renderBoxAndWhisker = function(svg, theData, context) {
           .attr("y", boxMiddle - boxHeight / 2)
           .attr("height", boxHeight)
           .attr("width", valuesScale(secondValue) - valuesScale(firstValue))
-          .attr("class", significanceClass(firstValue, secondValue));
+          .attr("class", Charts.helpers.getSignificanceClass(firstValue
+              , secondValue, context));
     }
   }
-  drawBox(firstQuartile, context.lower_threshold_value); // left blue
-  drawBox(Math.max(context.lower_threshold_value, firstQuartile)
-      , Math.min(context.higher_threshold_value, thirdQuartile)); // grey
-  drawBox(context.higher_threshold_value, thirdQuartile); // right blue
+  if (context.lower_threshold_value === undefined
+      || context.upper_threshold_value === undefined) {
+    drawBox(firstQuartile, thirdQuartile);
+  } else {
+    drawBox(firstQuartile, context.lower_threshold_value); // left blue
+    drawBox(Math.max(context.lower_threshold_value, firstQuartile)
+        , Math.min(context.upper_threshold_value, thirdQuartile)); // grey
+    drawBox(context.upper_threshold_value, thirdQuartile); // right blue
+  }
 
   // outliers
   boxplot.data(_.filter(theData, function (current) {
@@ -179,9 +185,10 @@ Charts.renderBoxAndWhisker = function(svg, theData, context) {
         return valuesScale(object.value);
       })
       .attr("cy", boxMiddle)
-      .attr("r", 2)
+      .attr("r", 1)
       .attr("class", function (object, index) {
-        return significanceClass(object.value, object.value);
+        return Charts.helpers.getSignificanceClass(object.value
+            , object.value, context);
       });
 
   // label samples
