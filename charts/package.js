@@ -16,6 +16,8 @@ Package.onUse(function(api) {
   api.use('aldeed:simple-schema');
   api.use('aldeed:collection2');
 
+  api.addFiles('helpers.js', 'client');
+
   api.addFiles([
       // functions to render charts
       'renderWaterfall.js',
