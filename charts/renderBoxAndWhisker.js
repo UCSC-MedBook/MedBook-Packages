@@ -5,7 +5,7 @@ if (typeof Charts === "undefined") {
 Charts.renderBoxAndWhisker = function(svg, theData, context) {
 
   Charts.helpers.setMargins(svg, context, {
-    top: 0, right: 8, bottom: 0, left: 8
+    right: 8, left: 8
   });
 
   var valuesScale = d3.scale.linear() // converts data values to pixel values
@@ -208,15 +208,6 @@ Charts.renderBoxAndWhisker = function(svg, theData, context) {
       .call(positionVerticalLine);
 
   highlightedSamples.append("text")
-      .text(function (object, index) {
-        var label = object.sample_label
-        // ECMAScript 2015!!!
-        if (label.includes("Pro") && label.length === "DTB-001Pro".length) {
-          return "Pro";
-        } else if (label.length === "DTB-001".length) {
-          return "BL";
-        }
-        return object.sample_label;
-      })
+      .text(Charts.helpers.minifySampleLabel)
       .attr("y", boxHeight + 15);
 }
