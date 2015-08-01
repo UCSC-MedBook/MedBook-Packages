@@ -1,17 +1,9 @@
-// note: global
-renderWaterfall = function (theData, context) {
+if (typeof Charts === "undefined") {
+  Charts = {};
+}
 
-  //console.log(context.dom_selector + " (renderWaterfall.js)");
-
-  // console.log("rendering theData :: context.current_sample_label :: ");
-  // console.log(theData);
-  // console.log(context.current_sample_label);
-
-  var HEIGHT = 150;
-  var WIDTH = 200;
+Charts.renderWaterfall = function(svg, theData, context) {
   var LEFT_AXIS_WIDTH = 50;
-  var VERTICAL_MARGIN = 10;
-  var HORIZONTAL_MARGIN = 5;
 
   // sort the values
   theData.values = theData.values.sort(function (a, b) {
@@ -32,13 +24,13 @@ renderWaterfall = function (theData, context) {
 
   var valuesToPixel = d3.scale.linear()
                         .domain([highestValue, lowestValue])
-                        .range([VERTICAL_MARGIN, HEIGHT - VERTICAL_MARGIN]);
+                        .range([0, context.height]);
 
   var indexToPixel = d3.scale.linear()
                         .domain([0, theData.values.length])
                         .range([
-                          LEFT_AXIS_WIDTH + HORIZONTAL_MARGIN
-                          , WIDTH - HORIZONTAL_MARGIN
+                          LEFT_AXIS_WIDTH
+                          , context.width
                         ]);
 
   // numbers to be on the left side, also where the tick marks are
@@ -47,19 +39,19 @@ renderWaterfall = function (theData, context) {
   //console.log("before");
   var svg = d3.select(context.dom_selector)
               .append("svg")
-              .attr("width", WIDTH)
-              .attr("height", HEIGHT)
+              .attr("width", context.width)
+              .attr("height", context.height)
               .selectAll("d"); // I have to do this to get it to work
   //console.log("after");
 
   // show left axis title (ex. "Model Score")
   // "Model Score" = default
-  svg.data([theData.vertical_axis_text || "Model Score"])
+  svg.data(["Model Score"])
       .enter()
       .append("text")
       .text(function (dataValue) { return dataValue; })
       .attr("class", "anchor-middle")
-      .attr("x", -(HEIGHT / 2))
+      .attr("x", -(context.height / 2))
       .attr("y", 20)
       .attr("transform", "rotate(-90)")
       .attr("cursor", "vertical-text"); // changes cursor on mouseover
@@ -148,8 +140,8 @@ renderWaterfall = function (theData, context) {
       ])
       .enter()
       .append("line")
-      .attr("x1", LEFT_AXIS_WIDTH + HORIZONTAL_MARGIN)
-      .attr("x2", WIDTH - HORIZONTAL_MARGIN)
+      .attr("x1", LEFT_AXIS_WIDTH)
+      .attr("x2", context.width)
       .attr("y1", valuesToPixel)
       .attr("y2", valuesToPixel)
       .attr("stroke-dasharray", function (object, index) {
@@ -157,28 +149,3 @@ renderWaterfall = function (theData, context) {
         return "5, 5";
       });
 }
-
-// Template.renderWaterfall.rendered = function () {
-//
-//   var chart_id = this.data.chart_id;
-//   var outerThis = this;
-//
-//   Deps.autorun(function (first) {
-//     var chart = Charts.findOne({ "_id": chart_id }); // get the chart
-//
-//     if (chart) { // is it loaded yet?
-//       switch (chart.type) {
-//         case "waterfall":
-//           //console.log(outerThis.data['dom_element_id'] + " found a waterfall");
-//           renderWaterfall(chart.data,
-//               "#" + outerThis.data['dom_element_id'],
-//               outerThis.data["current_sample_label"]);
-//           break;
-//         default:
-//           console.log("unknown chart type");
-//       }
-//       // stop the autorun so it doesn't render multiple times
-//       first.stop();
-//     }
-//   });
-// };
