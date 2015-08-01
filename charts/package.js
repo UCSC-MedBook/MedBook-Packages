@@ -16,12 +16,15 @@ Package.onUse(function(api) {
   api.use('aldeed:simple-schema');
   api.use('aldeed:collection2');
 
-  api.use('templating', 'client');
-
   api.addFiles([
       // functions to render charts
       'renderWaterfall.js',
+      'renderBoxAndWhisker.js',
     ], 'client');
+
+  api.addFiles('render.js', 'client');
+
+  api.export("Charts", "client");
 });
 
 Package.onTest(function(api) {
