@@ -47,6 +47,7 @@ Charts.render = function (theData, context) {
       .append("svg")
       .attr("width", context.width)
       .attr("height", context.height)
+      .attr("class", "chart")
     .append("g")
       .attr("class", context.chart_type);
 
