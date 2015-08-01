@@ -5,7 +5,7 @@ if (typeof Charts === "undefined") {
 Charts.renderWaterfall = function(svg, theData, context) {
 
   Charts.helpers.setMargins(svg, context, {
-    top: 5, right: 0, bottom: 5, left: 0
+    top: 5, bottom: 5,
   });
 
   var axisSize = 0;
@@ -51,34 +51,65 @@ Charts.renderWaterfall = function(svg, theData, context) {
       .attr("dominant-baseline", "central");
 
   // setup data
-  var dataGroup = svg.append('g')
-      .attr("transform", "translate(" + axisSize + ", 0)")
-      .selectAll("bleh") // doesn't work without this (no selection)
+  console.log('about to append data g');
+  var dataGroup = svg.append('g');
 
-  context.width -= axisSize;
+  Charts.helpers.setMargins(dataGroup, context, {
+    left: axisSize + 6, right: 6
+  });
+
+  // line at 0
+  function positionLine(selection) {
+    return selection
+        .attr("x1", 0)
+        .attr("x2", context.width)
+        .attr("y1", valuesScale)
+        .attr("y2", valuesScale);
+  }
+
+  dataGroup.append("g")
+      .attr("class", "threshold-lines")
+      .selectAll("bleh")
+      .data([0])
+      .enter()
+      .append("line")
+      .call(positionLine);
 
   var indexToPixel = d3.scale.linear()
       .domain([0, theData.length])
       .range([
-        1,
+        0,
         context.width,
       ]);
 
   // bars on the plot
   var barWidth = (indexToPixel(1) - indexToPixel(0)) * .9;
-  dataGroup.data(theData)
+  var bars = dataGroup.selectAll("bleh")
+      .data(theData)
       .enter()
-      .append("rect")
-      .attr("x", function (object, index) {
-        return indexToPixel(index);
-      })
-      .attr("y", function (object, index) {
+      .append("g")
+      .attr("transform", function (object, index) {
+        var dx = indexToPixel(index);
+        var dy;
         if (object.value < 0) {
-          return valuesScale(0);
+          dy = valuesScale(0);
         } else {
-          return valuesScale(object.value);
+          dy = valuesScale(object.value);
         }
+        return "translate(" + dx + ", " + dy + ")";
       })
+      .attr("class", function (object, index) {
+        // TODO: move this
+        if (context.highlighted_sample_labels.indexOf(object.sample_label) > -1) {
+          return "highlighted-sample";
+        }
+        return Charts.helpers.getSignificanceClass(object.value
+            , object.value, context);
+      });
+
+  bars.append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
       .attr("width", barWidth)
       .attr("height", function (object, index) {
         if (object.value < 0) {
@@ -86,13 +117,6 @@ Charts.renderWaterfall = function(svg, theData, context) {
         } else {
           return valuesScale(0) - valuesScale(object.value);
         }
-      })
-      .attr("class", function (object, index) {
-        if (context.highlighted_sample_labels.indexOf(object.sample_label) > -1) {
-          return "highlighted-sample";
-        }
-        return Charts.helpers.getSignificanceClass(object.value
-            , object.value, context);
       })
       .on("mouseover", function (object, indext) {
         d3.select(this).style({ opacity: '0.7' });
@@ -103,30 +127,47 @@ Charts.renderWaterfall = function(svg, theData, context) {
       .on("click", function (object, index) {
         console.log("clicked on the waterfall plot! object ::");
         console.log(object);
+
         // TODO: onclick method
       })
       .attr("cursor", "pointer"); // cursor looks like a link
 
+  // add BL and Pro labels
+  bars.filter(function (object, index) {
+        return context.highlighted_sample_labels.indexOf(object.sample_label) > -1;
+      })
+      .append("text")
+      .text(Charts.helpers.minifySampleLabel)
+      .attr("x", barWidth / 2)
+      .attr("y", function (object, index) {
+        var toMove = 6;
+        if (object.value < 0) {
+          return -toMove;
+        } else {
+          return valuesScale(0) - valuesScale(object.value) + toMove;
+        }
+      });
 
 
-  // // threshold lines
+
+  // threshold lines
   if (context.upper_threshold_value !== undefined
       && context.lower_threshold_value !== undefined) {
-    dataGroup.data([
+    dataGroup.append("g")
+        .attr("class", "threshold-lines")
+        .selectAll("bleh")
+        .data([
           context.upper_threshold_value,
-          (context.upper_threshold_value + context.lower_threshold_value) / 2,
+          //(context.upper_threshold_value + context.lower_threshold_value) / 2,
           context.lower_threshold_value
         ])
         .enter()
         .append("line")
-        .attr("x1", 0)
-        .attr("x2", context.width)
-        .attr("y1", valuesScale)
-        .attr("y2", valuesScale)
+        .call(positionLine)
         .attr("stroke-dasharray", function (object, index) {
-          if (index === 1) {
-            return "5, 10"
-          }
+          // if (index === 1) {
+          //   return "5, 10"
+          // }
           return "5, 5";
         });
   }
