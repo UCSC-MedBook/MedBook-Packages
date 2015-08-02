@@ -40,7 +40,6 @@ Charts.render = function (theData, context) {
   }
   if (context.maximum_value === undefined) {
     context.maximum_value = theData[0];
-    console.log('asdf');
   }
 
   var svg = d3.select("#" + context.dom_selector)

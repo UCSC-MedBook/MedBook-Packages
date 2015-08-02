@@ -12,10 +12,8 @@ Charts.helpers.setMargins = function (svg, context, margins) {
 
   context.margin = {};
 
-  console.log("context.margins before: ", context.margin);
   _.extend(context.margin, margins);
   _.defaults(context.margin, {top: 0, right: 0, left: 0, bottom: 0});
-  console.log("context.margins after: ", context.margin);
 
   // pretend it's only so big
   context.width += -context.margin.left - context.margin.right;
@@ -44,11 +42,12 @@ Charts.helpers.getSignificanceClass = function(firstValue, secondValue, context)
 
 Charts.helpers.minifySampleLabel = function (object, index) {
   var label = object.sample_label
-  // ECMAScript 2015!!!
-  if (label.includes("Pro") && label.length === "DTB-001Pro".length) {
-    return "Pro";
-  } else if (label.length === "DTB-001".length) {
+  
+  if (label.length === "DTB-001".length) {
     return "BL";
+  }
+  if (label.length > "DTB-001".length) {
+    return label.slice("DTB-001".length);
   }
   return object.sample_label;
 };

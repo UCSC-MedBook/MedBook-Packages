@@ -13,8 +13,7 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
-  api.use('aldeed:simple-schema');
-  api.use('aldeed:collection2');
+  api.use('iron:router');
 
   api.addFiles('helpers.js', 'client');
 

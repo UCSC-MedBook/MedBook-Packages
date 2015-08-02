@@ -51,7 +51,6 @@ Charts.renderWaterfall = function(svg, theData, context) {
       .attr("dominant-baseline", "central");
 
   // setup data
-  console.log('about to append data g');
   var dataGroup = svg.append('g');
 
   Charts.helpers.setMargins(dataGroup, context, {
@@ -125,10 +124,12 @@ Charts.renderWaterfall = function(svg, theData, context) {
         d3.select(this).style({ opacity: '1' });
       })
       .on("click", function (object, index) {
-        console.log("clicked on the waterfall plot! object ::");
-        console.log(object);
-
-        // TODO: onclick method
+        if (object.patient_label) {
+          Router.go('patientReport'
+              , { "patient_label": object.patient_label }
+              , { hash: object.sample_label }
+            );
+        }
       })
       .attr("cursor", "pointer"); // cursor looks like a link
 
