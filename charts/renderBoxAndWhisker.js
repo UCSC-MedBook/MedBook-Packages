@@ -130,7 +130,6 @@ Charts.renderBoxAndWhisker = function(svg, theData, context) {
   // horizontal lines
   function drawLine(firstValue, secondValue) {
     if (firstValue < secondValue) {
-      console.log('drawLine in if');
       boxplot.data([0]).enter()
           .append("line")
           .attr("x1", valuesScale(firstValue))

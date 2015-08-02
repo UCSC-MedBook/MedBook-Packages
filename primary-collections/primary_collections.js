@@ -100,9 +100,10 @@ var signaturesSchema = new SimpleSchema({
   "type": { type: String },
   "algorithm": { type: String },
   "label": { type: String },
+  "gene_label": { type: String, optional: true },
   "dense_weights": { type: [geneValuePair], optional: true },
   "sparse_weights": { type: [geneValuePair], optional: true },
-  "version": { type: Number, optional: true }
+  "version": { type: Number, optional: true },
 });
 
 var cohortSignatureSchema = new SimpleSchema({
@@ -113,12 +114,15 @@ var cohortSignatureSchema = new SimpleSchema({
   "sample_values": { // contains data
     type: [
       new SimpleSchema({
-        "patient_id": { type: String },
         "sample_label": { type: String },
-        "value": { type: Number, decimal: true }
+        "value": { type: Number, decimal: true },
+        // optional because we might not have a report for it
+        "patient_label": { type: String, optional: true },
       })
     ]
   },
+
+  "gene_label": { type: String, optional: true },
 });
 
 var studiesSchema = new SimpleSchema({
