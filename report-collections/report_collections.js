@@ -181,7 +181,7 @@ var patientReportSchema = new SimpleSchema({
         "treatment_ongoing": { type: Boolean, optional: true },
         "sample_label": { type: String, optional: true },
         "description": { type: String, optional: true },
-        "drug_name": { type: [String], optional: true },
+        "drug_names": { type: [String], optional: true },
         "reason_for_stop": { type: String, optional: true },
         "psa_response": { type: String, optional: true },
         "recist_response": { type: String, optional: true },
@@ -201,6 +201,12 @@ var patientReportSchema = new SimpleSchema({
         "site_of_biopsy": { type: String, optional: true }, // changed from site_of_metastasis
         "procedure_day": { type: Number, optional: true },
         "trichotomy_call": { type: String, optional: true },
+        // last-minute fields
+        "abiraterone": { type: String, optional: true },
+        "enzalutamide": { type: String, optional: true },
+        "subsequent_treatments": { type: [String], optional: true },
+        "prior_treatments": { type: [String], optional: true },
+
         "pathways": {
           type: [
             new SimpleSchema({
