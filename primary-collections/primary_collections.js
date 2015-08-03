@@ -41,7 +41,7 @@ var patientsSchema = new SimpleSchema({
         "treatment_ongoing": { type: Boolean, optional: true },
         "sample_label": { type: String, optional: true },
         "description": { type: String, optional: true },
-        "drug_name": { type: [String], optional: true },
+        "drug_names": { type: [String], optional: true },
         "reason_for_stop": { type: String, optional: true },
         "psa_response": { type: String, optional: true },
         "recist_response": { type: String, optional: true },
