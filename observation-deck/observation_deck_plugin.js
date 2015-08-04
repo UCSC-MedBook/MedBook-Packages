@@ -8980,6 +8980,11 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
 
                 samplesToHide = eventAlbum.getDatatypeNullSamples(hide_null_samples_datatype);
             }
+
+            // always hide clinical null samples
+            var clinicalNullSamples = eventAlbum.getDatatypeNullSamples("clinical data");
+            samplesToHide = samplesToHide.concat(clinicalNullSamples);
+
             samplesToHide = utils.eliminateDuplicates(samplesToHide);
 
             // colNames after hiding null samples
