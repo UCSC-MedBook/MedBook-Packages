@@ -5199,6 +5199,9 @@ var eventData = eventData || {};
                 for (var i = 0; i < steps.length; i++) {
                     // get this step's values
                     var eventId = steps[i]['name'];
+                    if ( typeof eventId === "undefined") {
+                        continue;
+                    }
                     var reverse = steps[i]['reverse'];
                     var eventObj = album.getEvent(eventId);
                     if ((eventObj == undefined) || (eventObj == null)) {
@@ -5990,7 +5993,6 @@ var eventData = eventData || {};
             if (results.percentNullData == 1) {
                 return results;
             }
-            console.log("results.percentNullData", results.percentNullData);
 
             // a mapping of sampleId to index
             var allSampleIds = this.getAllSampleIds(true);
@@ -6019,7 +6021,6 @@ var eventData = eventData || {};
                 }
             }
 
-            console.log("vector", vector);
             if (vector.length == 0) {
                 return results;
             }
@@ -6902,8 +6903,6 @@ var medbookDataLoader = medbookDataLoader || {};
             var gene_label = doc["gene_label"];
             var sample_values = doc["sample_values"];
 
-            console.log("sample_values", sample_values);
-
             var sampleData = {};
             for (var j = 0, lengthj = sample_values.length; j < lengthj; j++) {
                 var sampleValue = sample_values[j];
@@ -6912,8 +6911,6 @@ var medbookDataLoader = medbookDataLoader || {};
                 var value = sampleValue["value"];
 
                 sampleData[sample_label] = value;
-
-                // console.log("sampleData", sampleData);
             }
 
             // TODO version number ??
@@ -7360,6 +7357,16 @@ var circleMapGenerator = {};
         this.eventAlbum = eventAlbum.fillInMissingSamples();
         this.cmgParams = cmgParams;
 
+        // rescale expression data
+        var exprRescalingData = this.eventAlbum.eventwiseMedianRescaling();
+
+        var expressionColorMapper = utils.centeredRgbaColorMapper(false);
+        if (exprRescalingData != null) {
+            var minExpVal = exprRescalingData['minVal'];
+            var maxExpVal = exprRescalingData['maxVal'];
+            var expressionColorMapper = utils.centeredRgbaColorMapper(false, 0, minExpVal, maxExpVal);
+        }
+
         this.eventStats = {};
         this.colorMappers = {};
         var eventIdsByGroup = this.eventAlbum.getEventIdsByType();
@@ -7368,7 +7375,10 @@ var circleMapGenerator = {};
             for (var i = 0; i < eventIds.length; i++) {
                 var eventId = eventIds[i];
                 var eventObj = this.eventAlbum.getEvent(eventId);
-                if (!utils.isObjInArray(['numeric'], eventObj.metadata.allowedValues)) {
+                if (eventObj.metadata.datatype === 'expression data') {
+                    // shared expression color mapper
+                    this.colorMappers[eventId] = expressionColorMapper;
+                } else if (!utils.isObjInArray(['numeric'], eventObj.metadata.allowedValues)) {
                     // define a discrete color mapper
                     this.colorMappers[eventId] = d3.scale.category10();
                 } else {
@@ -7453,7 +7463,7 @@ var circleMapGenerator = {};
         this.sortSamples();
 
         /**
-         * get a color for a score
+         * get a color for a score that straddles 0
          * @param {Object} score
          * @param {Object} cohortMin
          * @param {Object} cohortMax
@@ -7606,6 +7616,10 @@ var circleMapGenerator = {};
 
                     var startDegrees = 0;
                     var colorMapper = this.colorMappers[ringName];
+                    if (ringName === "expression data") {
+                        var eventId = dataName;
+                        colorMapper = this.colorMappers[eventId];
+                    };
                     this.sortedSamples.forEach(function(val, idx, arr) {
                         var sampleName = val;
                         var hexColor = "grey";
@@ -7613,7 +7627,7 @@ var circleMapGenerator = {};
                         var score = null;
                         if ( sampleName in ringData) {
                             var score = ringData[sampleName];
-                            if (eventStats != null) {
+                            if ((eventStats != null) && (ringName !== "expression data")) {
                                 // assign color for numerical data
                                 hexColor = getHexColor(score, eventStats['min'], eventStats['max']);
                                 // hexColor = getHexColor(score, -1.0, 1.0);
