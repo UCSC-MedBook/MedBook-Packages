@@ -243,7 +243,6 @@ var patientReportSchema = new SimpleSchema({
     ],
     optional: true
   },
-  "cohort_signature_ids": { type: [Meteor.ObjectID], optional: true },
 });
 
 //
