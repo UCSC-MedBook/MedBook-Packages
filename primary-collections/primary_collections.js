@@ -111,7 +111,7 @@ var cohortSignatureSchema = new SimpleSchema({
   "type": { type: String },
   "algorithm": { type: String },
   "label": { type: String },
-  "sample_values": { // contains data
+  "samples": { // contains data
     type: [
       new SimpleSchema({
         "sample_label": { type: String },
