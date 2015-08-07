@@ -129,6 +129,8 @@ Charts.renderWaterfall = function(svg, theData, context) {
               , { "patient_label": object.patient_label }
               , { hash: object.sample_label }
             );
+        } else {
+          console.log("no patient_label associated with that sample");
         }
       })
       .attr("cursor", "pointer"); // cursor looks like a link

@@ -11336,11 +11336,11 @@ var medbookDataLoader = medbookDataLoader || {};
             var algorithm = doc["algorithm"];
             var label = doc["label"];
             var gene_label = doc["gene_label"];
-            var sample_values = doc["sample_values"];
+            var samples = doc["samples"];
 
             var sampleData = {};
-            for (var j = 0, lengthj = sample_values.length; j < lengthj; j++) {
-                var sampleValue = sample_values[j];
+            for (var j = 0, lengthj = samples.length; j < lengthj; j++) {
+                var sampleValue = samples[j];
                 var patient_label = sampleValue["patient_label"];
                 var sample_label = sampleValue["sample_label"];
                 var value = sampleValue["value"];
