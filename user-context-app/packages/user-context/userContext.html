@@ -1,3 +1,17 @@
+<template name="contextContentStudyChooser">
+    <label for="sel1">Select list (select one):</label>
+    Current: {{$.Session.get 'CurrentStudy'}}
+    <select class="form-control" id="currentStudy">
+	{{#each studies}}
+	    {{#if $.Session.equals 'CurrentStudy' this.id}}
+		<option value="{{this.id}}" selected> {{this.name}}</option>
+	    {{else}}
+		<option value="{{this.id}}" > {{this.name}}</option>
+	    {{/if}}
+	    
+	{{/each}}
+    </select>
+</template>
 <template name="userContext">
   <div id="user-context" class="bordered">
   {{#if currentUser}}
@@ -12,6 +26,22 @@
   <h3>User context</h3>
   <form class="set-context">
     <ul>
+      <li>
+
+<div class="form-group">
+
+       <label for="sel1">Select list (select one):</label>
+       <select class="form-control" id="sel1">
+       <option>1</option>
+       <option>2</option>
+       <option>3</option>
+       <option>4</option>
+       </select>
+       </div>
+
+        Studies:
+        <input type="text" name="studiesList" placeholder="Add studies by label" value="{{studies}}"/>
+      </li>
       <li>
         Patients:
         <input type="text" name="patientList" placeholder="Add patients by label (ex. DTB-011)" value={{patients}} />

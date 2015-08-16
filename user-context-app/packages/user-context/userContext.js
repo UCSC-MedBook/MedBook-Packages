@@ -1,4 +1,31 @@
+// Meteor Collection Pattern
+Template.contextContentStudyChooser.helpers({
+  studies: function () {
+      return Collections.studies.find({}, {sort: ["name"]});
+  }
+});
+Template.contextContentStudyChooser.events({
+    "change #currentStudy": function (event) {
+        var currentStudy = event.target.value;
+	Session.set("CurrentStudy", currentStudy);
+     }
+});
+  
+
+
+
 Template.contextContent.helpers({
+  studies: function () {
+    // the same thing three times??
+    if (Meteor.user() && Meteor.user().profile) {
+      var context = Meteor.user().profile.context;
+      if (context && context.studies) {
+        return context.studies.join([separator = ',']);
+      } else {
+        return "";
+      }
+    }
+  },
   patients: function () {
     // the same thing three times??
     if (Meteor.user() && Meteor.user().profile) {

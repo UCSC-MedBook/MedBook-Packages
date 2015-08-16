@@ -14,7 +14,9 @@ Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
   api.use('templating', 'client');
+  api.addFiles(["studies.js"], ['client', 'server']);
   api.addFiles([
+      'studies.js',
       'userContext.html',
       'userContext.css',
       'userContext.js'
