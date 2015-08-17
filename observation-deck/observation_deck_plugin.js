@@ -5648,18 +5648,6 @@ var eventData = eventData || {};
                     orderedEvents = utils.eliminateDuplicates(orderedEvents);
                 }
 
-                // if ((keepTails) && (utils.isObjInArray(pivotedDatatypes, datatype))) {
-                // console.log('keepTails for', datatype);
-                // var size = 10;
-                // if (orderedEvents.length <= size) {
-                // // skip filter
-                // } else {
-                // // TODO filter for head and tail of list
-                // var head = orderedEvents.splice(0, size * 0.5);
-                // var tail = orderedEvents.splice(size * -0.5);
-                // orderedEvents = head.concat(tail);
-                // }
-                // }
                 result[datatype] = orderedEvents;
             }
             return result;
@@ -5953,6 +5941,9 @@ var eventData = eventData || {};
                 for (var i = 0; i < steps.length; i++) {
                     // get this step's values
                     var eventId = steps[i]['name'];
+                    if ( typeof eventId === "undefined") {
+                        continue;
+                    }
                     var reverse = steps[i]['reverse'];
                     var eventObj = album.getEvent(eventId);
                     if ((eventObj == undefined) || (eventObj == null)) {
@@ -6772,6 +6763,10 @@ var eventData = eventData || {};
                 }
             }
 
+            if (vector.length == 0) {
+                return results;
+            }
+
             results['mean'] = jStat.mean(vector).toPrecision(precision);
             results['sd'] = jStat.stdev(vector).toPrecision(precision);
             results['median'] = jStat.median(vector).toPrecision(precision);
@@ -7146,6 +7141,44 @@ var medbookDataLoader = medbookDataLoader || {};
     };
 
     /**
+     *
+     */
+    mdl.mongoViperSignaturesData = function(collection, OD_eventAlbum) {
+        // iter over doc (each doc = signature)
+        for (var i = 0, length = collection.length; i < length; i++) {
+            var doc = collection[i];
+            var type = doc["type"];
+            var algorithm = doc["algorithm"];
+            var label = doc["label"];
+            var gene_label = doc["gene_label"];
+            var sample_values = doc["sample_values"];
+
+            var sampleData = {};
+            for (var j = 0, lengthj = sample_values.length; j < lengthj; j++) {
+                var sampleValue = sample_values[j];
+                var patient_label = sampleValue["patient_label"];
+                var sample_label = sampleValue["sample_label"];
+                var value = sampleValue["value"];
+
+                sampleData[sample_label] = value;
+            }
+
+            // TODO version number ??
+            var datatype = type + "_" + algorithm;
+            var suffix = "_" + datatype;
+            var eventId = gene_label + suffix;
+            var eventObj = OD_eventAlbum.getEvent(eventId);
+
+            // add event if DNE
+            if (eventObj == null) {
+                eventObj = mdl.loadEventBySampleData(OD_eventAlbum, gene_label, "_viper", 'viper data', 'numeric', sampleData);
+            } else {
+                eventObj.data.setData(sampleData);
+            }
+        }
+    };
+
+    /**
      *Add expression data from mongo collection.
      * @param {Object} collection
      * @param {Object} OD_eventAlbum
@@ -7515,6 +7548,11 @@ var medbookDataLoader = medbookDataLoader || {};
                     // no suffix here, just the gene symbol
                     // newName = name + "_mRNA";
                     newName = name;
+                } else {
+                    newName = name;
+                }
+                if ( typeof newName === "undefined") {
+                    console.log("undefined name for", name, datatype, version);
                 }
                 return newName;
             };
@@ -8169,60 +8207,6 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                         }
                     },
                     "sep1" : "---------",
-                    // "pagingFold" : {
-                    // "name" : "paging",
-                    // "items" : {
-                    // "pagingHeadHome" : {
-                    // "name" : "most correlated",
-                    // "icon" : null,
-                    // "disabled" : false,
-                    // "callback" : function(key, opt) {
-                    // setDatatypePaging(datatype, "head", "0");
-                    // }
-                    // },
-                    // "pagingHeadDown" : {
-                    // "name" : "correlated ^",
-                    // "icon" : null,
-                    // "disabled" : false,
-                    // "callback" : function(key, opt) {
-                    // setDatatypePaging(datatype, "head", "down");
-                    // }
-                    // },
-                    // "pagingHeadUp" : {
-                    // "name" : "correlated v",
-                    // "icon" : null,
-                    // "disabled" : false,
-                    // "callback" : function(key, opt) {
-                    // setDatatypePaging(datatype, "head", "up");
-                    // }
-                    // },
-                    // "sep1" : "---------",
-                    // "pagingTailUp" : {
-                    // "name" : "anti-correlated ^",
-                    // "icon" : null,
-                    // "disabled" : false,
-                    // "callback" : function(key, opt) {
-                    // setDatatypePaging(datatype, "tail", "up");
-                    // }
-                    // },
-                    // "pagingTailDown" : {
-                    // "name" : "anti-correlated v",
-                    // "icon" : null,
-                    // "disabled" : false,
-                    // "callback" : function(key, opt) {
-                    // setDatatypePaging(datatype, "tail", "down");
-                    // }
-                    // },
-                    // "pagingTailEnd" : {
-                    // "name" : "most anti-correlated",
-                    // "icon" : null,
-                    // "disabled" : false,
-                    // "callback" : function(key, opt) {
-                    // setDatatypePaging(datatype, "tail", "0");
-                    // }
-                    // }
-                    // }
-                    // },
                     'toggle_datatype_visibility' : {
                         'name' : function() {
                             return 'toggle visibility';
@@ -8250,7 +8234,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                         }
                     },
                     "hide_null_samples_datatype" : {
-                        name : "hide null samples in this datatype",
+                        name : "(un)hide null samples in this datatype",
                         icon : null,
                         disabled : false,
                         callback : function(key, opt) {
@@ -8510,7 +8494,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                         'name' : 'hide...',
                         'items' : {
                             "hide_null_samples_event" : {
-                                name : "hide null samples in this event",
+                                name : "(un)hide null samples in this event",
                                 icon : null,
                                 disabled : false,
                                 callback : function(key, opt) {
@@ -9252,6 +9236,20 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
         });
         // rowLabels.on("click", config["rowClickback"]);
         // rowLabels.on("contextmenu", config["rowRightClickback"]);
+
+        var pivotScoresMap;
+        if (pivotEventId != null) {
+            pivotScoresMap = {};
+            var pivotSortedEvents = eventAlbum.getPivotSortedEvents(pivotEventId);
+            for (var i = 0, lengthi = pivotSortedEvents.length; i < lengthi; i++) {
+                var pivotObj = pivotSortedEvents[i];
+                var key = pivotObj["key"];
+                var val = pivotObj["val"];
+                pivotScoresMap[key] = val;
+                console.log(pivotEventId, key);
+            }
+        }
+
         rowLabels.append("title").text(function(d, i) {
             var eventObj = eventAlbum.getEvent(d);
             var datatype = eventObj.metadata.datatype;
@@ -9260,6 +9258,19 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
 
             if ((allowedValues === 'numeric') && (rescalingData != null) && (utils.hasOwnProperty(rescalingData, 'stats')) && ( typeof rescalingData['stats'][d] !== 'undefined')) {
                 s = s + '\nraw data stats: ' + utils.prettyJson(rescalingData['stats'][d]);
+            }
+
+            if ( typeof pivotScoresMap !== "undefined") {
+                var val = pivotScoresMap[d];
+                if ( typeof val === "undefined") {
+                    // try _mRNA suffix
+                    var key = d.replace(/_mRNA$/, "");
+                    val = pivotScoresMap[key];
+                }
+
+                if ( typeof val !== "undefined") {
+                    s = s + "\npivot score: " + val;
+                }
             }
 
             return s;
