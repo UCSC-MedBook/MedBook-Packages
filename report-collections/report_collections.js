@@ -116,6 +116,11 @@ var pathwayReportSchema = new SimpleSchema({
 // patient report
 //
 
+function sampleLabelsFromThis(theThis) {
+  var samples = theThis.field('samples').value;
+  return _.pluck(samples, "sample_label");
+}
+
 // note on "_day" fields:
 // These are numbers as counted from patient.n_study_date
 var patientReportSchema = new SimpleSchema({
@@ -243,6 +248,39 @@ var patientReportSchema = new SimpleSchema({
     ],
     optional: true
   },
+
+  "metadata": {
+    type: new SimpleSchema({
+      "sample_labels": {
+        type: [String],
+        autoValue: function () {
+          return sampleLabelsFromThis(this);
+        },
+      },
+      "sample_labels_count": {
+        type: Number,
+        autoValue: function () {
+          return sampleLabelsFromThis(this).length;
+        },
+      },
+      "is_in_signatures": {
+        type: Boolean,
+        autoValue: function () {
+          var sampleLabels = sampleLabelsFromThis(this);
+          var count = CohortSignatures.find({
+            "samples": {
+              $elemMatch: {
+                sample_label: {
+                  $in: sampleLabels
+                }
+              }
+            }
+          }).count();
+          return count > 0;
+        }
+      },
+    })
+  }
 });
 
 //
