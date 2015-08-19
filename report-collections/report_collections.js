@@ -1,17 +1,33 @@
 // sorry for having everything in one file...
 
-var mutationSchema = new SimpleSchema({ // used in PatientReports, GeneReports
-  "gene_label": { type: String },
-  "gene_id": { type: String },
-  "protein_change": { type: String, optional: true },
-  "mutation_type": { type: String }, // variant_classification for us
-  "chromosome": { type: String },
-  "start_position": { type: Number },
-  "end_position": { type: Number },
-  "reference_allele": { type: String },
-  "variant_allele": { type: String },
-  "MA_FImpact": { type: String, optional: true },
-  "MA_FIS": { type: Number, optional: true }
+var networkSchema = new SimpleSchema({
+  "name": { type: String },
+  "version": { type: Number, optional: true },
+  "elements": {
+    type: [
+      new SimpleSchema({
+        "name": { type: String, },
+        "type": { type: String },
+        // "position": {
+        //     type: new SimpleSchema({
+        //         "x": { type: Number },
+        //         "y": { type: Number }
+        //     }),
+        //     optional: true
+        // },
+      })
+    ]
+  },
+  "interactions": {
+      type: [
+        new SimpleSchema({
+          "source": { type: String },
+          "target": { type: String },
+          "type": { type: String },
+          "score": { type: Number, optional: true, decimal: true },
+      })
+    ]
+  },
 });
 
 var geneReportSchema = new SimpleSchema({
@@ -21,39 +37,7 @@ var geneReportSchema = new SimpleSchema({
   "gene_label": { type: String },
   "status": { type: String }, // ex. Approved / Symbol Withdrawn
 
-  "network": {
-    type: new SimpleSchema({
-      "name": { type: String },
-      "version": { type: Number, optional: true },
-      // source url
-      "elements": {
-        type: [
-          new SimpleSchema({
-            "name": { type: String, },
-            "type": { type: String },
-            "position": {
-                type: new SimpleSchema({
-                    "x": { type: Number },
-                    "y": { type: Number }
-                }),
-                optional: true
-            },
-          })
-        ]
-      },
-      "interactions": {
-          type: [
-            new SimpleSchema({
-              "source": { type: String },
-              "target": { type: String },
-              "type": { type: String },
-              "score": { type: Number, optional: true }
-          })
-        ]
-      },
-    }),
-  },
-
+  "network": { type: networkSchema },
 
   // "description": { type: String, optional: true },
   // "previous": { type: [String], optional: true }, // need to send to client?
@@ -107,9 +91,8 @@ var signatureReportSchema = new SimpleSchema({
 
 var pathwayReportSchema = new SimpleSchema({
   pathway_label: { type: String },
-  version: { type: Number, decimal: true },
-  source: { type: String, optional: true }, // URL
-
+  version: { type: String },
+  network: { type: networkSchema }
 });
 
 //
@@ -212,6 +195,8 @@ var patientReportSchema = new SimpleSchema({
         "subsequent_treatments": { type: [String], optional: true },
         "prior_treatments": { type: [String], optional: true },
 
+        "hallmarks_image_url": { type: String, optional: true },
+
         "pathways": {
           type: [
             new SimpleSchema({
@@ -228,7 +213,7 @@ var patientReportSchema = new SimpleSchema({
           ],
           optional: true
         },
-        "mutations": { type: [mutationSchema], optional: true },
+        //"mutations": { type: [mutationSchema], optional: true },
         "gene_sets": {
           type: [
             new SimpleSchema({

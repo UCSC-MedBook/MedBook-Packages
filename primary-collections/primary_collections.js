@@ -125,12 +125,29 @@ var cohortSignatureSchema = new SimpleSchema({
   "gene_label": { type: String, optional: true },
 });
 
-var studiesSchema = new SimpleSchema({
-  "_id": { type: Meteor.ObjectID },
-  "study_label": { type: String },
-  "study_sites": { type: [String] },
-  "patient_ids": { type: [Meteor.ObjectID] },
+var networkElementSchema = new SimpleSchema({
+  "network_label": { type: String }, // ex. "superpathway"
+  "name": { type: String },
+  "type": { type: String },
 });
+
+// this is a semi-temporary schema/collection:
+// there is no need to store interactions without creating a report immidiately
+var networkInteractionSchema = new SimpleSchema({
+  "network_label": { type: String },
+  "source": { type: String },
+  "target": { type: String },
+  "interaction": { type: String },
+  "score": { type: Number, optional: true, decimal: true },
+});
+
+
+// var studiesSchema = new SimpleSchema({
+//   "_id": { type: Meteor.ObjectID },
+//   "study_label": { type: String },
+//   "study_sites": { type: [String] },
+//   "patient_ids": { type: [Meteor.ObjectID] },
+// });
 
 //
 // TODO: do signatureAlgorithm primary collection schema
@@ -169,26 +186,43 @@ var studiesSchema = new SimpleSchema({
 // pathways
 //
 
-var pathwayElement = new SimpleSchema({
-  name: { type: String },
-  type: { type: String },
+// var pathwayElement = new SimpleSchema({
+//   name: { type: String },
+//   type: { type: String },
+// });
+//
+// var pathwayInteraction = new SimpleSchema({
+//   source: { type: String },
+//   target: { type: String },
+//   type: { type: String },
+//   strength: { type: Number },
+// });
+//
+// // get from report_collections: is it the same?
+// var pathwaySchema = new SimpleSchema({
+//   pathway_label: { type: String },
+//   version: { type: Number, decimal: true },
+//   source: { type: String, optional: true }, // URL
+//   elements: { type: [pathwayElement]},
+//   interactions: { type: [pathwayInteraction] },
+// });
+
+var mutationSchema = new SimpleSchema({ // used in PatientReports, GeneReports
+  "gene_label": { type: String }, // Hugo symbol
+  "gene_id": { type: String },
+  "protein_change": { type: String, optional: true },
+  "chromosome": { type: String },
+  "start_position": { type: Number },
+  "end_position": { type: Number },
+  "strand": { type: String },
+  "reference_allele": { type: String },
+  "variant_allele": { type: String },
+  "variant_classification": { type: String },
+  "variant_type": { type: String },
+  "MA_FImpact": { type: String, optional: true },
+  "MA_FIS": { type: Number, optional: true }
 });
 
-var pathwayInteraction = new SimpleSchema({
-  source: { type: String },
-  target: { type: String },
-  type: { type: String },
-  strength: { type: Number },
-});
-
-// get from report_collections: is it the same?
-var pathwaySchema = new SimpleSchema({
-  pathway_label: { type: String },
-  version: { type: Number, decimal: true },
-  source: { type: String, optional: true }, // URL
-  elements: { type: [pathwayElement]},
-  interactions: { type: [pathwayInteraction] },
-});
 
 //
 // declare the collections
@@ -199,14 +233,25 @@ var pathwaySchema = new SimpleSchema({
 Patients = new Meteor.Collection("patients");
 Patients.attachSchema(patientsSchema);
 
-Studies = new Meteor.Collection("studies");
-Studies.attachSchema(studiesSchema);
-
 Signatures = new Meteor.Collection("signatures");
 Signatures.attachSchema(signaturesSchema);
 
-CohortSignatures = new Meteor.Collection("cohort_signatures"); // TODO: change to signature_scores
+// TODO: change to signature_scores
+CohortSignatures = new Meteor.Collection("cohort_signatures");
 CohortSignatures.attachSchema(cohortSignatureSchema);
 
-Pathways = new Meteor.Collection("pathways");
-Pathways.attachSchema(pathwaySchema);
+NetworkElements = new Meteor.Collection("network_elements");
+NetworkElements.attachSchema(networkElementSchema);
+
+// see note above about wanting to phase out this collection
+NetworkInteractions = new Meteor.Collection("network_interactions");
+NetworkInteractions.attachSchema(networkInteractionSchema);
+
+Mutations = new Meteor.Collection("mutations");
+Mutations.attachSchema(mutationSchema);
+
+// Pathways = new Meteor.Collection("pathways");
+// Pathways.attachSchema(pathwaySchema);
+//
+// Studies = new Meteor.Collection("studies");
+// Studies.attachSchema(studiesSchema);
