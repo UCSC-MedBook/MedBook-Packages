@@ -5569,6 +5569,7 @@ var eventData = eventData || {};
 
                 var key;
                 var val = score;
+                pEventId = pEventId.replace(/_mRNA$/, "");
                 if (eventId1 === pEventId) {
                     key = eventId2;
                 } else if (eventId2 === pEventId) {
@@ -5596,14 +5597,13 @@ var eventData = eventData || {};
 
         /**
          * Get pivot sorted events organized by datatype.
-         * If keepTails == true, then only keep top and bottom ranking events.
          */
-        this.getGroupedPivotSorts = function(pEventId, keepTails) {
+        this.getGroupedPivotSorts = function(pEventId) {
             console.log('getGroupedPivotSorts');
-            var pivotedDatatypes = ['expression data', 'expression signature'];
             var result = {};
 
             // Extract the gene symbols. They are without suffix.
+            pEventId = pEventId.replace(/_mRNA$/, "");
             var pivotSortedEventObjs = this.getPivotSortedEvents(pEventId);
             // console.log("pivotSortedEventObjs", utils.prettyJson(pivotSortedEventObjs));
             var pivotSortedEvents = [];
@@ -5614,15 +5614,10 @@ var eventData = eventData || {};
 
             // iterate through datatypes
             var groupedEvents = this.getEventIdsByType();
-            pivotedDatatypes = utils.getKeys(groupedEvents);
+            var pivotedDatatypes = utils.getKeys(groupedEvents);
             pivotedDatatypes = utils.removeA(pivotedDatatypes, "clinical data");
 
             for (var datatype in groupedEvents) {
-                // pivot sort events within datatype
-
-                // var suffix = this.datatypeSuffixMapping[datatype];
-                // suffix = (suffix == null) ? "" : suffix;
-
                 var orderedEvents = [];
 
                 // suffixed ids here
@@ -5635,18 +5630,17 @@ var eventData = eventData || {};
 
                 // add scored events in the datatype
                 for (var i = 0; i < pivotSortedEvents.length; i++) {
-                    // var eventId = pivotSortedEvents[i] + suffix;
                     var eventId = this.getSuffixedEventId(pivotSortedEvents[i], datatype);
                     if (utils.isObjInArray(unorderedEvents, eventId)) {
                         orderedEvents.push(eventId);
                     }
                 }
 
-                if (! utils.isObjInArray(pivotedDatatypes, datatype)) {
-                    // add the unscored events from the datatype group
-                    orderedEvents = orderedEvents.concat(unorderedEvents);
-                    orderedEvents = utils.eliminateDuplicates(orderedEvents);
-                }
+                // add the unscored events from the datatype group
+                // if (! utils.isObjInArray(pivotedDatatypes, datatype)) {
+                orderedEvents = orderedEvents.concat(unorderedEvents);
+                orderedEvents = utils.eliminateDuplicates(orderedEvents);
+                // }
 
                 result[datatype] = orderedEvents;
             }
@@ -9009,14 +9003,14 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             // console.log("rowNames", rowNames);
 
             // groupedPivotSorts ... uses pivot scoring on server side
+            // TODO what about events that are in the album, but not in the pivot data?
             if (utils.hasOwnProperty(querySettings, 'pivot_sort_list')) {
                 console.log('querySettings has a pivot_sort_list of datatypes', querySettings['pivot_sort_list']);
                 rowNames = [];
                 var pivotSortedRowNames = [];
                 var pEventId = querySettings['pivot_event']['id'];
                 var pEventObj = eventAlbum.getEvent(pEventId);
-                var keepTailsOnly = true;
-                var groupedPivotSorts = eventAlbum.getGroupedPivotSorts(pEventId, keepTailsOnly);
+                var groupedPivotSorts = eventAlbum.getGroupedPivotSorts(pEventId);
 
                 for (var datatype in groupedPivotSorts) {
                     // section header rows
@@ -9037,22 +9031,6 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 }
                 rowNames = pivotSortedRowNames.concat(rowNames);
                 rowNames = utils.eliminateDuplicates(rowNames);
-            } else {
-                // TODO need to insert the datatype label events in correct order when no pivot sort used
-                console.log('querySettings has NO pivot_sort_list of datatypes');
-                // var datatypeLabels = [];
-                // for (var i = 0, length = rowNames.length; i < length; i++) {
-                // var rowName = rowNames[i];
-                // if (utils.endsWith(rowName, "(+)") || utils.endsWith(rowName, "(-)")) {
-                // datatypeLabels.push(rowName);
-                // }
-                // }
-                //
-                // for (var i = 0, length = datatypeLabels.length; i < length; i++) {
-                // var datatypeLabel = datatypeLabels[i];
-                // utils.removeA(rowNames, datatypeLabel);
-                // }
-
             }
 
             // console.log("rowNames", rowNames);
@@ -9063,6 +9041,9 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             var shownNames = [];
 
             var albumEventIds = eventAlbum.getAllEventIds();
+            // console.log("albumEventIds", albumEventIds);
+
+
             for (var i = 0; i < rowNames.length; i++) {
                 var rowName = rowNames[i];
                 if (!utils.isObjInArray(albumEventIds, rowName)) {
@@ -9075,6 +9056,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 }
                 shownNames.push(rowName);
             }
+            // console.log("shownNames", shownNames);
             rowNames = shownNames;
 
             // move pivot event to top of matrix (1st row)
@@ -9104,6 +9086,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
         };
 
         var rowNames = getRowNames(querySettings, eventAlbum, colSortSteps, rowSortSteps);
+        // console.log("rowNames", rowNames);
 
         // TODO hack
         var pivotEventId = null;
@@ -9246,7 +9229,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 var key = pivotObj["key"];
                 var val = pivotObj["val"];
                 pivotScoresMap[key] = val;
-                console.log(pivotEventId, key);
+                // console.log(pivotEventId, key);
             }
         }
 
