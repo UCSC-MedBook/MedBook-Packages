@@ -25,6 +25,7 @@ Package.onUse(function(api) {
   api.export('CohortSignatures');
   api.export('NetworkElements');
   api.export('NetworkInteractions');
+  api.export('Mutations');
 });
 
 Package.onTest(function(api) {
