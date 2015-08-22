@@ -230,9 +230,9 @@ var mutationSchema = new SimpleSchema({ // used in PatientReports, GeneReports
   "mutation_type": { type: String }, // variant_classification for us
   "chromosome": { type: String },
   "start_position": { type: Number },
-  "end_position": { type: Number },
+  "end_position": { type: Number, optional: true },
   "reference_allele": { type: String },
-  "variant_allele": { type: String },
+  "variant_allele": { type: [String] },
   "MA_FImpact": { type: String, optional: true },
   "MA_FIS": { type: Number, optional: true },
   "allele_count": { type: Number, label: "Allele count in genotypes, for each ALT allele, in the same order as listed", optional:true },
