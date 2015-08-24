@@ -15,6 +15,7 @@ Package.onUse(function(api) {
 
   api.use('aldeed:simple-schema');
   api.use('aldeed:collection2');
+  api.use('medbook:primary-collections');
 
   api.addFiles('report_collections.js');
 
