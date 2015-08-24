@@ -1,33 +1,37 @@
 // sorry for having everything in one file...
 
 var networkSchema = new SimpleSchema({
-  "name": { type: String },
-  "version": { type: Number, optional: true },
   "elements": {
     type: [
-      new SimpleSchema({
-        "name": { type: String, },
-        "type": { type: String },
-        // "position": {
-        //     type: new SimpleSchema({
-        //         "x": { type: Number },
-        //         "y": { type: Number }
-        //     }),
-        //     optional: true
-        // },
-      })
+      // https://github.com/aldeed/meteor-simple-schema/blob/master/README.md#combining-simpleschemas
+      new SimpleSchema([
+        NetworkElements.simpleSchema(),
+        {
+          "position": {
+            type: new SimpleSchema({
+              "x": { type: Number },
+              "y": { type: Number }
+            }),
+            optional: true
+          },
+        }
+      ])
     ]
   },
   "interactions": {
-      type: [
-        new SimpleSchema({
-          "source": { type: String },
-          "target": { type: String },
-          "type": { type: String },
-          "score": { type: Number, optional: true, decimal: true },
-      })
-    ]
+    type: [ NetworkInteractions.simpleSchema() ],
+    optional: true,
   },
+});
+
+//
+// pathway report
+//
+
+var pathwayReportSchema = new SimpleSchema({
+  "label": { type: String },
+  "version": { type: String },
+  "network": { type: networkSchema }
 });
 
 var geneReportSchema = new SimpleSchema({
@@ -63,7 +67,6 @@ var geneReportSchema = new SimpleSchema({
   // slide 2 of 2 of the keynote
 });
 
-
 var signatureWeightSchema = new SimpleSchema({
   "gene_id": { type: String },
   "gene_label": { type: String },
@@ -83,16 +86,6 @@ var signatureReportSchema = new SimpleSchema({
   "value_type": { type: String },
   "sparse_weights": { type: [signatureWeightSchema] },
   "dense_weights": { type: [signatureWeightSchema] },
-});
-
-//
-// pathway report
-//
-
-var pathwayReportSchema = new SimpleSchema({
-  pathway_label: { type: String },
-  version: { type: String },
-  network: { type: networkSchema }
 });
 
 //

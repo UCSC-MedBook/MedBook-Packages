@@ -125,9 +125,13 @@ var cohortSignatureSchema = new SimpleSchema({
   "gene_label": { type: String, optional: true },
 });
 
-var networkElementSchema = new SimpleSchema({
-  "network_label": { type: String }, // ex. "superpathway"
+var superpathwaySchema = new SimpleSchema({
   "name": { type: String },
+  "version": { type: Number },
+});
+
+var networkElementSchema = new SimpleSchema({
+  "label": { type: String },
   "type": {
     type: String,
     allowedValues: [
@@ -135,14 +139,17 @@ var networkElementSchema = new SimpleSchema({
       "complex",
       "abstract",
       "family",
+      "miRNA",
+      "rna",
     ],
   },
 });
+networkElementSchema.fieldOrder = [
+  "label",
+  "type",
+];
 
-// this is a semi-temporary schema/collection:
-// there is no need to store interactions without creating a report immidiately
 var networkInteractionSchema = new SimpleSchema({
-  "network_label": { type: String },
   "source": { type: String },
   "target": { type: String },
   "interaction": {
@@ -152,10 +159,18 @@ var networkInteractionSchema = new SimpleSchema({
       "-t|",
       "-a>",
       "-a|",
+      "-phos>",
+      "PPI>",
     ],
   },
-  "score": { type: Number, optional: true, decimal: true },
+  // scores could differ by pathway or institution (?)
+  // "score": { type: Number, optional: true, decimal: true },
 });
+networkInteractionSchema.fieldOrder = [
+  "source",
+  "interaction",
+  "target",
+];
 
 
 // var studiesSchema = new SimpleSchema({
@@ -270,14 +285,15 @@ Patients.attachSchema(patientsSchema);
 Signatures = new Meteor.Collection("signatures");
 Signatures.attachSchema(signaturesSchema);
 
-// TODO: change to signature_scores
+// TODO: think about changing to signature_scores
 CohortSignatures = new Meteor.Collection("cohort_signatures");
 CohortSignatures.attachSchema(cohortSignatureSchema);
 
+// unclear how this is created...
 NetworkElements = new Meteor.Collection("network_elements");
 NetworkElements.attachSchema(networkElementSchema);
 
-// see note above about wanting to phase out this collection
+// combination of networks and superpathway uploads
 NetworkInteractions = new Meteor.Collection("network_interactions");
 NetworkInteractions.attachSchema(networkInteractionSchema);
 
