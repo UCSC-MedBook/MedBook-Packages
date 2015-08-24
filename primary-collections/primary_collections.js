@@ -226,6 +226,8 @@ var networkInteractionSchema = new SimpleSchema({
 var mutationSchema = new SimpleSchema({ // used in PatientReports, GeneReports
   "gene_label": { type: String },
   "gene_id": { type: String },
+  "sample_label": { type: String },
+  "sample_id": { type: String },
   "protein_change": { type: String, optional: true },
   "mutation_type": { type: String }, // variant_classification for us
   "chromosome": { type: String },
