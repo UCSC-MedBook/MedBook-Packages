@@ -269,9 +269,59 @@ var mutationSchema = new SimpleSchema({ // used in PatientReports, GeneReports
   "reads_at_start": { type: Number, label: "Number of reads starting at this position across all samples", optional:true },
   "reads_at_stop": { type: Number, label: "Number of reads stopping at this position across all samples", optional:true },
   "variant_type": { type: String, label: "Variant type, can be SNP, INS or DEL", optional:true },
-  "effects": { type: [Object], label: "Predicted effects Effect ( Effect_Impact | Functional_Class | Codon_Change | Amino_Acid_change| Amino_Acid_length | Gene_Name | Transcript_BioType | Gene_Coding | Transcript_ID | Exon  | GenotypeNum [ | ERRORS | WARNINGS ] )" , optional:true }
-
+  // "effects": {
+  //   type: String,
+  //   allowedValues: [
+  //     "Effect_Impact",
+  //     "Functional_Class",
+  //     "Codon_Change",
+  //     "Amino_Acid_change"
+  //     "Amino_Acid_length",
+  //     "Gene_Name",
+  //     "Transcript_BioType",
+  //     "Gene_Coding",
+  //     "Transcript_ID",
+  //     "Exon" ,
+  //     "GenotypeNum",
+  //     "ERRORS",
+  //     "WARNINGS",
+  //   ],
+  //   label: "Predicted effects",
+  //   optional:true
+  // },
 });
+mutationSchema.fieldOrder = [
+  "gene_label",
+  "gene_id",
+  "sample_label",
+  "sample_id",
+  "protein_change",
+  "mutation_type",
+  "chromosome",
+  "start_position",
+  "end_position",
+  "reference_allele",
+  "variant_allele",
+  "MA_FImpact",
+  "MA_FIS",
+  "allele_count",
+  "allele_frequency",
+  "allele_number",
+  "base_quality",
+  "read_depth",
+  "fraction_alt",
+  "indel_number",
+  "modification_base_changes",
+  "modification_types",
+  "sample_number",
+  "origin",
+  "strand_bias",
+  "somatic",
+  "variant_status",
+  "reads_at_start",
+  "reads_at_stop",
+  "variant_type",
+];
 
 //
 // declare the collections
