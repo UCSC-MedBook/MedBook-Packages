@@ -9043,7 +9043,6 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             var albumEventIds = eventAlbum.getAllEventIds();
             // console.log("albumEventIds", albumEventIds);
 
-
             for (var i = 0; i < rowNames.length; i++) {
                 var rowName = rowNames[i];
                 if (!utils.isObjInArray(albumEventIds, rowName)) {
@@ -9170,6 +9169,20 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             "class" : "primer"
         });
 
+        // map event to pivot score
+        var pivotScoresMap;
+        if (pivotEventId != null) {
+            pivotScoresMap = {};
+            var pivotSortedEvents = eventAlbum.getPivotSortedEvents(pivotEventId);
+            for (var i = 0, lengthi = pivotSortedEvents.length; i < lengthi; i++) {
+                var pivotObj = pivotSortedEvents[i];
+                var key = pivotObj["key"];
+                var val = pivotObj["val"];
+                pivotScoresMap[key] = val;
+                // console.log(pivotEventId, key);
+            }
+        }
+
         // row labels
         var translateX = -6;
         var translateY = gridSize / 1.5;
@@ -9195,9 +9208,24 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 } else {
                     s = "rowLabel mono axis unselectable";
                     if (d === pivotEventId) {
-                        s = s + " pivotEvent";
+                        s = s + " bold italic";
+                        // s = s + " pivotEvent";
                     }
                 }
+
+                // TODO underline genes added via geneset control
+                // TODO may be better to get these from the session variable passed into the plugin
+                // console.log("geneSetControl", config["geneSetControl"])
+                if (pivotEventId != null) {
+                    if (datatype == "expression data") {
+                        var geneName = d.replace(/_mRNA$/, "");
+                        var geneSetControl = config["geneSetControl"] || [];
+                        if (utils.isObjInArray(geneSetControl, geneName)) {
+                            s = s + " underline";
+                        }
+                    }
+                }
+
                 return s;
             },
             'eventId' : function(d, i) {
@@ -9219,19 +9247,6 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
         });
         // rowLabels.on("click", config["rowClickback"]);
         // rowLabels.on("contextmenu", config["rowRightClickback"]);
-
-        var pivotScoresMap;
-        if (pivotEventId != null) {
-            pivotScoresMap = {};
-            var pivotSortedEvents = eventAlbum.getPivotSortedEvents(pivotEventId);
-            for (var i = 0, lengthi = pivotSortedEvents.length; i < lengthi; i++) {
-                var pivotObj = pivotSortedEvents[i];
-                var key = pivotObj["key"];
-                var val = pivotObj["val"];
-                pivotScoresMap[key] = val;
-                // console.log(pivotEventId, key);
-            }
-        }
 
         rowLabels.append("title").text(function(d, i) {
             var eventObj = eventAlbum.getEvent(d);
