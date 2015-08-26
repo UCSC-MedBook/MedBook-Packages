@@ -125,10 +125,15 @@ var cohortSignatureSchema = new SimpleSchema({
   "gene_label": { type: String, optional: true },
 });
 
+// TODO: who can change this?
 var superpathwaySchema = new SimpleSchema({
   "name": { type: String },
   "version": { type: Number },
 });
+superpathwaySchema.fieldOrder = [
+  "name",
+  "version",
+];
 
 var networkElementSchema = new SimpleSchema({
   "label": { type: String },
@@ -143,6 +148,7 @@ var networkElementSchema = new SimpleSchema({
       "rna",
     ],
   },
+  "superpathway_id": { type: Meteor.ObjectID },
 });
 networkElementSchema.fieldOrder = [
   "label",
@@ -163,6 +169,7 @@ var networkInteractionSchema = new SimpleSchema({
       "PPI>",
     ],
   },
+  "superpathway_id": { type: Meteor.ObjectID },
   // scores could differ by pathway or institution (?)
   // "score": { type: Number, optional: true, decimal: true },
 });
@@ -238,25 +245,53 @@ networkInteractionSchema.fieldOrder = [
 //   interactions: { type: [pathwayInteraction] },
 // });
 
-var mutationSchema = new SimpleSchema({ // used in PatientReports, GeneReports
+var mutationSchema = new SimpleSchema({
+  // required fields
   "gene_label": { type: String },
-  "gene_id": { type: String },
   "sample_label": { type: String },
-  "sample_id": { type: String },
-  "protein_change": { type: String, optional: true },
   "mutation_type": { type: String }, // variant_classification for us
   "chromosome": { type: String },
-  "start_position": { type: Number },
-  "end_position": { type: Number, optional: true },
+  "effect_impact": { type: String },
+
   "reference_allele": { type: String },
   "variant_allele": { type: [String] },
+
+  "start_position": { type: Number },
+  "end_position": { type: Number, optional: true },
+
+
+
+
+  "protein_change": { type: String, optional: true },
+
+
+
+
   "MA_FImpact": { type: String, optional: true },
   "MA_FIS": { type: Number, optional: true },
   "allele_count": { type: Number, label: "Allele count in genotypes, for each ALT allele, in the same order as listed", optional:true },
   "allele_frequency": { type: Number, decimal:true, label: "Allele frequency, for each ALT allele, in the same order as listed", optional:true },
   "allele_number": { type: Number, label: "Number of unique alleles across all samples", optional:true },
   "base_quality": { type: Number, decimal:true, label: "Overall average base quality", optional:true },
-  "read_depth": { type: Number, label: "Total read depth for all samples", optional:true },
+  "read_depth": { type: Number, label: "Total read depth for all samples", optional:true }, // TODO: from DP (in fake switch statement)
+  // "genotype": { type: String } // GT string
+  // "genotype_quality" // GQ string
+  // "alternative_allele_observation" // AO  number
+  // "reference_allele_observation" // RO
+  // "biological_source": {
+  //   type: String,
+  //   allowedValues: [
+  //     "dna_normal",
+  //     "dna_tumor",
+  //     "rna_tumor",
+  //     "rna_tumor",
+  //     "cellline"
+  //   ],
+  //   optional: true,
+  // } // dna or rna String
+  // "alternative_allele_quality": "probability that the ALT allele is incorrectly specified, expressed on the the phred scale (-10log10(probability))" // from QUAL
+  // "qc_filter": { type: String, label: 'Either "PASS" or a semicolon-separated list of failed quality control filters' },
+
   "fraction_alt": { type: Number, decimal:true, label: "Overall fraction of reads supporting ALT", optional:true },
   "indel_number": { type: Number, label: "Number of indels for all samples", optional:true },
   "modification_base_changes": { type: String, label: "Modification base changes at this position", optional:true },
@@ -269,39 +304,28 @@ var mutationSchema = new SimpleSchema({ // used in PatientReports, GeneReports
   "reads_at_start": { type: Number, label: "Number of reads starting at this position across all samples", optional:true },
   "reads_at_stop": { type: Number, label: "Number of reads stopping at this position across all samples", optional:true },
   "variant_type": { type: String, label: "Variant type, can be SNP, INS or DEL", optional:true },
+  // "effects": {
+  //   type: [
+  //     new SimpleSchema({
+  //
+  //     });
+  //   ]
+  // }
   // "effects": { type: [Object], label:"Predicted effects Effect ( Effect_Impact | Functional_Class | Codon_Change | Amino_Acid_change| Amino_Acid_length | Gene_Name | Transcript_BioType | Gene_Coding | Transcript_ID | Exon  | GenotypeNum [ | ERRORS | WARNINGS ] )" , optional:true }
 });
 mutationSchema.fieldOrder = [
+  // TODO: ugh
   "gene_label",
-  "gene_id",
   "sample_label",
-  "sample_id",
-  "protein_change",
   "mutation_type",
   "chromosome",
-  "start_position",
-  "end_position",
+  "effect_impact",
+
   "reference_allele",
   "variant_allele",
-  "MA_FImpact",
-  "MA_FIS",
-  "allele_count",
-  "allele_frequency",
-  "allele_number",
-  "base_quality",
-  "read_depth",
-  "fraction_alt",
-  "indel_number",
-  "modification_base_changes",
-  "modification_types",
-  "sample_number",
-  "origin",
-  "strand_bias",
-  "somatic",
-  "variant_status",
-  "reads_at_start",
-  "reads_at_stop",
-  "variant_type",
+
+  "start_position",
+  "end_position",
 ];
 
 //
@@ -320,16 +344,23 @@ Signatures.attachSchema(signaturesSchema);
 CohortSignatures = new Meteor.Collection("cohort_signatures");
 CohortSignatures.attachSchema(cohortSignatureSchema);
 
-// unclear how this is created...
+Mutations = new Meteor.Collection("mutations");
+Mutations.attachSchema(mutationSchema);
+
+/*
+** superpathway stuff
+*/
+
+Superpathways = new Meteor.Collection("superpathways");
+Superpathways.attachSchema(superpathwaySchema);
+
 NetworkElements = new Meteor.Collection("network_elements");
 NetworkElements.attachSchema(networkElementSchema);
 
-// combination of networks and superpathway uploads
 NetworkInteractions = new Meteor.Collection("network_interactions");
 NetworkInteractions.attachSchema(networkInteractionSchema);
 
-Mutations = new Meteor.Collection("mutations");
-Mutations.attachSchema(mutationSchema);
+
 
 // Pathways = new Meteor.Collection("pathways");
 // Pathways.attachSchema(pathwaySchema);
