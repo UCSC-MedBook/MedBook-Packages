@@ -23,6 +23,8 @@ Package.onUse(function(api) {
   api.export('Studies');
   api.export('Signatures');
   api.export('CohortSignatures');
+  api.export('Mutations');
+  api.export('Superpathways');
   api.export('NetworkElements');
   api.export('NetworkInteractions');
   api.export('Mutations');
