@@ -260,8 +260,6 @@ var mutationSchema = new SimpleSchema({
   "end_position": { type: Number, optional: true },
 
 
-
-
   "protein_change": { type: String, optional: true },
 
 
@@ -318,12 +316,13 @@ mutationSchema.fieldOrder = [
   "gene_label",
   "sample_label",
   "mutation_type",
-  "chromosome",
+
   "effect_impact",
 
   "reference_allele",
   "variant_allele",
 
+  "chromosome",
   "start_position",
   "end_position",
 ];
