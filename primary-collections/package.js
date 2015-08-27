@@ -13,8 +13,8 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
-  api.use('aldeed:simple-schema');
-  api.use('aldeed:collection2');
+  api.use('aldeed:simple-schema@1.3.3');
+  api.use('aldeed:collection2@2.3.3');
 
   api.addFiles('primary_collections.js');
 
@@ -33,6 +33,5 @@ Package.onUse(function(api) {
 Package.onTest(function(api) {
   // I've never used this
   api.use('tinytest');
-  api.use('medbook:-collections');
   api.addFiles('primary_collections_tests.js');
 });

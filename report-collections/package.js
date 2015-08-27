@@ -13,9 +13,9 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
-  api.use('aldeed:simple-schema');
-  api.use('aldeed:collection2');
-  api.use('medbook:primary-collections');
+  api.use('aldeed:simple-schema@1.3.3');
+  api.use('aldeed:collection2@2.3.3');
+  api.use('medbook:primary-collections@0.0.2');
 
   api.addFiles('report_collections.js');
 
@@ -28,6 +28,5 @@ Package.onUse(function(api) {
 
 Package.onTest(function(api) {
   api.use('tinytest');
-  api.use('report-collections');
   api.addFiles('report_collections_tests.js');
 });
