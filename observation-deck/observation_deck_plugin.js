@@ -7228,12 +7228,10 @@ var medbookDataLoader = medbookDataLoader || {};
 
             var variantCallData = {};
 
-            var sample = variantCallData["sample"] = doc["sample"];
-            var gene = variantCallData["gene"] = doc["Hugo_Symbol"];
-            variantCallData["mutType"] = doc["Variant_Classification"];
-            variantCallData["MA_FImpact"] = doc["MA_FImpact"];
-            variantCallData["MA_FIS"] = doc["MA_FIS"];
-            variantCallData["proteinChange"] = doc["MA_protein_change"];
+            var sample = variantCallData["sample"] = doc["sample_label"];
+            var gene = variantCallData["gene"] = doc["gene_label"];
+            variantCallData["mutType"] = doc["mutation_type"];
+            variantCallData["impact"] = doc["effect_impact"];
 
             if (! utils.hasOwnProperty(mutByGene, gene)) {
                 mutByGene[gene] = {};
@@ -9169,20 +9167,6 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             "class" : "primer"
         });
 
-        // map event to pivot score
-        var pivotScoresMap;
-        if (pivotEventId != null) {
-            pivotScoresMap = {};
-            var pivotSortedEvents = eventAlbum.getPivotSortedEvents(pivotEventId);
-            for (var i = 0, lengthi = pivotSortedEvents.length; i < lengthi; i++) {
-                var pivotObj = pivotSortedEvents[i];
-                var key = pivotObj["key"];
-                var val = pivotObj["val"];
-                pivotScoresMap[key] = val;
-                // console.log(pivotEventId, key);
-            }
-        }
-
         // row labels
         var translateX = -6;
         var translateY = gridSize / 1.5;
@@ -9213,9 +9197,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     }
                 }
 
-                // TODO underline genes added via geneset control
-                // TODO may be better to get these from the session variable passed into the plugin
-                // console.log("geneSetControl", config["geneSetControl"])
+                // underline genes added via geneset control
                 if (pivotEventId != null) {
                     if (datatype == "expression data") {
                         var geneName = d.replace(/_mRNA$/, "");
@@ -9247,6 +9229,20 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
         });
         // rowLabels.on("click", config["rowClickback"]);
         // rowLabels.on("contextmenu", config["rowRightClickback"]);
+
+        // map event to pivot score
+        var pivotScoresMap;
+        if (pivotEventId != null) {
+            pivotScoresMap = {};
+            var pivotSortedEvents = eventAlbum.getPivotSortedEvents(pivotEventId);
+            for (var i = 0, lengthi = pivotSortedEvents.length; i < lengthi; i++) {
+                var pivotObj = pivotSortedEvents[i];
+                var key = pivotObj["key"];
+                var val = pivotObj["val"];
+                pivotScoresMap[key] = val;
+                // console.log(pivotEventId, key);
+            }
+        }
 
         rowLabels.append("title").text(function(d, i) {
             var eventObj = eventAlbum.getEvent(d);
