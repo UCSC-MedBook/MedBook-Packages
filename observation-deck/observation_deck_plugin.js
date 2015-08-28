@@ -4241,6 +4241,19 @@ var utils = utils || {};
     };
 
     /**
+     * Get the object's attribute values in an array
+     */
+    u.getValues = function(obj) {
+        var vals = [];
+        var keys = u.getKeys(obj);
+        for (var i = 0, length = keys.length; i < length; i++) {
+            var val = obj[keys[i]];
+            vals.push(val);
+        }
+        return vals;
+    };
+
+    /**
      * Only unique and first instance of duplicated elements is returned. Ordering is preserved.
      */
     u.eliminateDuplicates = function(array) {
@@ -5345,6 +5358,13 @@ var eventData = eventData || {};
         // xmlDoc = $.parseXML(xmlStr);
         // // convert JS obj to jQ obj
         // $xml = $(xmlDoc);
+
+        this.mutationImpactScoresMap = {
+            "MIN" : -1,
+            "MODIFIER" : -0.3,
+            "MODERATE" : 1,
+            "HIGH" : 2
+        };
 
         this.album = {};
 
@@ -7222,6 +7242,7 @@ var medbookDataLoader = medbookDataLoader || {};
 
     mdl.mongoMutationData = function(collection, OD_eventAlbum) {
         // iter over doc ... each doc is a mutation call
+        var impactScoresMap = OD_eventAlbum.mutationImpactScoresMap;
         var mutByGene = {};
         for (var i = 0, length = collection.length; i < length; i++) {
             var doc = collection[i];
@@ -7231,17 +7252,30 @@ var medbookDataLoader = medbookDataLoader || {};
             var sample = variantCallData["sample"] = doc["sample_label"];
             var gene = variantCallData["gene"] = doc["gene_label"];
             variantCallData["mutType"] = doc["mutation_type"];
-            variantCallData["impact"] = doc["effect_impact"];
+            var impact = variantCallData["impact"] = doc["effect_impact"];
 
             if (! utils.hasOwnProperty(mutByGene, gene)) {
                 mutByGene[gene] = {};
             }
 
+            // TODO score by greatest impact
             if (! utils.hasOwnProperty(mutByGene[gene], sample)) {
-                mutByGene[gene][sample] = 0;
+                mutByGene[gene][sample] = impact;
+            } else {
+                var recordedImpact = mutByGene[gene][sample];
+                if (impactScoresMap[impact] > impactScoresMap[recordedImpact]) {
+                    mutByGene[gene][sample] = impact;
+                } else {
+                    continue;
+                }
             }
 
-            mutByGene[gene][sample] = mutByGene[gene][sample] + 1;
+            // mutation counts
+            // if (! utils.hasOwnProperty(mutByGene[gene], sample)) {
+            // mutByGene[gene][sample] = 0;
+            // }
+            //
+            // mutByGene[gene][sample] = mutByGene[gene][sample] + 1;
         }
 
         // add to event album
@@ -7250,7 +7284,7 @@ var medbookDataLoader = medbookDataLoader || {};
         for (var i = 0, length = genes.length; i < length; i++) {
             var gene = genes[i];
             var sampleData = mutByGene[gene];
-            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', 'numeric', sampleData);
+            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', 'mutation impact', sampleData);
         }
 
         return null;
@@ -8832,6 +8866,9 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 expressionColorMapper = utils.centeredRgbaColorMapper(false, 0, minExpVal, maxExpVal);
             }
 
+            var mutationsScoreVals = utils.getValues(eventAlbum.mutationImpactScoresMap);
+            var mutationImpactColorMapper = utils.centeredRgbaColorMapper(false, 0, jStat.min(mutationsScoreVals), jStat.max(mutationsScoreVals));
+
             // assign color mappers
             var colorMappers = {};
             for (var i = 0; i < eventList.length; i++) {
@@ -8864,6 +8901,9 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 } else if (allowedValues == 'expression') {
                     // shared expression color mapper
                     colorMappers[eventId] = expressionColorMapper;
+                } else if (allowedValues == 'mutation impact') {
+                    // mutation impact color mapper
+                    colorMappers[eventId] = mutationImpactColorMapper;
                 } else {
                     colorMappers[eventId] = d3.scale.category10();
                 }
@@ -9370,10 +9410,19 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             var width = gridSize;
             var height = gridSize;
             var colorMapper = colorMappers[d['eventId']];
+
+            var getFill = function(d) {
+                if (eventAlbum.getEvent(d['eventId']).metadata.allowedValues === 'mutation impact') {
+                    var impactScore = eventAlbum.mutationImpactScoresMap[d["val"]];
+                    return colorMapper(impactScore);
+                } else {
+                    return colorMapper(d["val"]);
+                }
+            }
             var attributes = {
                 "stroke" : "#E6E6E6",
                 "stroke-width" : "2px",
-                "fill" : colorMapper(val)
+                "fill" : getFill(d)
             };
             var icon;
             if (eventAlbum.getEvent(d['eventId']).metadata.allowedValues === 'categoric') {
