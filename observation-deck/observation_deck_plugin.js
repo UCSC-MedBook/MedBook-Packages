@@ -9544,8 +9544,10 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     var labelAttributes = {
                         "font-size" : 16,
                         "fill" : "lightgray",
-                        "x" : x + 1.3,
-                        "y" : y + 13
+                        // "x" : x + 1.3,
+                        "text-anchor" : "middle",
+                        "x" : x + (gridSize / 2),
+                        "y" : y + 10
                     };
 
                     var label = document.createElementNS(utils.svgNamespaceUri, "text");
@@ -9570,8 +9572,9 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     var labelAttributes = {
                         "font-size" : 16,
                         "fill" : "lightgray",
-                        "x" : x + 1.3,
-                        "y" : y + 12
+                        "text-anchor" : "middle",
+                        "x" : x + (gridSize / 2),
+                        "y" : y + 10
                     };
 
                     var label = document.createElementNS(utils.svgNamespaceUri, "text");
@@ -9600,7 +9603,8 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     var labelAttributes = {
                         "font-size" : 16,
                         "fill" : "lightgray",
-                        "x" : x + 2.6,
+                        "text-anchor" : "middle",
+                        "x" : x + (gridSize / 2),
                         "y" : y + 12.5
                     };
 
