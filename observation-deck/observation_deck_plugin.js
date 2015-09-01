@@ -5283,83 +5283,8 @@ var utils = utils || {};
 
 var eventData = eventData || {};
 (function(ed) {"use strict";
-
-    // ed.eventHierarchyUrl = 'observation_deck/data/eventHierarchy.xml';
-
-    /**
-     * Get the elements with the specified eventType.  Returns a list of elements.
-     */
-    ed.getEventElems = function(jqXmlHierarchy, eventType) {
-        var eventElemList = [];
-        jqXmlHierarchy.find('event').each(function(index, value) {
-            var type = value.getAttribute('type');
-            if ((eventType === undefined) || (eventType === null)) {
-                eventElemList.push(value);
-            } else if (type === eventType) {
-                eventElemList.push(value);
-            }
-        });
-        return eventElemList;
-    };
-
-    /**
-     * Get the event types of an event's parent and children.
-     */
-    ed.getEventParentChildren = function(jqXmlHierarchy, eventType) {
-        var result = {};
-        result['parent'] = null;
-        result['children'] = [];
-
-        var eventElems = ed.getEventElems(jqXmlHierarchy, eventType);
-        $(eventElems).each(function(index, elem) {
-            if (elem.tagName !== 'event') {
-                return 'continue';
-            }
-            var parentElem = elem.parentNode;
-            result['parent'] = parentElem.getAttribute('type');
-
-            $(elem.children).each(function(index, elem) {
-                if (elem.tagName === 'event') {
-                    result['children'].push(elem.getAttribute('type'));
-                }
-            });
-        });
-        return result;
-    };
-
-    /**
-     * Find the path to the root of the hierarchy.
-     */
-    ed.tracebackToRoot = function(jqXmlHierarchy, eventType) {
-        var tracebacks = [];
-        var eventElems = ed.getEventElems(jqXmlHierarchy, eventType);
-        for (var i = 0; i < eventElems.length; i++) {
-            var eventElem = eventElems[i];
-            var traceback = [];
-            tracebacks.push(traceback);
-
-            var type = eventElem.getAttribute('type');
-            var parentType = ed.getEventParentChildren(jqXmlHierarchy, type)['parent'];
-            while ((parentType !== undefined) && (parentType !== null)) {
-                traceback.push(parentType);
-                parentType = ed.getEventParentChildren(jqXmlHierarchy, parentType)['parent'];
-            }
-        }
-        return tracebacks;
-    };
-
     ed.OD_eventAlbum = function() {
-        // TODO instead of writing XML parser, better to use jQuery XML DOM traversal due to better handling of browser differences
-        // var xmlStr = getResponse(eventHierarchyUrl);
-        // if (xmlStr === null) {
-        // alert('Could not load event hierarchy!');
-        // }
-        // // parse string for XML doc (javascript obj)
-        // xmlDoc = $.parseXML(xmlStr);
-        // // convert JS obj to jQ obj
-        // $xml = $(xmlDoc);
-
-        // TODO ordinal score assignments to be saved in this object
+        // ordinal score assignments to be saved in this object
         this.ordinalScoring = {
             "mutation impact" : {
                 "MIN" : -1,
@@ -5689,124 +5614,6 @@ var eventData = eventData || {};
             }
 
             return allPivotScores;
-        };
-
-        /**
-         * Pivot sort results separated by absolute value of Pearson rho.
-         */
-        this.pivotSort_2 = function(pivotEvent, scoringAlgorithm) {
-            var pearsonScores = this.pivotSort(pivotEvent, jStat.corrcoeff);
-            var pearsonSigns = {};
-            for (var i = 0; i < pearsonScores.length; i++) {
-                var scoreObj = pearsonScores[i];
-                var eventId = scoreObj['event'];
-                var score = scoreObj['score'];
-                pearsonSigns[eventId] = (score < 0) ? -1 : 1;
-            }
-
-            var algScores = this.pivotSort(pivotEvent, scoringAlgorithm);
-            var posList = [];
-            var negList = [];
-            for (var i = 0; i < algScores.length; i++) {
-                var scoreObj = algScores[i];
-                var eventId = scoreObj['event'];
-                var score = scoreObj['score'];
-                if (pearsonSigns[eventId] < 0) {
-                    negList.push(scoreObj);
-                } else {
-                    posList.push(scoreObj);
-                }
-            }
-
-            // sort by scores
-            posList.sort(utils.sort_by('score'));
-            negList.sort(utils.sort_by('score'), true);
-
-            return posList.concat(negList);
-        };
-
-        /**
-         * Pivot sort returns array of objects with 'event' and 'score', sorted by score. Default scoring metric is pearson rho.
-         */
-        this.pivotSort = function(pivotEvent, scoringAlgorithm) {
-            console.log('eventAlbum.pivotSort:', pivotEvent);
-
-            // scoring algorithm
-            if ( typeof scoringAlgorithm === 'undefined') {
-                console.log('using default scoringAlgorithm, jStat.corrcoeff');
-                scoringAlgorithm = jStat.corrcoeff;
-            }
-
-            // get pivot event
-            var pEventObj = this.getEvent(pivotEvent);
-            if (pEventObj == null) {
-                console.log('eventObj not found for', pivotEvent);
-                return null;
-            }
-
-            var pSampleIds = pEventObj.data.getAllSampleIds();
-            var pNullSampleIds = pEventObj.data.getNullSamples();
-
-            // keep only IDs that appear less than 2 times
-            var pNonNullSampleIds = utils.keepReplicates(pSampleIds.concat(pNullSampleIds), 2, true);
-
-            // compute scores over events
-            var eventGroup = this.getEventIdsByType()[pEventObj.metadata.datatype];
-
-            var scores = [];
-            for (var i = 0; i < eventGroup.length; i++) {
-                var eventId = eventGroup[i];
-
-                var eventObj = this.getEvent(eventId);
-
-                // only consider samples where both events have a score
-                var eventAllSamples = eventObj.data.getAllSampleIds();
-                var eventNullSamples = eventObj.data.getNullSamples();
-                var eventNonNullSamples = utils.keepReplicates(eventAllSamples.concat(eventNullSamples), 2, true);
-
-                var commonNonNullSamples = utils.keepReplicates(eventNonNullSamples.concat(pNonNullSampleIds));
-
-                // ordering of samples is maintained as in the list parameter
-                var eventData1 = pEventObj.data.getData(commonNonNullSamples);
-                var eventData2 = eventObj.data.getData(commonNonNullSamples);
-
-                // skip if no comparable samples
-                if (eventData2.length > 0) {
-
-                } else {
-                    console.log('eventData2 is empty');
-                    continue;
-                }
-
-                // compute scores using original values
-                var vector1 = [];
-                var vector2 = [];
-
-                var propName1 = null;
-                if (propName1 == null) {
-                    propName1 = utils.hasOwnProperty(eventData1[0], 'val_orig') ? 'val_orig' : 'val';
-                }
-                var propName2 = null;
-                for (var j = 0; j < commonNonNullSamples.length; j++) {
-                    if (propName2 == null) {
-                        propName2 = utils.hasOwnProperty(eventData2[j], 'val_orig') ? 'val_orig' : 'val';
-                    }
-
-                    vector1.push(eventData1[j][propName1]);
-                    vector2.push(eventData2[j][propName2]);
-                }
-
-                var score = scoringAlgorithm(vector1, vector2);
-                scores.push({
-                    'event' : eventId,
-                    'score' : score
-                });
-            }
-
-            // sort score objects by 'score'
-            scores.sort(utils.sort_by('score'));
-
-            return scores;
         };
 
         /**
@@ -7243,7 +7050,58 @@ var medbookDataLoader = medbookDataLoader || {};
         }
     };
 
+    /**
+     * data about mutation type
+     */
     mdl.mongoMutationData = function(collection, OD_eventAlbum) {
+        // iter over doc ... each doc is a mutation call
+        var allowed_values = "mutation type";
+
+        var impactScoresMap = OD_eventAlbum.ordinalScoring[allowed_values];
+
+        var mutByGene = {};
+        // for (var i = 0, length = collection.length; i < length; i++) {
+        _.each(collection, function(element) {
+            var doc = element;
+
+            var variantCallData = {};
+
+            var sample = doc["sample_label"];
+            var gene = doc["gene_label"];
+            var type = variantCallData["mutType"] = doc["mutation_type"];
+            // var impact = variantCallData["impact"] = doc["effect_impact"];
+
+            if (! utils.hasOwnProperty(mutByGene, gene)) {
+                mutByGene[gene] = {};
+            }
+
+            if (! utils.hasOwnProperty(mutByGene[gene], sample)) {
+                mutByGene[gene][sample] = [];
+            }
+
+            var findResult = _.findWhere(mutByGene[gene][sample], type);
+            if (_.isUndefined(findResult)) {
+                mutByGene[gene][sample].push(type);
+            }
+        });
+        console.log("mutByGene", mutByGene);
+
+        // add to event album
+        var genes = utils.getKeys(mutByGene);
+        var suffix = "_mutation";
+        for (var i = 0, length = genes.length; i < length; i++) {
+            var gene = genes[i];
+            var sampleData = mutByGene[gene];
+            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', allowed_values, sampleData);
+        }
+
+        return null;
+    };
+
+    /**
+     * Data about mutation impact
+     */
+    mdl.mongoMutationData_impact = function(collection, OD_eventAlbum) {
         // iter over doc ... each doc is a mutation call
         var allowed_values = "mutation impact";
 
@@ -7252,12 +7110,10 @@ var medbookDataLoader = medbookDataLoader || {};
         for (var i = 0, length = collection.length; i < length; i++) {
             var doc = collection[i];
 
-            var variantCallData = {};
-
-            var sample = variantCallData["sample"] = doc["sample_label"];
-            var gene = variantCallData["gene"] = doc["gene_label"];
-            variantCallData["mutType"] = doc["mutation_type"];
-            var impact = variantCallData["impact"] = doc["effect_impact"];
+            var sample = doc["sample_label"];
+            var gene = doc["gene_label"];
+            var type = doc["mutation_type"];
+            var impact = doc["effect_impact"];
 
             if (! utils.hasOwnProperty(mutByGene, gene)) {
                 mutByGene[gene] = {};
@@ -7274,13 +7130,6 @@ var medbookDataLoader = medbookDataLoader || {};
                     continue;
                 }
             }
-
-            // mutation counts
-            // if (! utils.hasOwnProperty(mutByGene[gene], sample)) {
-            // mutByGene[gene][sample] = 0;
-            // }
-            //
-            // mutByGene[gene][sample] = mutByGene[gene][sample] + 1;
         }
 
         // add to event album
@@ -9359,6 +9208,50 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 showDataList.push(dataListObj);
             }
         }
+
+        /**
+         * Create an SVG group element icon to put in the matrix cell.
+         * @param {Object} x
+         * @param {Object} y
+         * @param {Object} rx
+         * @param {Object} ry
+         * @param {Object} width
+         * @param {Object} height
+         * @param {Object} attributes
+         */
+        var createMutTypeSvg = function(x, y, rx, ry, width, height, attributes) {
+            var iconGroup = document.createElementNS(utils.svgNamespaceUri, "g");
+            utils.setElemAttributes(iconGroup, {
+                "class" : "mutTypeIconGroup"
+            });
+            delete attributes["fill"];
+            delete attributes["stroke-width"];
+
+            var types = attributes["val"];
+
+            if (utils.isObjInArray(types, "complex")) {
+                var centeredCircleIcon = utils.createSvgCircleElement(x + width / 2, y + height / 2, height / 2, attributes);
+                iconGroup.appendChild(centeredCircleIcon);
+            } else {
+                if (utils.isObjInArray(types, "ins")) {
+                    attributes["fill"] = "red";
+                    var topHalfIcon = utils.createSvgRectElement(x, y, rx, ry, width, height / 2, attributes);
+                    iconGroup.appendChild(topHalfIcon);
+                }
+                if (utils.isObjInArray(types, "del")) {
+                    attributes["fill"] = "blue";
+                    var bottomHalfIcon = utils.createSvgRectElement(x, y + height / 2, rx, ry, width, height / 2, attributes);
+                    iconGroup.appendChild(bottomHalfIcon);
+                }
+            }
+            if (utils.isObjInArray(types, "snp")) {
+                attributes["fill"] = "green";
+                var centeredCircleIcon = utils.createSvgCircleElement(x + width / 2, y + height / 2, height / 4, attributes);
+                iconGroup.appendChild(centeredCircleIcon);
+            }
+            return iconGroup;
+        };
+
         var heatMap = svg.selectAll(".cell").data(showDataList).enter().append(function(d, i) {
             var getUpArrowPointsList = function(x, y, width, height) {
                 var pointsList = [];
@@ -9450,12 +9343,24 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 attributes['sampleId'] = d['id'];
                 attributes['val'] = d['val'];
                 icon = utils.createSvgRectElement(x, y, rx, ry, width, height, attributes);
-            } else if (utils.isObjInArray(["expression signature", "kinase target activity", "tf target activity", "mutation call"], eventAlbum.getEvent(d['eventId']).metadata.datatype)) {
+            } else if (utils.isObjInArray(["expression signature", "kinase target activity", "tf target activity"], eventAlbum.getEvent(d['eventId']).metadata.datatype)) {
                 attributes['class'] = "signature";
                 attributes['eventId'] = d['eventId'];
                 attributes['sampleId'] = d['id'];
                 attributes['val'] = d['val'];
                 icon = utils.createSvgRectElement(x, y, rx, ry, width, height, attributes);
+            } else if (eventAlbum.getEvent(d['eventId']).metadata.datatype === 'mutation call') {
+                // TODO oncoprint-style icons
+                attributes['class'] = "signature";
+                attributes['eventId'] = d['eventId'];
+                attributes['sampleId'] = d['id'];
+                // val is a list of mutation types
+                attributes['val'] = d['val'].sort();
+                if (attributes['val'].length > 1) {
+                    console.log("sorted vals", attributes['val']);
+                }
+
+                icon = createMutTypeSvg(x, y, rx, ry, width, height, attributes);
             } else if (false & eventAlbum.getEvent(d['eventId']).metadata.datatype === "datatype label") {
                 // TODO datatype label cells
                 var eventId = d["eventId"];
