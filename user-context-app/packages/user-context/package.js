@@ -13,7 +13,12 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
-  api.use('templating', 'client');
+  api.use([
+   'templating', 
+   'raix:handlebar-helpers'
+   ],
+  'client');
+
   api.addFiles(["studies.js"], ['client', 'server']);
   api.addFiles([
       'studies.js',
