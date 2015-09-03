@@ -7806,7 +7806,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
     var setupContextMenus = function(config) {
         // config['querySettings']
         // first destroy old contextMenus
-        var selectors = ['.typeLabel', '.colLabel', '.rowLabel', '.mrna_exp', '.categoric'];
+        var selectors = ['.typeLabel', '.colLabel', '.rowLabel', '.mrna_exp', '.categoric', ".signature"];
         for (var i = 0; i < selectors.length; i++) {
             var selector = selectors[i];
             $.contextMenu('destroy', selector);
@@ -9224,27 +9224,25 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             utils.setElemAttributes(iconGroup, {
                 "class" : "mutTypeIconGroup"
             });
-            delete attributes["fill"];
-            delete attributes["stroke-width"];
 
             var types = attributes["val"];
 
-            if (utils.isObjInArray(types, "complex")) {
-                var centeredCircleIcon = utils.createSvgCircleElement(x + width / 2, y + height / 2, height / 2, attributes);
-                iconGroup.appendChild(centeredCircleIcon);
-            } else {
-                if (utils.isObjInArray(types, "ins")) {
-                    attributes["fill"] = "red";
-                    var topHalfIcon = utils.createSvgRectElement(x, y, rx, ry, width, height / 2, attributes);
-                    iconGroup.appendChild(topHalfIcon);
-                }
-                if (utils.isObjInArray(types, "del")) {
-                    attributes["fill"] = "blue";
-                    var bottomHalfIcon = utils.createSvgRectElement(x, y + height / 2, rx, ry, width, height / 2, attributes);
-                    iconGroup.appendChild(bottomHalfIcon);
-                }
+            // background of cell
+            attributes["fill"] = "lightgrey";
+            iconGroup.appendChild(utils.createSvgRectElement(x, y, rx, ry, width, height, attributes));
+            delete attributes["stroke-width"];
+
+            if ((utils.isObjInArray(types, "ins")) || (utils.isObjInArray(types, "complex"))) {
+                attributes["fill"] = "red";
+                var topHalfIcon = utils.createSvgRectElement(x, y, rx, ry, width, height / 2, attributes);
+                iconGroup.appendChild(topHalfIcon);
             }
-            if (utils.isObjInArray(types, "snp")) {
+            if ((utils.isObjInArray(types, "del")) || (utils.isObjInArray(types, "complex"))) {
+                attributes["fill"] = "blue";
+                var bottomHalfIcon = utils.createSvgRectElement(x, y + height / 2, rx, ry, width, height / 2, attributes);
+                iconGroup.appendChild(bottomHalfIcon);
+            }
+            if ((utils.isObjInArray(types, "snp")) || (utils.isObjInArray(types, "complex"))) {
                 attributes["fill"] = "green";
                 var centeredCircleIcon = utils.createSvgCircleElement(x + width / 2, y + height / 2, height / 4, attributes);
                 iconGroup.appendChild(centeredCircleIcon);
@@ -9356,9 +9354,6 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 attributes['sampleId'] = d['id'];
                 // val is a list of mutation types
                 attributes['val'] = d['val'].sort();
-                if (attributes['val'].length > 1) {
-                    console.log("sorted vals", attributes['val']);
-                }
 
                 icon = createMutTypeSvg(x, y, rx, ry, width, height, attributes);
             } else if (false & eventAlbum.getEvent(d['eventId']).metadata.datatype === "datatype label") {
@@ -9430,11 +9425,19 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     headOrTail = "tail";
                 }
 
+                // https://en.wikipedia.org/wiki/List_of_Unicode_characters
+                // http://www.fileformat.info/info/unicode/char/search.htm
+                // http://shapecatcher.com/
+                // http://www.charbase.com/block/miscellaneous-symbols-and-pictographs
+                // https://stackoverflow.com/questions/12036038/is-there-unicode-glyph-symbol-to-represent-search?lq=1
+                // use "C/C++/Java source code" from search results: http://www.fileformat.info/info/unicode/char/search.htm
                 var glyphs = {
                     "upArrow" : "\u2191",
                     "downArrow" : "\u2193",
                     "upArrowBar" : "\u2912",
-                    "downArrowBar" : "\u2913"
+                    "downArrowBar" : "\u2913",
+                    "magGlass" : "\uD83D\uDD0E",
+                    "ghost" : "\uD83D\uDC7B"
                 };
 
                 attributes['class'] = "datatype";
