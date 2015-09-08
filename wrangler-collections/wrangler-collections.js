@@ -50,8 +50,8 @@ WranglerDocuments.attachSchema(new SimpleSchema({
   "collection_name": { // not so enthused about this
     type: String,
     allowedValues: [
-      "network_elements",
-      "network_interactions",
+      "superpathway_elements",
+      "superpathway_interactions",
       "mutations",
       "gene_expression",
       "superpathways",

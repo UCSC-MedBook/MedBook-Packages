@@ -25,8 +25,8 @@ Package.onUse(function(api) {
   api.export('CohortSignatures');
   api.export('Mutations');
   api.export('Superpathways');
-  api.export('NetworkElements');
-  api.export('NetworkInteractions');
+  api.export('SuperpathwayElements');
+  api.export('SuperpathwayInteractions');
   api.export('Mutations');
   api.export('GeneExpression');
 });

@@ -135,7 +135,7 @@ superpathwaySchema.fieldOrder = [
   "version",
 ];
 
-var networkElementSchema = new SimpleSchema({
+var superpathwayElementSchema = new SimpleSchema({
   "label": {
     type: String,
   },
@@ -152,12 +152,12 @@ var networkElementSchema = new SimpleSchema({
   },
   "superpathway_id": { type: String },
 });
-networkElementSchema.fieldOrder = [
+superpathwayElementSchema.fieldOrder = [
   "label",
   "type",
 ];
 
-var networkInteractionSchema = new SimpleSchema({
+var superpathwayInteractionSchema = new SimpleSchema({
   "source": { type: String },
   "target": { type: String },
   "interaction": {
@@ -175,7 +175,7 @@ var networkInteractionSchema = new SimpleSchema({
   // scores could differ by pathway or institution (?)
   // "score": { type: Number, optional: true, decimal: true },
 });
-networkInteractionSchema.fieldOrder = [
+superpathwayInteractionSchema.fieldOrder = [
   "source",
   "interaction",
   "target",
@@ -267,7 +267,7 @@ var mutationSchema = new SimpleSchema({
     allowedValues: [
       "dna_normal",
       "dna_tumor",
-      "rna_tumor",
+      "rna_normal",
       "rna_tumor",
       "cellline"
     ],
@@ -344,6 +344,9 @@ mutationSchema.fieldOrder = [
   "chromosome",
   "start_position",
   "end_position",
+
+  "biological_source",
+  "mutation_impact_assessor",
 ];
 
 var allowedNormalizations = [
@@ -415,8 +418,8 @@ GeneExpressionSummary.attachSchema(geneExpressionSummarySchema);
 Superpathways = new Meteor.Collection("superpathways");
 Superpathways.attachSchema(superpathwaySchema);
 
-NetworkElements = new Meteor.Collection("network_elements");
-NetworkElements.attachSchema(networkElementSchema);
+SuperpathwayElements = new Meteor.Collection("superpathway_elements");
+SuperpathwayElements.attachSchema(superpathwayElementSchema);
 
-NetworkInteractions = new Meteor.Collection("network_interactions");
-NetworkInteractions.attachSchema(networkInteractionSchema);
+SuperpathwayInteractions = new Meteor.Collection("superpathway_interactions");
+SuperpathwayInteractions.attachSchema(superpathwayInteractionSchema);
