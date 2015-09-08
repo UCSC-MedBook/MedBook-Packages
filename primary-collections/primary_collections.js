@@ -125,7 +125,7 @@ var cohortSignatureSchema = new SimpleSchema({
   "gene_label": { type: String, optional: true },
 });
 
-// TODO: who can change this?
+// TODO: who can change this? (update a new version)
 var superpathwaySchema = new SimpleSchema({
   "name": { type: String },
   "version": { type: Number },
@@ -136,7 +136,9 @@ superpathwaySchema.fieldOrder = [
 ];
 
 var networkElementSchema = new SimpleSchema({
-  "label": { type: String },
+  "label": {
+    type: String,
+  },
   "type": {
     type: String,
     allowedValues: [
@@ -148,7 +150,7 @@ var networkElementSchema = new SimpleSchema({
       "rna",
     ],
   },
-  "superpathway_id": { type: Meteor.ObjectID },
+  "superpathway_id": { type: String },
 });
 networkElementSchema.fieldOrder = [
   "label",
@@ -169,7 +171,7 @@ var networkInteractionSchema = new SimpleSchema({
       "PPI>",
     ],
   },
-  "superpathway_id": { type: Meteor.ObjectID },
+  "superpathway_id": { type: String },
   // scores could differ by pathway or institution (?)
   // "score": { type: Number, optional: true, decimal: true },
 });
@@ -259,11 +261,28 @@ var mutationSchema = new SimpleSchema({
   "start_position": { type: Number },
   "end_position": { type: Number, optional: true },
 
+  // user must input these manually
+  "biological_source": {
+    type: String,
+    allowedValues: [
+      "dna_normal",
+      "dna_tumor",
+      "rna_tumor",
+      "rna_tumor",
+      "cellline"
+    ],
+  },
+  "mutation_impact_assessor": {
+    type: String,
+    // allowedValues: [
+    //   // TODO
+    // ]
+  },
+
+  // BELOW: other fields we will likely add
+  // these fields are not yet handled by the parser
 
   "protein_change": { type: String, optional: true },
-
-
-
 
   "MA_FImpact": { type: String, optional: true },
   "MA_FIS": { type: Number, optional: true },
@@ -327,6 +346,37 @@ mutationSchema.fieldOrder = [
   "end_position",
 ];
 
+var allowedNormalizations = [
+  "raw_counts",
+  "counts",
+  "fpkm",
+  "tpm",
+  "rsem_quan_log2",
+];
+
+var geneExpressionSchema = new SimpleSchema({
+  "gene_label": { type: String },
+  "study_label": { type: String },
+  "sample_label": { type: String },
+  "normalization": {
+    type: String,
+    allowedValues: allowedNormalizations,
+  },
+  "value": { type: Number, decimal: true },
+});
+
+// This is updated after importing new data from Wrangler
+var geneExpressionSummarySchema = new SimpleSchema({
+  "gene_label": { type: String },
+  "study_label": { type: String },
+  "normalization": {
+    type: String,
+    allowedValues: allowedNormalizations,
+  },
+  "mean": { type: Number, decimal: true },
+  "variance": { type: Number, decimal: true },
+});
+
 //
 // declare the collections
 //
@@ -346,6 +396,18 @@ CohortSignatures.attachSchema(cohortSignatureSchema);
 Mutations = new Meteor.Collection("mutations");
 Mutations.attachSchema(mutationSchema);
 
+GeneExpression = new Meteor.Collection("gene_expression");
+GeneExpression.attachSchema(geneExpressionSchema);
+
+GeneExpressionSummary = new Meteor.Collection("gene_expression_summary");
+GeneExpressionSummary.attachSchema(geneExpressionSummarySchema);
+
+// Pathways = new Meteor.Collection("pathways");
+// Pathways.attachSchema(pathwaySchema);
+//
+// Studies = new Meteor.Collection("studies");
+// Studies.attachSchema(studiesSchema);
+
 /*
 ** superpathway stuff
 */
@@ -358,11 +420,3 @@ NetworkElements.attachSchema(networkElementSchema);
 
 NetworkInteractions = new Meteor.Collection("network_interactions");
 NetworkInteractions.attachSchema(networkInteractionSchema);
-
-
-
-// Pathways = new Meteor.Collection("pathways");
-// Pathways.attachSchema(pathwaySchema);
-//
-// Studies = new Meteor.Collection("studies");
-// Studies.attachSchema(studiesSchema);

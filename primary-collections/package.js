@@ -28,6 +28,7 @@ Package.onUse(function(api) {
   api.export('NetworkElements');
   api.export('NetworkInteractions');
   api.export('Mutations');
+  api.export('GeneExpression');
 });
 
 Package.onTest(function(api) {
