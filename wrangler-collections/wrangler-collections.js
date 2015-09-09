@@ -41,7 +41,15 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
       "mutation",
     ],
     optional: true,
-  }
+  },
+  "errors": { // errors as of last submission
+    type: [String],
+    optional: true,
+  },
+  "description": { // why are they uploading this data? where did it come from?
+    type: String,
+    optional: true,
+  },
 }));
 
 WranglerDocuments = new Meteor.Collection("wrangler_documents");
