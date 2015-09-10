@@ -34,14 +34,6 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
       "done",
     ],
   },
-  "document_types": { // used only for the UI, not in validation
-    type: [String],
-    allowedValues: [
-      "superpathway",
-      "mutation",
-    ],
-    optional: true,
-  },
   "errors": { // errors as of last submission
     type: [String],
     optional: true,
@@ -55,7 +47,7 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
 WranglerDocuments = new Meteor.Collection("wrangler_documents");
 WranglerDocuments.attachSchema(new SimpleSchema({
   "submission_id": { type: Meteor.ObjectID },
-  "collection_name": { // not so enthused about this
+  "collection_name": {
     type: String,
     allowedValues: [
       "superpathway_elements",
