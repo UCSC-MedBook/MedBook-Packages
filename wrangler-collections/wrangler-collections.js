@@ -1,29 +1,7 @@
-// it was too confusing to have it embedded
-var fileSchema = new SimpleSchema({
-  "file_id": { type: Meteor.ObjectID },
-  "file_name": { type: String },
-  "status": {
-    type: String,
-    allowedValues: [
-      "creating",
-      "uploading", "saving", // same step
-      "processing",
-      "done",
-      "error",
-    ],
-  },
-  // TODO: only allow if status = "error"
-  "error_description": { type: String, optional: true },
-});
-
 WranglerSubmissions = new Meteor.Collection("wrangler_submissions");
 WranglerSubmissions.attachSchema(new SimpleSchema({
   "user_id": { type: Meteor.ObjectID },
   "date_created": { type: Date },
-  "files": {
-    type: [fileSchema],
-    optional: true
-  },
   "status": {
     type: String,
     allowedValues: [
@@ -38,10 +16,47 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
     type: [String],
     optional: true,
   },
-  "description": { // why are they uploading this data? where did it come from?
-    type: String,
+  "options": {
+    type: Object,
+    blackbox: true,
     optional: true,
   },
+  "editing_file": {
+    type: Meteor.ObjectID, // refers to WranglerFiles
+    optional: true
+  },
+  "editing_document": { // no functionality yet
+    type: Meteor.ObjectID, // refers to WranglerDocuments
+    optional: true
+  },
+}));
+
+WranglerFiles = new Meteor.Collection("wrangler_files");
+WranglerFiles.attachSchema(new SimpleSchema({
+  "submission_id": { type: Meteor.ObjectID },
+  "file_id": { type: Meteor.ObjectID },
+  "file_name": { type: String },
+  "status": {
+    type: String,
+    allowedValues: [
+      "creating",
+      "uploading", "saving", // same step
+      "processing",
+      "done",
+      "error",
+    ],
+  },
+  "manual_file_type": {
+    type: String,
+    allowedValues: [
+      "mutation",
+      "superpathway_interactions",
+      "superpathway_elements",
+    ],
+    optional: true
+  },
+  // TODO: only allow if status = "error"
+  "error_description": { type: String, optional: true },
 }));
 
 WranglerDocuments = new Meteor.Collection("wrangler_documents");
@@ -61,7 +76,7 @@ WranglerDocuments.attachSchema(new SimpleSchema({
     type: Object,
     blackbox: true,
   },
-  "file_id": { type: Meteor.ObjectID, optional: true },
+  "wrangler_file_id": { type: Meteor.ObjectID, optional: true },
 }));
 
 Jobs = new Meteor.Collection("jobs");
@@ -114,14 +129,41 @@ Blobs.allow({
   }
 });
 
-WranglerDocuments.allow({
+ensureSubmissionAvailable = function (userId, submissionId) {
+  var submission = WranglerSubmissions.findOne(submissionId);
+  if (submission.user_id !== userId) {
+    throw new Meteor.Error("submission-not-available",
+        "The submission _id provided does not exist or is not available" +
+        " to you");
+  }
+  return submission;
+};
+
+WranglerSubmissions.allow({
   insert: function (userId, doc) {
-    return true;
+    return doc.user_id === userId;
   },
-  update: function(userId, doc, fields, modifier) {
-    return true;
-  },
-  remove: function (userId, doc) {
-    return true;
+  update: function (userId, doc, fields, modifier) {
+    var submission = WranglerSubmissions.findOne(doc._id);
+
+    return submission.user_id === userId;
   },
 });
+
+getCollectionByName = function(collectionName) {
+  switch (collectionName) {
+    case "superpathway_elements":
+      return SuperpathwayElements;
+    case "superpathway_interactions":
+      return SuperpathwayInteractions;
+    case "mutations":
+      return Mutations;
+    case "gene_expression":
+      return GeneExpression;
+    case "superpathways":
+      return Superpathways;
+    default:
+      console.log("couldn't find appropriate schema");
+      return null;
+  }
+};
