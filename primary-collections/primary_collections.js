@@ -172,8 +172,6 @@ var superpathwayInteractionSchema = new SimpleSchema({
     ],
   },
   "superpathway_id": { type: String },
-  // scores could differ by pathway or institution (?)
-  // "score": { type: Number, optional: true, decimal: true },
 });
 superpathwayInteractionSchema.fieldOrder = [
   "source",

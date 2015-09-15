@@ -34,6 +34,7 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
 WranglerFiles = new Meteor.Collection("wrangler_files");
 WranglerFiles.attachSchema(new SimpleSchema({
   "submission_id": { type: Meteor.ObjectID },
+  "user_id": { type: Meteor.ObjectID },
   "file_id": { type: Meteor.ObjectID },
   "file_name": { type: String },
   "status": {
@@ -62,6 +63,7 @@ WranglerFiles.attachSchema(new SimpleSchema({
 WranglerDocuments = new Meteor.Collection("wrangler_documents");
 WranglerDocuments.attachSchema(new SimpleSchema({
   "submission_id": { type: Meteor.ObjectID },
+  "user_id": { type: Meteor.ObjectID },
   "collection_name": {
     type: String,
     allowedValues: [
@@ -77,6 +79,7 @@ WranglerDocuments.attachSchema(new SimpleSchema({
     blackbox: true,
   },
   "wrangler_file_id": { type: Meteor.ObjectID, optional: true },
+  "inserted_into_database": { type: Boolean, optional: true },
 }));
 
 Jobs = new Meteor.Collection("jobs");
@@ -129,7 +132,7 @@ Blobs.allow({
   }
 });
 
-ensureSubmissionAvailable = function (userId, submissionId) {
+ensureSubmissionEditable = function (userId, submissionId) {
   var submission = WranglerSubmissions.findOne(submissionId);
   if (submission.user_id !== userId) {
     throw new Meteor.Error("submission-not-available",
@@ -146,9 +149,33 @@ WranglerSubmissions.allow({
   update: function (userId, doc, fields, modifier) {
     var submission = WranglerSubmissions.findOne(doc._id);
 
-    return submission.user_id === userId;
+    return submission.user_id === userId &&
+        submission.status === "editing";
   },
 });
+
+function makePermissions (collection) {
+  return {
+    insert: function (userId, doc) {
+      var submission = WranglerSubmissions.findOne(doc.submission_id);
+
+      return doc.user_id === userId &&
+          submission.user_id === userId;
+    },
+    update: function (userId, doc, fields, modifier) {
+      console.log("check if it's the whole document:");
+      console.log("doc:", doc);
+      var wholeDoc = collection.findOne(doc._id);
+      var submission = WranglerSubmissions.findOne(wholeDoc.submission_id);
+
+      return submission.user_id === userId &&
+          submission.status === "editing";
+    },
+  };
+}
+
+WranglerDocuments.allow(makePermissions(WranglerDocuments));
+WranglerFiles.allow(makePermissions(WranglerFiles));
 
 getCollectionByName = function(collectionName) {
   switch (collectionName) {
