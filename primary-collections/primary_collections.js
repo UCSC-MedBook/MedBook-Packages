@@ -365,6 +365,13 @@ var geneExpressionSchema = new SimpleSchema({
   },
   "value": { type: Number, decimal: true },
 });
+geneExpressionSchema.fieldOrder = [
+  "gene_label",
+  "study_label",
+  "sample_label",
+  "normalization",
+  "value",
+];
 
 // This is updated after importing new data from Wrangler
 var geneExpressionSummarySchema = new SimpleSchema({

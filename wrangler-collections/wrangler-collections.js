@@ -56,8 +56,10 @@ WranglerFiles.attachSchema(new SimpleSchema({
     ],
     optional: true
   },
-  // TODO: only allow if status = "error"
   "error_description": { type: String, optional: true },
+
+  // refers to Blobs
+  "uncompressed_from_id": { type: Meteor.ObjectID, optional: true },
 }));
 
 WranglerDocuments = new Meteor.Collection("wrangler_documents");
@@ -189,6 +191,8 @@ getCollectionByName = function(collectionName) {
       return GeneExpression;
     case "superpathways":
       return Superpathways;
+    case "gene_expression":
+      return GeneExpression;
     default:
       console.log("couldn't find appropriate schema");
       return null;

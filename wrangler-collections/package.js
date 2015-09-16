@@ -18,6 +18,8 @@ Package.onUse(function(api) {
   api.use('cfs:standard-packages@0.5.9');
 
   api.addFiles('wrangler-collections.js');
+  api.addFiles('createIndexes.js', 'server');
+
 
   api.export('WranglerSubmissions');
   api.export('WranglerDocuments');
