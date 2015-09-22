@@ -84,8 +84,6 @@ WranglerDocuments.attachSchema(new SimpleSchema({
   "inserted_into_database": { type: Boolean, optional: true },
 }));
 
-
-
 BlobStore = new FS.Store.GridFS("blobs", {
   beforeWrite: function (fileObject) {
     if (fileObject.metadata === undefined) {

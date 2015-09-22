@@ -278,25 +278,26 @@ var mutationSchema = new SimpleSchema([
         "cellline"
       ],
     },
-    "mutation_impact_assessor": {
-      type: String,
-      // allowedValues: [
-      //   // TODO
-      // ]
-    },
+
+    // TODO: add these
+    "protein_change": { type: String, optional: true },
+    "mutation_type": { type: String, label: "SNP, MNP, INS, DEL, or COMPLEX", optional: true }, // mutation type
+    "mutation_impact_assessor": { type: String },
+    "mutation_impact": { type: String, optional: true },
+    "mutation_impact_score": { type: Number, optional: true },
+
+    "functional_class": { type: String, label: "MISSENSE, NONSENSE, or SILENT",optional: true },
+    "read_depth": { type: Number, label: "Total read depth for all samples", optional:true }, // TODO: from DP (in fake switch statement)
+    "genotype": { type: String, optional: true },
 
     // BELOW: other fields we will likely add
     // these fields are not yet handled by the parser
 
-    "protein_change": { type: String, optional: true },
-
-    "MA_FImpact": { type: String, optional: true },
-    "MA_FIS": { type: Number, optional: true },
     "allele_count": { type: Number, label: "Allele count in genotypes, for each ALT allele, in the same order as listed", optional:true },
     "allele_frequency": { type: Number, decimal:true, label: "Allele frequency, for each ALT allele, in the same order as listed", optional:true },
     "allele_number": { type: Number, label: "Number of unique alleles across all samples", optional:true },
     "base_quality": { type: Number, decimal:true, label: "Overall average base quality", optional:true },
-    "read_depth": { type: Number, label: "Total read depth for all samples", optional:true }, // TODO: from DP (in fake switch statement)
+
     // "genotype": { type: String } // GT string
     // "genotype_quality" // GQ string
     // "alternative_allele_observation" // AO  number
@@ -368,7 +369,6 @@ var geneExpressionSchema = new SimpleSchema([
   studyAndCollaboration,
   {
     "gene_label": { type: String },
-    "study_label": { type: String },
     "sample_label": { type: String },
     "normalization": {
       type: String,
@@ -379,7 +379,6 @@ var geneExpressionSchema = new SimpleSchema([
 ]);
 geneExpressionSchema.fieldOrder = [
   "gene_label",
-  "study_label",
   "sample_label",
   "normalization",
   "value",
@@ -474,3 +473,6 @@ SuperpathwayInteractions.attachSchema(superpathwayInteractionSchema);
 
 Jobs = new Meteor.Collection("jobs");
 Jobs.attachSchema(jobSchema);
+
+Studies = new Meteor.Collection("studies");
+Collaborations = new Meteor.Collection("collaboration");

@@ -19,8 +19,10 @@ Package.onUse(function(api) {
   api.addFiles('primary_collections.js');
 
   // symbol exports
-  api.export('Patients');
   api.export('Studies');
+  api.export('Collaborations');
+
+  api.export('Patients');
   api.export('Signatures');
   api.export('CohortSignatures');
   api.export('Mutations');
