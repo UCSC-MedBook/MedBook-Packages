@@ -385,6 +385,36 @@ var geneExpressionSummarySchema = new SimpleSchema({
   "variance": { type: Number, decimal: true },
 });
 
+
+var jobSchema = new SimpleSchema({
+  "name": { type: String },
+  "date_created": { type: Date },
+  "date_modified": {
+    type: Date,
+    autoValue: function () {
+      if (this.isSet) {
+        return;
+      }
+      return new Date();
+    },
+  },
+  "args": {
+    type: Object,
+    blackbox: true,
+  },
+  "status": {
+    type: String,
+    allowedValues: [
+      "waiting",
+      "running",
+      "done",
+    ],
+    defaultValue: "waiting",
+  },
+  // errors
+  //"result": { type:  }
+});
+
 //
 // declare the collections
 //
@@ -428,3 +458,10 @@ SuperpathwayElements.attachSchema(superpathwayElementSchema);
 
 SuperpathwayInteractions = new Meteor.Collection("superpathway_interactions");
 SuperpathwayInteractions.attachSchema(superpathwayInteractionSchema);
+
+/*
+** not really data
+*/
+
+Jobs = new Meteor.Collection("jobs");
+Jobs.attachSchema(jobSchema);

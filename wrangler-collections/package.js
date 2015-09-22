@@ -29,7 +29,6 @@ Package.onUse(function(api) {
   api.export('getCollectionByName');
 
   api.export('BlobStore', 'server');
-  api.export('Jobs', 'server');
 });
 
 Package.onTest(function(api) {

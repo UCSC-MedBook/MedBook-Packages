@@ -35,8 +35,8 @@ WranglerFiles = new Meteor.Collection("wrangler_files");
 WranglerFiles.attachSchema(new SimpleSchema({
   "submission_id": { type: Meteor.ObjectID },
   "user_id": { type: Meteor.ObjectID },
-  "file_id": { type: Meteor.ObjectID },
-  "file_name": { type: String },
+  "blob_id": { type: Meteor.ObjectID },
+  "blob_name": { type: String },
   "status": {
     type: String,
     allowedValues: [
@@ -84,26 +84,7 @@ WranglerDocuments.attachSchema(new SimpleSchema({
   "inserted_into_database": { type: Boolean, optional: true },
 }));
 
-Jobs = new Meteor.Collection("jobs");
-Jobs.attachSchema(new SimpleSchema({
-  "name": { type: String },
-  "date_created": { type: Date },
-  "args": {
-    type: Object,
-    blackbox: true,
-  },
-  "status": {
-    type: String,
-    allowedValues: [
-      "waiting",
-      "running",
-      "done",
-    ],
-    defaultValue: "waiting",
-  },
-  // errors
-  //"result": { type:  }
-}));
+
 
 BlobStore = new FS.Store.GridFS("blobs", {
   beforeWrite: function (fileObject) {
