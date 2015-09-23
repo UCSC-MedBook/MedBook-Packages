@@ -257,7 +257,7 @@ var mutationSchema = new SimpleSchema([
     // required fields
     "gene_label": { type: String },
     "sample_label": { type: String },
-    "mutation_type": { type: String }, // variant_classification for us
+
     "chromosome": { type: String },
     "effect_impact": { type: String },
 
@@ -281,7 +281,7 @@ var mutationSchema = new SimpleSchema([
 
     // TODO: add these
     "protein_change": { type: String, optional: true },
-    "mutation_type": { type: String, label: "SNP, MNP, INS, DEL, or COMPLEX", optional: true }, // mutation type
+    "mutation_type": { type: String, label: "SNP, MNP, INS, DEL, or COMPLEX" },
     "mutation_impact_assessor": { type: String },
     "mutation_impact": { type: String, optional: true },
     "mutation_impact_score": { type: Number, optional: true },
