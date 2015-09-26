@@ -31,6 +31,55 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
   },
 }));
 
+// does a pick and then adds { optional: true} to it
+var fileTypeSlugsAndNames = [
+  { "slug": "mutation_vcf", "name": "Mutation VCF" },
+  { "slug": "superpathway_interactions", "name": "Superpathway interactions" },
+  { "slug": "superpathway_elements", "name": "Superpathway element definitions" },
+  { "slug": "gene_expression", "name": "Gene expression" },
+  { "slug": "rectangular_gene_expression", "name": "Rectangular gene expression" },
+  { "slug": "compressed_tar_gz", "name": "Compressed (.tar.gz)" },
+  { "slug": "error" }, // intentionally doesn't have a name
+];
+function makePickOptional(collection, schemaAttribute) {
+  var schemaObject = {};
+  schemaObject[schemaAttribute] = _.extend(collection
+          .simpleSchema()
+          .pick(schemaAttribute) // so it doesn't set on the original
+          .schema()[schemaAttribute],
+      {
+        custom: function () {
+          if (!this.value && 
+              (this.field("file_type").value === "gene_expression" ||
+                this.field("file_type").value ===
+                    "rectangular_gene_expression")) {
+            return "required";
+          }
+        },
+        optional: true,
+      });
+  return new SimpleSchema(schemaObject);
+}
+wranglerFileOptions = new SimpleSchema([
+  {
+    "file_type": {
+      type: String,
+      allowedValues: _.pluck(fileTypeSlugsAndNames, "slug"),
+      autoform: {
+        options: _.filter(_.map(fileTypeSlugsAndNames, function (value) {
+          if (value.name) {
+            return { label: value.name, value: value.slug };
+          }
+          // return undefined
+        }), function (value) {
+          return value !== undefined;
+        }),
+      },
+      optional: true,
+    },
+  },
+  makePickOptional(GeneExpression, "normalization"),
+]);
 WranglerFiles = new Meteor.Collection("wrangler_files");
 WranglerFiles.attachSchema(new SimpleSchema({
   "submission_id": { type: Meteor.ObjectID },
@@ -47,14 +96,9 @@ WranglerFiles.attachSchema(new SimpleSchema({
       "error",
     ],
   },
-  "manual_file_type": {
-    type: String,
-    allowedValues: [
-      "mutation",
-      "superpathway_interactions",
-      "superpathway_elements",
-    ],
-    optional: true
+  "options": {
+    type: wranglerFileOptions,
+    optional: true,
   },
   "error_description": { type: String, optional: true },
 
@@ -144,8 +188,6 @@ function makePermissions (collection) {
           submission.user_id === userId;
     },
     update: function (userId, doc, fields, modifier) {
-      console.log("check if it's the whole document:");
-      console.log("doc:", doc);
       var wholeDoc = collection.findOne(doc._id);
       var submission = WranglerSubmissions.findOne(wholeDoc.submission_id);
 

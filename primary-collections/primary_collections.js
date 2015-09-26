@@ -352,17 +352,14 @@ mutationSchema.fieldOrder = [
   "chromosome",
   "start_position",
   "end_position",
-
-  "biological_source",
-  "mutation_impact_assessor",
 ];
 
-var allowedNormalizations = [
-  "raw_counts",
-  "counts",
-  "fpkm",
-  "tpm",
-  "rsem_quan_log2",
+var normalizationSlugsAndNames = [
+  { "value": "raw_counts", "label": "raw counts" },
+  { "value": "counts", "label": "counts" },
+  { "value": "fpkm", "label": "FPKM" },
+  { "value": "tpm", "label": "TPM" },
+  { "value": "rsem_quan_log2", "label": "RSEM log(2)" },
 ];
 
 var geneExpressionSchema = new SimpleSchema([
@@ -372,7 +369,10 @@ var geneExpressionSchema = new SimpleSchema([
     "sample_label": { type: String },
     "normalization": {
       type: String,
-      allowedValues: allowedNormalizations,
+      allowedValues: _.pluck(normalizationSlugsAndNames, "value"),
+      autoform: {
+        options: normalizationSlugsAndNames,
+      },
     },
     "value": { type: Number, decimal: true },
   }
@@ -392,16 +392,16 @@ var geneExpressionSummarySchema = new SimpleSchema([
     "study_label": { type: String },
     "normalization": {
       type: String,
-      allowedValues: allowedNormalizations,
+      allowedValues: _.pluck(normalizationSlugsAndNames, "value"),
     },
     "mean": { type: Number, decimal: true },
     "variance": { type: Number, decimal: true },
   }
 ]);
 
-
 var jobSchema = new SimpleSchema({
   "name": { type: String },
+  "user_id": { type: Meteor.ObjectID },
   "date_created": { type: Date },
   "date_modified": {
     type: Date,
@@ -422,11 +422,14 @@ var jobSchema = new SimpleSchema({
       "waiting",
       "running",
       "done",
+      "error",
     ],
     defaultValue: "waiting",
   },
-  // errors
-  //"result": { type:  }
+  "retry_count": { type: Number, defaultValue: 0 },
+  // can be set even if status is not "error"
+  "error_description": { type: String, optional: true },
+  "prerequisite_job_id": { type: Meteor.ObjectID, optional: true },
 });
 
 //

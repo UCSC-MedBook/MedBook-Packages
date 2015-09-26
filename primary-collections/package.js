@@ -13,8 +13,10 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
+  api.use('aldeed:autoform@5.5.0');
   api.use('aldeed:simple-schema@1.3.3');
   api.use('aldeed:collection2@2.3.3');
+  api.use('underscore');
 
   api.addFiles('primary_collections.js');
 
