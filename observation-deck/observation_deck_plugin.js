@@ -4562,6 +4562,8 @@ var utils = utils || {};
             var g = 169;
             var b = 169;
 
+            var exponent = 1 / 2;
+
             var v = parseFloat(val);
 
             if ((v == null) || (v != v)) {
@@ -4576,7 +4578,7 @@ var utils = utils || {};
                     a = (v - centerV) / (maxPosV - centerV);
                     a = Math.abs(a);
                     if (log) {
-                        a = Math.log(a);
+                        a = Math.pow(a, exponent);
                     }
                 }
             } else if (v < centerV) {
@@ -4589,7 +4591,7 @@ var utils = utils || {};
                     a = (v - centerV) / (minNegV - centerV);
                     a = Math.abs(a);
                     if (log) {
-                        a = Math.log(a);
+                        a = Math.pow(a, exponent);
                     }
                 }
             } else {
@@ -6004,8 +6006,7 @@ var eventData = eventData || {};
         /**
          * for checking if some samples have differential expression
          */
-        this.eventwiseMedianRescaling = function() {
-            // TODO
+        this.eventwiseMedianRescaling_old = function() {
             console.log('eventwiseMedianRescaling');
 
             // get expression events
@@ -6055,6 +6056,66 @@ var eventData = eventData || {};
             result['minVal'] = jStat.min(allAdjustedVals);
 
             return result;
+        };
+
+        this.eventwiseMedianRescaling_events = function(eventIds) {
+            // compute average val each gene
+            var stats = {};
+            var result = {
+                'stats' : stats
+            };
+
+            var allAdjustedVals = [];
+
+            _.each(eventIds, function(eventId) {
+                // get stats
+                var eventObj = this.getEvent(eventId);
+                var eventStats = this.getEvent(eventId).data.getStats();
+                stats[eventId] = {};
+                stats[eventId] = eventStats;
+
+                // finally iter over all samples to adjust score
+                var allEventData = this.getEvent(eventId).data.getData();
+
+                _.each(allEventData, function(data) {
+                    if (utils.hasOwnProperty(data, 'val_orig')) {
+                        data['val'] = data['val_orig'];
+                    }
+                    var val = data['val'];
+                    data['val_orig'] = val;
+                    if (utils.isNumerical(val)) {
+                        var newVal = (val - stats[eventId]['median']);
+                        data['val'] = newVal;
+                        allAdjustedVals.push(data['val']);
+                    }
+                });
+            }, this);
+
+            // find min/max of entire matrix
+            result['maxVal'] = jStat.max(allAdjustedVals);
+            result['minVal'] = jStat.min(allAdjustedVals);
+
+            return result;
+        };
+
+        /**
+         * for checking if some samples have differential expression
+         */
+        this.eventwiseMedianRescaling = function(datatypesToRescale) {
+            console.log('eventwiseMedianRescaling');
+            // get expression events
+            var allEventIds = this.getEventIdsByType();
+            var datatypesToRescale = datatypesToRescale || _.keys(allEventIds);
+            var result = {};
+            _.each(datatypesToRescale, function(eventType) {
+                console.log("eventType", eventType);
+                var eventIds = allEventIds[eventType];
+                if (this.getEvent(eventIds[0]).metadata.allowedValues === "numeric") {
+                    var datatypeResult = this.eventwiseMedianRescaling_events(eventIds);
+                    result[eventType] = datatypeResult;
+                }
+            }, this);
+            return result["expression data"];
         };
 
         /**
@@ -6879,7 +6940,7 @@ var medbookDataLoader = medbookDataLoader || {};
     };
 
     /**
-     *
+     * where the event is a gene
      */
     mdl.getGeneBySampleData = function(url, OD_eventAlbum, geneSuffix, datatype, allowedValues) {
         var response = utils.getResponse(url);
@@ -6962,6 +7023,34 @@ var medbookDataLoader = medbookDataLoader || {};
             }
         }
         return eventObj;
+    };
+
+    /**
+     * Load a matrix of signature data from a string.
+     */
+    mdl.genericMatrixData = function(matrixString, dataName, OD_eventAlbum, allowedValues) {
+        var parsedMatrix = d3.tsv.parse(matrixString);
+        // var allowedValues = "numeric";
+        var sanitizedDataName = dataName.replace(/ /, "_");
+
+        var returnFeatures = [];
+
+        _.each(parsedMatrix, function(row) {
+            var colNames = _.keys(row);
+            var featureKey = colNames.shift();
+            var feature = row[featureKey];
+            delete row[featureKey];
+
+            if (dataName === "clinical data") {
+                mdl.loadEventBySampleData(OD_eventAlbum, feature, "", "clinical data", "categoric", row);
+                returnFeatures.push(feature);
+            } else {
+                mdl.loadEventBySampleData(OD_eventAlbum, feature, "_" + sanitizedDataName, dataName, allowedValues, row);
+                returnFeatures = [dataName];
+            }
+            // mdl.loadEventBySampleData(OD_eventAlbum, feature, "_viper", "viper data", allowedValues, row);
+        });
+        return returnFeatures;
     };
 
     /**
@@ -8421,6 +8510,21 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                             }
                         }
                     },
+                    "pathway_context" : {
+                        "name" : "view pathway context",
+                        "icon" : null,
+                        "disabled" : function() {
+                            var pathway_context_viewable = ["expression data", "mutation call"];
+                            var disabled = (_.contains(pathway_context_viewable, datatype)) ? false : true;
+                            return disabled;
+                        },
+                        "callback" : function(key, opt) {
+                            var geneSymbol = eventId.replace(/_mRNA$/, "").replace(/_mutation$/, "");
+                            var url = "/PatientCare/geneReport/" + geneSymbol;
+                            console.log("linking out to", url, "for pathway context");
+                            window.open(url, "_patientCare");
+                        }
+                    },
                     "sep2" : "---------",
                     "reset" : createResetContextMenuItem(config)
                 };
@@ -8692,7 +8796,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     rescalingData = OD_eventAlbum.yuliaExpressionRescaling(rescalingSettings['eventId'], rescalingSettings['val']);
                 } else if (rescalingSettings['method'] === 'eventwiseMedianRescaling') {
                     // rescalingData = eventAlbum.zScoreExpressionRescaling();
-                    rescalingData = OD_eventAlbum.eventwiseMedianRescaling();
+                    rescalingData = OD_eventAlbum.eventwiseMedianRescaling(["expression data"]);
                 } else if (rescalingSettings['method'] === 'zScoreExpressionRescaling') {
                     rescalingData = OD_eventAlbum.zScoreExpressionRescaling();
                 } else if (rescalingSettings['method'] === 'samplewiseMedianRescaling') {
@@ -8701,7 +8805,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     // no rescaling
                 }
             } else if (utils.hasOwnProperty(groupedEvents, 'expression data')) {
-                rescalingData = OD_eventAlbum.eventwiseMedianRescaling();
+                rescalingData = OD_eventAlbum.eventwiseMedianRescaling(["expression data"]);
             } else {
                 console.log('no expression data rescaling');
             }
@@ -9226,6 +9330,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             });
 
             var types = attributes["val"];
+            // types.push("complex");
 
             // background of cell
             attributes["fill"] = "lightgrey";
