@@ -7920,6 +7920,19 @@ var utils = utils || {};
     };
 
     /**
+     * Get the object's attribute values in an array
+     */
+    u.getValues = function(obj) {
+        var vals = [];
+        var keys = u.getKeys(obj);
+        for (var i = 0, length = keys.length; i < length; i++) {
+            var val = obj[keys[i]];
+            vals.push(val);
+        }
+        return vals;
+    };
+
+    /**
      * Only unique and first instance of duplicated elements is returned. Ordering is preserved.
      */
     u.eliminateDuplicates = function(array) {
@@ -8228,6 +8241,8 @@ var utils = utils || {};
             var g = 169;
             var b = 169;
 
+            var exponent = 1 / 2;
+
             var v = parseFloat(val);
 
             if ((v == null) || (v != v)) {
@@ -8242,7 +8257,7 @@ var utils = utils || {};
                     a = (v - centerV) / (maxPosV - centerV);
                     a = Math.abs(a);
                     if (log) {
-                        a = Math.log(a);
+                        a = Math.pow(a, exponent);
                     }
                 }
             } else if (v < centerV) {
@@ -8255,7 +8270,7 @@ var utils = utils || {};
                     a = (v - centerV) / (minNegV - centerV);
                     a = Math.abs(a);
                     if (log) {
-                        a = Math.log(a);
+                        a = Math.pow(a, exponent);
                     }
                 }
             } else {
@@ -8951,81 +8966,16 @@ var utils = utils || {};
 
 var eventData = eventData || {};
 (function(ed) {"use strict";
-
-    // ed.eventHierarchyUrl = 'observation_deck/data/eventHierarchy.xml';
-
-    /**
-     * Get the elements with the specified eventType.  Returns a list of elements.
-     */
-    ed.getEventElems = function(jqXmlHierarchy, eventType) {
-        var eventElemList = [];
-        jqXmlHierarchy.find('event').each(function(index, value) {
-            var type = value.getAttribute('type');
-            if ((eventType === undefined) || (eventType === null)) {
-                eventElemList.push(value);
-            } else if (type === eventType) {
-                eventElemList.push(value);
-            }
-        });
-        return eventElemList;
-    };
-
-    /**
-     * Get the event types of an event's parent and children.
-     */
-    ed.getEventParentChildren = function(jqXmlHierarchy, eventType) {
-        var result = {};
-        result['parent'] = null;
-        result['children'] = [];
-
-        var eventElems = ed.getEventElems(jqXmlHierarchy, eventType);
-        $(eventElems).each(function(index, elem) {
-            if (elem.tagName !== 'event') {
-                return 'continue';
-            }
-            var parentElem = elem.parentNode;
-            result['parent'] = parentElem.getAttribute('type');
-
-            $(elem.children).each(function(index, elem) {
-                if (elem.tagName === 'event') {
-                    result['children'].push(elem.getAttribute('type'));
-                }
-            });
-        });
-        return result;
-    };
-
-    /**
-     * Find the path to the root of the hierarchy.
-     */
-    ed.tracebackToRoot = function(jqXmlHierarchy, eventType) {
-        var tracebacks = [];
-        var eventElems = ed.getEventElems(jqXmlHierarchy, eventType);
-        for (var i = 0; i < eventElems.length; i++) {
-            var eventElem = eventElems[i];
-            var traceback = [];
-            tracebacks.push(traceback);
-
-            var type = eventElem.getAttribute('type');
-            var parentType = ed.getEventParentChildren(jqXmlHierarchy, type)['parent'];
-            while ((parentType !== undefined) && (parentType !== null)) {
-                traceback.push(parentType);
-                parentType = ed.getEventParentChildren(jqXmlHierarchy, parentType)['parent'];
-            }
-        }
-        return tracebacks;
-    };
-
     ed.OD_eventAlbum = function() {
-        // TODO instead of writing XML parser, better to use jQuery XML DOM traversal due to better handling of browser differences
-        // var xmlStr = getResponse(eventHierarchyUrl);
-        // if (xmlStr === null) {
-        // alert('Could not load event hierarchy!');
-        // }
-        // // parse string for XML doc (javascript obj)
-        // xmlDoc = $.parseXML(xmlStr);
-        // // convert JS obj to jQ obj
-        // $xml = $(xmlDoc);
+        // ordinal score assignments to be saved in this object
+        this.ordinalScoring = {
+            "mutation impact" : {
+                "MIN" : -1,
+                "MODIFIER" : -0.3,
+                "MODERATE" : 1,
+                "HIGH" : 2
+            }
+        };
 
         this.album = {};
 
@@ -9250,6 +9200,7 @@ var eventData = eventData || {};
 
                 var key;
                 var val = score;
+                pEventId = pEventId.replace(/_mRNA$/, "");
                 if (eventId1 === pEventId) {
                     key = eventId2;
                 } else if (eventId2 === pEventId) {
@@ -9277,14 +9228,13 @@ var eventData = eventData || {};
 
         /**
          * Get pivot sorted events organized by datatype.
-         * If keepTails == true, then only keep top and bottom ranking events.
          */
-        this.getGroupedPivotSorts = function(pEventId, keepTails) {
+        this.getGroupedPivotSorts = function(pEventId) {
             console.log('getGroupedPivotSorts');
-            var pivotedDatatypes = ['expression data', 'expression signature'];
             var result = {};
 
             // Extract the gene symbols. They are without suffix.
+            pEventId = pEventId.replace(/_mRNA$/, "");
             var pivotSortedEventObjs = this.getPivotSortedEvents(pEventId);
             // console.log("pivotSortedEventObjs", utils.prettyJson(pivotSortedEventObjs));
             var pivotSortedEvents = [];
@@ -9295,15 +9245,10 @@ var eventData = eventData || {};
 
             // iterate through datatypes
             var groupedEvents = this.getEventIdsByType();
-            pivotedDatatypes = utils.getKeys(groupedEvents);
+            var pivotedDatatypes = utils.getKeys(groupedEvents);
             pivotedDatatypes = utils.removeA(pivotedDatatypes, "clinical data");
 
             for (var datatype in groupedEvents) {
-                // pivot sort events within datatype
-
-                // var suffix = this.datatypeSuffixMapping[datatype];
-                // suffix = (suffix == null) ? "" : suffix;
-
                 var orderedEvents = [];
 
                 // suffixed ids here
@@ -9316,31 +9261,18 @@ var eventData = eventData || {};
 
                 // add scored events in the datatype
                 for (var i = 0; i < pivotSortedEvents.length; i++) {
-                    // var eventId = pivotSortedEvents[i] + suffix;
                     var eventId = this.getSuffixedEventId(pivotSortedEvents[i], datatype);
                     if (utils.isObjInArray(unorderedEvents, eventId)) {
                         orderedEvents.push(eventId);
                     }
                 }
 
-                if (! utils.isObjInArray(pivotedDatatypes, datatype)) {
-                    // add the unscored events from the datatype group
-                    orderedEvents = orderedEvents.concat(unorderedEvents);
-                    orderedEvents = utils.eliminateDuplicates(orderedEvents);
-                }
+                // add the unscored events from the datatype group
+                // if (! utils.isObjInArray(pivotedDatatypes, datatype)) {
+                orderedEvents = orderedEvents.concat(unorderedEvents);
+                orderedEvents = utils.eliminateDuplicates(orderedEvents);
+                // }
 
-                // if ((keepTails) && (utils.isObjInArray(pivotedDatatypes, datatype))) {
-                // console.log('keepTails for', datatype);
-                // var size = 10;
-                // if (orderedEvents.length <= size) {
-                // // skip filter
-                // } else {
-                // // TODO filter for head and tail of list
-                // var head = orderedEvents.splice(0, size * 0.5);
-                // var tail = orderedEvents.splice(size * -0.5);
-                // orderedEvents = head.concat(tail);
-                // }
-                // }
                 result[datatype] = orderedEvents;
             }
             return result;
@@ -9365,124 +9297,6 @@ var eventData = eventData || {};
             }
 
             return allPivotScores;
-        };
-
-        /**
-         * Pivot sort results separated by absolute value of Pearson rho.
-         */
-        this.pivotSort_2 = function(pivotEvent, scoringAlgorithm) {
-            var pearsonScores = this.pivotSort(pivotEvent, jStat.corrcoeff);
-            var pearsonSigns = {};
-            for (var i = 0; i < pearsonScores.length; i++) {
-                var scoreObj = pearsonScores[i];
-                var eventId = scoreObj['event'];
-                var score = scoreObj['score'];
-                pearsonSigns[eventId] = (score < 0) ? -1 : 1;
-            }
-
-            var algScores = this.pivotSort(pivotEvent, scoringAlgorithm);
-            var posList = [];
-            var negList = [];
-            for (var i = 0; i < algScores.length; i++) {
-                var scoreObj = algScores[i];
-                var eventId = scoreObj['event'];
-                var score = scoreObj['score'];
-                if (pearsonSigns[eventId] < 0) {
-                    negList.push(scoreObj);
-                } else {
-                    posList.push(scoreObj);
-                }
-            }
-
-            // sort by scores
-            posList.sort(utils.sort_by('score'));
-            negList.sort(utils.sort_by('score'), true);
-
-            return posList.concat(negList);
-        };
-
-        /**
-         * Pivot sort returns array of objects with 'event' and 'score', sorted by score. Default scoring metric is pearson rho.
-         */
-        this.pivotSort = function(pivotEvent, scoringAlgorithm) {
-            console.log('eventAlbum.pivotSort:', pivotEvent);
-
-            // scoring algorithm
-            if ( typeof scoringAlgorithm === 'undefined') {
-                console.log('using default scoringAlgorithm, jStat.corrcoeff');
-                scoringAlgorithm = jStat.corrcoeff;
-            }
-
-            // get pivot event
-            var pEventObj = this.getEvent(pivotEvent);
-            if (pEventObj == null) {
-                console.log('eventObj not found for', pivotEvent);
-                return null;
-            }
-
-            var pSampleIds = pEventObj.data.getAllSampleIds();
-            var pNullSampleIds = pEventObj.data.getNullSamples();
-
-            // keep only IDs that appear less than 2 times
-            var pNonNullSampleIds = utils.keepReplicates(pSampleIds.concat(pNullSampleIds), 2, true);
-
-            // compute scores over events
-            var eventGroup = this.getEventIdsByType()[pEventObj.metadata.datatype];
-
-            var scores = [];
-            for (var i = 0; i < eventGroup.length; i++) {
-                var eventId = eventGroup[i];
-
-                var eventObj = this.getEvent(eventId);
-
-                // only consider samples where both events have a score
-                var eventAllSamples = eventObj.data.getAllSampleIds();
-                var eventNullSamples = eventObj.data.getNullSamples();
-                var eventNonNullSamples = utils.keepReplicates(eventAllSamples.concat(eventNullSamples), 2, true);
-
-                var commonNonNullSamples = utils.keepReplicates(eventNonNullSamples.concat(pNonNullSampleIds));
-
-                // ordering of samples is maintained as in the list parameter
-                var eventData1 = pEventObj.data.getData(commonNonNullSamples);
-                var eventData2 = eventObj.data.getData(commonNonNullSamples);
-
-                // skip if no comparable samples
-                if (eventData2.length > 0) {
-
-                } else {
-                    console.log('eventData2 is empty');
-                    continue;
-                }
-
-                // compute scores using original values
-                var vector1 = [];
-                var vector2 = [];
-
-                var propName1 = null;
-                if (propName1 == null) {
-                    propName1 = utils.hasOwnProperty(eventData1[0], 'val_orig') ? 'val_orig' : 'val';
-                }
-                var propName2 = null;
-                for (var j = 0; j < commonNonNullSamples.length; j++) {
-                    if (propName2 == null) {
-                        propName2 = utils.hasOwnProperty(eventData2[j], 'val_orig') ? 'val_orig' : 'val';
-                    }
-
-                    vector1.push(eventData1[j][propName1]);
-                    vector2.push(eventData2[j][propName2]);
-                }
-
-                var score = scoringAlgorithm(vector1, vector2);
-                scores.push({
-                    'event' : eventId,
-                    'score' : score
-                });
-            }
-
-            // sort score objects by 'score'
-            scores.sort(utils.sort_by('score'));
-
-            return scores;
         };
 
         /**
@@ -9873,8 +9687,7 @@ var eventData = eventData || {};
         /**
          * for checking if some samples have differential expression
          */
-        this.eventwiseMedianRescaling = function() {
-            // TODO
+        this.eventwiseMedianRescaling_old = function() {
             console.log('eventwiseMedianRescaling');
 
             // get expression events
@@ -9924,6 +9737,66 @@ var eventData = eventData || {};
             result['minVal'] = jStat.min(allAdjustedVals);
 
             return result;
+        };
+
+        this.eventwiseMedianRescaling_events = function(eventIds) {
+            // compute average val each gene
+            var stats = {};
+            var result = {
+                'stats' : stats
+            };
+
+            var allAdjustedVals = [];
+
+            _.each(eventIds, function(eventId) {
+                // get stats
+                var eventObj = this.getEvent(eventId);
+                var eventStats = this.getEvent(eventId).data.getStats();
+                stats[eventId] = {};
+                stats[eventId] = eventStats;
+
+                // finally iter over all samples to adjust score
+                var allEventData = this.getEvent(eventId).data.getData();
+
+                _.each(allEventData, function(data) {
+                    if (utils.hasOwnProperty(data, 'val_orig')) {
+                        data['val'] = data['val_orig'];
+                    }
+                    var val = data['val'];
+                    data['val_orig'] = val;
+                    if (utils.isNumerical(val)) {
+                        var newVal = (val - stats[eventId]['median']);
+                        data['val'] = newVal;
+                        allAdjustedVals.push(data['val']);
+                    }
+                });
+            }, this);
+
+            // find min/max of entire matrix
+            result['maxVal'] = jStat.max(allAdjustedVals);
+            result['minVal'] = jStat.min(allAdjustedVals);
+
+            return result;
+        };
+
+        /**
+         * for checking if some samples have differential expression
+         */
+        this.eventwiseMedianRescaling = function(datatypesToRescale) {
+            console.log('eventwiseMedianRescaling');
+            // get expression events
+            var allEventIds = this.getEventIdsByType();
+            var datatypesToRescale = datatypesToRescale || _.keys(allEventIds);
+            var result = {};
+            _.each(datatypesToRescale, function(eventType) {
+                console.log("eventType", eventType);
+                var eventIds = allEventIds[eventType];
+                if (this.getEvent(eventIds[0]).metadata.allowedValues === "numeric") {
+                    var datatypeResult = this.eventwiseMedianRescaling_events(eventIds);
+                    result[eventType] = datatypeResult;
+                }
+            }, this);
+            return result["expression data"];
         };
 
         /**
@@ -11240,7 +11113,7 @@ var medbookDataLoader = medbookDataLoader || {};
     };
 
     /**
-     *
+     * where the event is a gene
      */
     mdl.getGeneBySampleData = function(url, OD_eventAlbum, geneSuffix, datatype, allowedValues) {
         var response = utils.getResponse(url);
@@ -11326,6 +11199,34 @@ var medbookDataLoader = medbookDataLoader || {};
     };
 
     /**
+     * Load a matrix of signature data from a string.
+     */
+    mdl.genericMatrixData = function(matrixString, dataName, OD_eventAlbum, allowedValues) {
+        var parsedMatrix = d3.tsv.parse(matrixString);
+        // var allowedValues = "numeric";
+        var sanitizedDataName = dataName.replace(/ /, "_");
+
+        var returnFeatures = [];
+
+        _.each(parsedMatrix, function(row) {
+            var colNames = _.keys(row);
+            var featureKey = colNames.shift();
+            var feature = row[featureKey];
+            delete row[featureKey];
+
+            if (dataName === "clinical data") {
+                mdl.loadEventBySampleData(OD_eventAlbum, feature, "", "clinical data", "categoric", row);
+                returnFeatures.push(feature);
+            } else {
+                mdl.loadEventBySampleData(OD_eventAlbum, feature, "_" + sanitizedDataName, dataName, allowedValues, row);
+                returnFeatures = [dataName];
+            }
+            // mdl.loadEventBySampleData(OD_eventAlbum, feature, "_viper", "viper data", allowedValues, row);
+        });
+        return returnFeatures;
+    };
+
+    /**
      *
      */
     mdl.mongoViperSignaturesData = function(collection, OD_eventAlbum) {
@@ -11357,7 +11258,7 @@ var medbookDataLoader = medbookDataLoader || {};
             // add event if DNE
             if (eventObj == null) {
                 eventObj = mdl.loadEventBySampleData(OD_eventAlbum, gene_label, "_viper", 'viper data', 'numeric', sampleData);
-                } else {
+            } else {
                 eventObj.data.setData(sampleData);
             }
         }
@@ -11411,30 +11312,86 @@ var medbookDataLoader = medbookDataLoader || {};
         }
     };
 
+    /**
+     * data about mutation type
+     */
     mdl.mongoMutationData = function(collection, OD_eventAlbum) {
         // iter over doc ... each doc is a mutation call
+        var allowed_values = "mutation type";
+
+        var impactScoresMap = OD_eventAlbum.ordinalScoring[allowed_values];
+
         var mutByGene = {};
-        for (var i = 0, length = collection.length; i < length; i++) {
-            var doc = collection[i];
+        // for (var i = 0, length = collection.length; i < length; i++) {
+        _.each(collection, function(element) {
+            var doc = element;
 
             var variantCallData = {};
 
-            var sample = variantCallData["sample"] = doc["sample"];
-            var gene = variantCallData["gene"] = doc["Hugo_Symbol"];
-            variantCallData["mutType"] = doc["Variant_Classification"];
-            variantCallData["MA_FImpact"] = doc["MA_FImpact"];
-            variantCallData["MA_FIS"] = doc["MA_FIS"];
-            variantCallData["proteinChange"] = doc["MA_protein_change"];
+            var sample = doc["sample_label"];
+            var gene = doc["gene_label"];
+            var type = variantCallData["mutType"] = doc["mutation_type"];
+            // var impact = variantCallData["impact"] = doc["effect_impact"];
 
             if (! utils.hasOwnProperty(mutByGene, gene)) {
                 mutByGene[gene] = {};
             }
 
             if (! utils.hasOwnProperty(mutByGene[gene], sample)) {
-                mutByGene[gene][sample] = 0;
+                mutByGene[gene][sample] = [];
             }
 
-            mutByGene[gene][sample] = mutByGene[gene][sample] + 1;
+            var findResult = _.findWhere(mutByGene[gene][sample], type);
+            if (_.isUndefined(findResult)) {
+                mutByGene[gene][sample].push(type);
+            }
+        });
+        console.log("mutByGene", mutByGene);
+
+        // add to event album
+        var genes = utils.getKeys(mutByGene);
+        var suffix = "_mutation";
+        for (var i = 0, length = genes.length; i < length; i++) {
+            var gene = genes[i];
+            var sampleData = mutByGene[gene];
+            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', allowed_values, sampleData);
+        }
+
+        return null;
+    };
+
+    /**
+     * Data about mutation impact
+     */
+    mdl.mongoMutationData_impact = function(collection, OD_eventAlbum) {
+        // iter over doc ... each doc is a mutation call
+        var allowed_values = "mutation impact";
+
+        var impactScoresMap = OD_eventAlbum.ordinalScoring[allowed_values];
+        var mutByGene = {};
+        for (var i = 0, length = collection.length; i < length; i++) {
+            var doc = collection[i];
+
+            var sample = doc["sample_label"];
+            var gene = doc["gene_label"];
+            var type = doc["mutation_type"];
+            var impact = doc["effect_impact"];
+
+            if (! utils.hasOwnProperty(mutByGene, gene)) {
+                mutByGene[gene] = {};
+            }
+
+            // TODO score by greatest impact
+            if (! utils.hasOwnProperty(mutByGene[gene], sample)) {
+                mutByGene[gene][sample] = impact;
+            } else {
+                var recordedImpact = mutByGene[gene][sample];
+                if (impactScoresMap[impact] > impactScoresMap[recordedImpact]) {
+                    mutByGene[gene][sample] = impact;
+                } else {
+                    continue;
+                }
+            }
         }
 
         // add to event album
@@ -11443,7 +11400,7 @@ var medbookDataLoader = medbookDataLoader || {};
         for (var i = 0, length = genes.length; i < length; i++) {
             var gene = genes[i];
             var sampleData = mutByGene[gene];
-            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', 'numeric', sampleData);
+            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', allowed_values, sampleData);
         }
 
         return null;
@@ -11733,6 +11690,11 @@ var medbookDataLoader = medbookDataLoader || {};
                     // no suffix here, just the gene symbol
                     // newName = name + "_mRNA";
                     newName = name;
+                } else {
+                    newName = name;
+                }
+                if ( typeof newName === "undefined") {
+                    console.log("undefined name for", name, datatype, version);
                 }
                 return newName;
             };
@@ -11788,6 +11750,8 @@ var circleMapGenerator = {};
     };
 
     // constructor should take parameters: OD_eventData, cmgParams
+    // cmgParams includes ringsList and possibly centerScores
+    // centerScores is an object of feature:score where score is taken to be a 0-centered normalized score.
     cmg.circleMapGenerator = function(eventAlbum, cmgParams) {
         this.eventAlbum = eventAlbum.fillInMissingSamples();
         this.cmgParams = cmgParams;
@@ -11989,10 +11953,43 @@ var circleMapGenerator = {};
                 "feature" : feature
             });
 
-            // white center
+            // white palete
             circleMapGroup.appendChild(utils.createSvgCircleElement(0, 0, fullRadius, {
                 "fill" : "white"
             }));
+
+            // node centers
+            var fill;
+            if (_.isUndefined(this.cmgParams["centerScores"]) || (_.keys(this.cmgParams["centerScores"]).length == 0 )) {
+                // no node center
+            } else {
+                var centerScore = this.cmgParams["centerScores"][feature];
+                if (_.isUndefined(centerScore)) {
+                    // check if node center data exists
+                    fill = "grey";
+                } else {
+                    // color center
+                    fill = getHexColor(centerScore, -1, 1);
+                }
+                var centerCircleElem = utils.createSvgCircleElement(0, 0, ringThickness, {
+                    "fill" : fill
+                });
+                // additional interactive features
+                if (interactive) {
+                    // tooltip for node center
+                    if (_.isUndefined(centerScore)) {
+                        centerScore = "N/A";
+                    } else {
+                        // use centerScore
+                    }
+                    var titleText = "node center score for " + feature + ": " + centerScore;
+                    var titleElem = document.createElementNS(utils.svgNamespaceUri, "title");
+                    titleElem.innerHTML = titleText;
+                    centerCircleElem.appendChild(titleElem);
+                }
+
+                circleMapGroup.appendChild(centerCircleElem);
+            }
 
             var legendColorMapper;
 
@@ -12002,7 +11999,7 @@ var circleMapGenerator = {};
                 var dataName = null;
 
                 // find data name suffix at runtime
-                if ( ringName in this.eventAlbum.datatypeSuffixMapping) {
+                if ( ringName in this.eventAlbum.datatypeSuffixMapping && (this.eventAlbum.datatypeSuffixMapping[ringName] !== "")) {
                     dataName = feature + this.eventAlbum.datatypeSuffixMapping[ringName];
                 } else {
                     dataName = ringName;
@@ -12040,7 +12037,7 @@ var circleMapGenerator = {};
                     ringGroupElem.appendChild(pathElem);
 
                     // tooltip for arc
-                    var titleText = "no data";
+                    var titleText = "no " + ringName + " scores";
                     var titleElem = document.createElementNS(utils.svgNamespaceUri, "title");
                     titleElem.innerHTML = titleText;
                     pathElem.appendChild(titleElem);
@@ -12177,6 +12174,8 @@ var circleMapGenerator = {};
  * 7) graphData
  * 8) medbook_data_load
  * 9) circleMapGenerator
+ * 10) WebCola layout package <https://github.com/tgdwyer/WebCola>
+ * 11) underscore
  */
 
 // http://bl.ocks.org/mbostock/929623 shows a nice way to build a graph with intuitive controls.
@@ -12236,45 +12235,68 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
 
     cmGraph.build = function(config) {
         // graph data
-        var medbookGraphData = config["medbookGraphData"];
         var graphDataObj = new graphData.graphData();
-        graphDataObj.readMedbookGraphData(medbookGraphData);
+        if (config.hasOwnProperty("medbookGraphData")) {
+            var medbookGraphData = config["medbookGraphData"];
+            graphDataObj.readMedbookGraphData(medbookGraphData);
+        } else if (config.hasOwnProperty("sifGraphData")) {
+            var sifGraphData = config["sifGraphData"];
+            graphDataObj.readSif(sifGraphData);
+        }
 
         // event data
-        var eventAlbum = new eventData.OD_eventAlbum();
+        var eventAlbum;
+        if (utils.hasOwnProperty(config, "eventAlbum")) {
+            eventAlbum = config["eventAlbum"];
+        } else {
+            eventAlbum = new eventData.OD_eventAlbum();
+        }
 
-        // clnical data
-        // medbookDataLoader.getClinicalData('data/subtype.tab', eventAlbum);
+        // ring ordering
+        var ringsList;
+        if (utils.hasOwnProperty(config, "ringsList")) {
+            ringsList = config["ringsList"];
+        } else {
+            ringsList = [];
+        }
 
-        // medbookDataLoader.getExpressionData('data/expression.tab', eventAlbum);
-        // medbookDataLoader.getViperData('data/viper.tab', eventAlbum);
-
-        var ringsList = [];
+        // node center scores is a dict of nodeName:score
+        var centerScores;
+        if (utils.hasOwnProperty(config, "centerScores")) {
+            centerScores = config["centerScores"];
+            console.log("centerScores", centerScores);
+        } else {
+            centerScores = {};
+        }
 
         // expression data
         if (utils.hasOwnProperty(config, "medbookExprData")) {
             medbookDataLoader.mongoExpressionData(config["medbookExprData"], eventAlbum);
-            // eventAlbum.eventwiseMedianRescaling();
-            // eventAlbum.samplewiseMedianRescaling();
             ringsList.push("expression data");
         }
 
         // medbookViperSignaturesData
         if (utils.hasOwnProperty(config, "medbookViperSignaturesData")) {
             medbookDataLoader.mongoViperSignaturesData(config["medbookViperSignaturesData"], eventAlbum);
-            // eventAlbum.eventwiseMedianRescaling();
-            // eventAlbum.samplewiseMedianRescaling();
             ringsList.push("viper data");
         }
 
-        // circle map generator
+        // new circle map generator
         var cmg = new circleMapGenerator.circleMapGenerator(eventAlbum, {
             // "ringsList" : ["core_subtype", "expression data", 'viper data'],
             // "orderFeature" : ["expression data"]
-            "ringsList" : ringsList
+            "ringsList" : ringsList,
+            "centerScores" : centerScores
         });
 
-        cmGraph.buildCircleMapGraph(config["containerDiv"], graphDataObj, cmg, config["circleDataLoaded"]);
+        var circleDataLoaded;
+        if (ringsList.length < 1) {
+            circleDataLoaded = false;
+        } else {
+            circleDataLoaded = config["circleDataLoaded"];
+        }
+
+        cmGraph.buildCircleMapGraph(config["containerDiv"], graphDataObj, cmg, circleDataLoaded);
     };
 
     /**
@@ -12627,6 +12649,7 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
             return cmGraph.colorMapper(d.relation);
         });
 
+        // initial setting of decoration styles
         linkSelection.style('marker-end', function(d, i) {
             var type = d.relation;
             if (type === "component>") {
@@ -12665,6 +12688,8 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                 styles["marker-end"] = "url(#Triangle)";
             } else if (utils.beginsWith(relationType, "-") && utils.endsWith(relationType, "|")) {
                 styles["marker-end"] = "url(#Bar)";
+            } else if (utils.beginsWith(relationType, "component") && utils.endsWith(relationType, ">")) {
+                styles["marker-end"] = "url(#Circle)";
             }
             // stroke-dasharray
             if (utils.beginsWith(relationType, "-a")) {
@@ -12843,13 +12868,13 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
 
             // don't run the layout indefinitely
             // if (force.alpha() < maxAlpha) {
-                // console.log("stop layout with alpha=" + force.alpha());
-//
-                // d3.selectAll(".node").each(function(d, i) {
-                    // d.fixed = true;
-                // });
-//
-                // force.stop();
+            // console.log("stop layout with alpha=" + force.alpha());
+            //
+            // d3.selectAll(".node").each(function(d, i) {
+            // d.fixed = true;
+            // });
+            //
+            // force.stop();
             // }
         });
 

@@ -4241,6 +4241,19 @@ var utils = utils || {};
     };
 
     /**
+     * Get the object's attribute values in an array
+     */
+    u.getValues = function(obj) {
+        var vals = [];
+        var keys = u.getKeys(obj);
+        for (var i = 0, length = keys.length; i < length; i++) {
+            var val = obj[keys[i]];
+            vals.push(val);
+        }
+        return vals;
+    };
+
+    /**
      * Only unique and first instance of duplicated elements is returned. Ordering is preserved.
      */
     u.eliminateDuplicates = function(array) {
@@ -4549,6 +4562,8 @@ var utils = utils || {};
             var g = 169;
             var b = 169;
 
+            var exponent = 1 / 2;
+
             var v = parseFloat(val);
 
             if ((v == null) || (v != v)) {
@@ -4563,7 +4578,7 @@ var utils = utils || {};
                     a = (v - centerV) / (maxPosV - centerV);
                     a = Math.abs(a);
                     if (log) {
-                        a = Math.log(a);
+                        a = Math.pow(a, exponent);
                     }
                 }
             } else if (v < centerV) {
@@ -4576,7 +4591,7 @@ var utils = utils || {};
                     a = (v - centerV) / (minNegV - centerV);
                     a = Math.abs(a);
                     if (log) {
-                        a = Math.log(a);
+                        a = Math.pow(a, exponent);
                     }
                 }
             } else {
@@ -5270,81 +5285,16 @@ var utils = utils || {};
 
 var eventData = eventData || {};
 (function(ed) {"use strict";
-
-    // ed.eventHierarchyUrl = 'observation_deck/data/eventHierarchy.xml';
-
-    /**
-     * Get the elements with the specified eventType.  Returns a list of elements.
-     */
-    ed.getEventElems = function(jqXmlHierarchy, eventType) {
-        var eventElemList = [];
-        jqXmlHierarchy.find('event').each(function(index, value) {
-            var type = value.getAttribute('type');
-            if ((eventType === undefined) || (eventType === null)) {
-                eventElemList.push(value);
-            } else if (type === eventType) {
-                eventElemList.push(value);
-            }
-        });
-        return eventElemList;
-    };
-
-    /**
-     * Get the event types of an event's parent and children.
-     */
-    ed.getEventParentChildren = function(jqXmlHierarchy, eventType) {
-        var result = {};
-        result['parent'] = null;
-        result['children'] = [];
-
-        var eventElems = ed.getEventElems(jqXmlHierarchy, eventType);
-        $(eventElems).each(function(index, elem) {
-            if (elem.tagName !== 'event') {
-                return 'continue';
-            }
-            var parentElem = elem.parentNode;
-            result['parent'] = parentElem.getAttribute('type');
-
-            $(elem.children).each(function(index, elem) {
-                if (elem.tagName === 'event') {
-                    result['children'].push(elem.getAttribute('type'));
-                }
-            });
-        });
-        return result;
-    };
-
-    /**
-     * Find the path to the root of the hierarchy.
-     */
-    ed.tracebackToRoot = function(jqXmlHierarchy, eventType) {
-        var tracebacks = [];
-        var eventElems = ed.getEventElems(jqXmlHierarchy, eventType);
-        for (var i = 0; i < eventElems.length; i++) {
-            var eventElem = eventElems[i];
-            var traceback = [];
-            tracebacks.push(traceback);
-
-            var type = eventElem.getAttribute('type');
-            var parentType = ed.getEventParentChildren(jqXmlHierarchy, type)['parent'];
-            while ((parentType !== undefined) && (parentType !== null)) {
-                traceback.push(parentType);
-                parentType = ed.getEventParentChildren(jqXmlHierarchy, parentType)['parent'];
-            }
-        }
-        return tracebacks;
-    };
-
     ed.OD_eventAlbum = function() {
-        // TODO instead of writing XML parser, better to use jQuery XML DOM traversal due to better handling of browser differences
-        // var xmlStr = getResponse(eventHierarchyUrl);
-        // if (xmlStr === null) {
-        // alert('Could not load event hierarchy!');
-        // }
-        // // parse string for XML doc (javascript obj)
-        // xmlDoc = $.parseXML(xmlStr);
-        // // convert JS obj to jQ obj
-        // $xml = $(xmlDoc);
+        // ordinal score assignments to be saved in this object
+        this.ordinalScoring = {
+            "mutation impact" : {
+                "MIN" : -1,
+                "MODIFIER" : -0.3,
+                "MODERATE" : 1,
+                "HIGH" : 2
+            }
+        };
 
         this.album = {};
 
@@ -5666,124 +5616,6 @@ var eventData = eventData || {};
             }
 
             return allPivotScores;
-        };
-
-        /**
-         * Pivot sort results separated by absolute value of Pearson rho.
-         */
-        this.pivotSort_2 = function(pivotEvent, scoringAlgorithm) {
-            var pearsonScores = this.pivotSort(pivotEvent, jStat.corrcoeff);
-            var pearsonSigns = {};
-            for (var i = 0; i < pearsonScores.length; i++) {
-                var scoreObj = pearsonScores[i];
-                var eventId = scoreObj['event'];
-                var score = scoreObj['score'];
-                pearsonSigns[eventId] = (score < 0) ? -1 : 1;
-            }
-
-            var algScores = this.pivotSort(pivotEvent, scoringAlgorithm);
-            var posList = [];
-            var negList = [];
-            for (var i = 0; i < algScores.length; i++) {
-                var scoreObj = algScores[i];
-                var eventId = scoreObj['event'];
-                var score = scoreObj['score'];
-                if (pearsonSigns[eventId] < 0) {
-                    negList.push(scoreObj);
-                } else {
-                    posList.push(scoreObj);
-                }
-            }
-
-            // sort by scores
-            posList.sort(utils.sort_by('score'));
-            negList.sort(utils.sort_by('score'), true);
-
-            return posList.concat(negList);
-        };
-
-        /**
-         * Pivot sort returns array of objects with 'event' and 'score', sorted by score. Default scoring metric is pearson rho.
-         */
-        this.pivotSort = function(pivotEvent, scoringAlgorithm) {
-            console.log('eventAlbum.pivotSort:', pivotEvent);
-
-            // scoring algorithm
-            if ( typeof scoringAlgorithm === 'undefined') {
-                console.log('using default scoringAlgorithm, jStat.corrcoeff');
-                scoringAlgorithm = jStat.corrcoeff;
-            }
-
-            // get pivot event
-            var pEventObj = this.getEvent(pivotEvent);
-            if (pEventObj == null) {
-                console.log('eventObj not found for', pivotEvent);
-                return null;
-            }
-
-            var pSampleIds = pEventObj.data.getAllSampleIds();
-            var pNullSampleIds = pEventObj.data.getNullSamples();
-
-            // keep only IDs that appear less than 2 times
-            var pNonNullSampleIds = utils.keepReplicates(pSampleIds.concat(pNullSampleIds), 2, true);
-
-            // compute scores over events
-            var eventGroup = this.getEventIdsByType()[pEventObj.metadata.datatype];
-
-            var scores = [];
-            for (var i = 0; i < eventGroup.length; i++) {
-                var eventId = eventGroup[i];
-
-                var eventObj = this.getEvent(eventId);
-
-                // only consider samples where both events have a score
-                var eventAllSamples = eventObj.data.getAllSampleIds();
-                var eventNullSamples = eventObj.data.getNullSamples();
-                var eventNonNullSamples = utils.keepReplicates(eventAllSamples.concat(eventNullSamples), 2, true);
-
-                var commonNonNullSamples = utils.keepReplicates(eventNonNullSamples.concat(pNonNullSampleIds));
-
-                // ordering of samples is maintained as in the list parameter
-                var eventData1 = pEventObj.data.getData(commonNonNullSamples);
-                var eventData2 = eventObj.data.getData(commonNonNullSamples);
-
-                // skip if no comparable samples
-                if (eventData2.length > 0) {
-
-                } else {
-                    console.log('eventData2 is empty');
-                    continue;
-                }
-
-                // compute scores using original values
-                var vector1 = [];
-                var vector2 = [];
-
-                var propName1 = null;
-                if (propName1 == null) {
-                    propName1 = utils.hasOwnProperty(eventData1[0], 'val_orig') ? 'val_orig' : 'val';
-                }
-                var propName2 = null;
-                for (var j = 0; j < commonNonNullSamples.length; j++) {
-                    if (propName2 == null) {
-                        propName2 = utils.hasOwnProperty(eventData2[j], 'val_orig') ? 'val_orig' : 'val';
-                    }
-
-                    vector1.push(eventData1[j][propName1]);
-                    vector2.push(eventData2[j][propName2]);
-                }
-
-                var score = scoringAlgorithm(vector1, vector2);
-                scores.push({
-                    'event' : eventId,
-                    'score' : score
-                });
-            }
-
-            // sort score objects by 'score'
-            scores.sort(utils.sort_by('score'));
-
-            return scores;
         };
 
         /**
@@ -6174,8 +6006,7 @@ var eventData = eventData || {};
         /**
          * for checking if some samples have differential expression
          */
-        this.eventwiseMedianRescaling = function() {
-            // TODO
+        this.eventwiseMedianRescaling_old = function() {
             console.log('eventwiseMedianRescaling');
 
             // get expression events
@@ -6225,6 +6056,66 @@ var eventData = eventData || {};
             result['minVal'] = jStat.min(allAdjustedVals);
 
             return result;
+        };
+
+        this.eventwiseMedianRescaling_events = function(eventIds) {
+            // compute average val each gene
+            var stats = {};
+            var result = {
+                'stats' : stats
+            };
+
+            var allAdjustedVals = [];
+
+            _.each(eventIds, function(eventId) {
+                // get stats
+                var eventObj = this.getEvent(eventId);
+                var eventStats = this.getEvent(eventId).data.getStats();
+                stats[eventId] = {};
+                stats[eventId] = eventStats;
+
+                // finally iter over all samples to adjust score
+                var allEventData = this.getEvent(eventId).data.getData();
+
+                _.each(allEventData, function(data) {
+                    if (utils.hasOwnProperty(data, 'val_orig')) {
+                        data['val'] = data['val_orig'];
+                    }
+                    var val = data['val'];
+                    data['val_orig'] = val;
+                    if (utils.isNumerical(val)) {
+                        var newVal = (val - stats[eventId]['median']);
+                        data['val'] = newVal;
+                        allAdjustedVals.push(data['val']);
+                    }
+                });
+            }, this);
+
+            // find min/max of entire matrix
+            result['maxVal'] = jStat.max(allAdjustedVals);
+            result['minVal'] = jStat.min(allAdjustedVals);
+
+            return result;
+        };
+
+        /**
+         * for checking if some samples have differential expression
+         */
+        this.eventwiseMedianRescaling = function(datatypesToRescale) {
+            console.log('eventwiseMedianRescaling');
+            // get expression events
+            var allEventIds = this.getEventIdsByType();
+            var datatypesToRescale = datatypesToRescale || _.keys(allEventIds);
+            var result = {};
+            _.each(datatypesToRescale, function(eventType) {
+                console.log("eventType", eventType);
+                var eventIds = allEventIds[eventType];
+                if (this.getEvent(eventIds[0]).metadata.allowedValues === "numeric") {
+                    var datatypeResult = this.eventwiseMedianRescaling_events(eventIds);
+                    result[eventType] = datatypeResult;
+                }
+            }, this);
+            return result["expression data"];
         };
 
         /**
@@ -7049,7 +6940,7 @@ var medbookDataLoader = medbookDataLoader || {};
     };
 
     /**
-     *
+     * where the event is a gene
      */
     mdl.getGeneBySampleData = function(url, OD_eventAlbum, geneSuffix, datatype, allowedValues) {
         var response = utils.getResponse(url);
@@ -7132,6 +7023,34 @@ var medbookDataLoader = medbookDataLoader || {};
             }
         }
         return eventObj;
+    };
+
+    /**
+     * Load a matrix of signature data from a string.
+     */
+    mdl.genericMatrixData = function(matrixString, dataName, OD_eventAlbum, allowedValues) {
+        var parsedMatrix = d3.tsv.parse(matrixString);
+        // var allowedValues = "numeric";
+        var sanitizedDataName = dataName.replace(/ /, "_");
+
+        var returnFeatures = [];
+
+        _.each(parsedMatrix, function(row) {
+            var colNames = _.keys(row);
+            var featureKey = colNames.shift();
+            var feature = row[featureKey];
+            delete row[featureKey];
+
+            if (dataName === "clinical data") {
+                mdl.loadEventBySampleData(OD_eventAlbum, feature, "", "clinical data", "categoric", row);
+                returnFeatures.push(feature);
+            } else {
+                mdl.loadEventBySampleData(OD_eventAlbum, feature, "_" + sanitizedDataName, dataName, allowedValues, row);
+                returnFeatures = [dataName];
+            }
+            // mdl.loadEventBySampleData(OD_eventAlbum, feature, "_viper", "viper data", allowedValues, row);
+        });
+        return returnFeatures;
     };
 
     /**
@@ -7220,30 +7139,86 @@ var medbookDataLoader = medbookDataLoader || {};
         }
     };
 
+    /**
+     * data about mutation type
+     */
     mdl.mongoMutationData = function(collection, OD_eventAlbum) {
         // iter over doc ... each doc is a mutation call
+        var allowed_values = "mutation type";
+
+        var impactScoresMap = OD_eventAlbum.ordinalScoring[allowed_values];
+
         var mutByGene = {};
-        for (var i = 0, length = collection.length; i < length; i++) {
-            var doc = collection[i];
+        // for (var i = 0, length = collection.length; i < length; i++) {
+        _.each(collection, function(element) {
+            var doc = element;
 
             var variantCallData = {};
 
-            var sample = variantCallData["sample"] = doc["sample"];
-            var gene = variantCallData["gene"] = doc["Hugo_Symbol"];
-            variantCallData["mutType"] = doc["Variant_Classification"];
-            variantCallData["MA_FImpact"] = doc["MA_FImpact"];
-            variantCallData["MA_FIS"] = doc["MA_FIS"];
-            variantCallData["proteinChange"] = doc["MA_protein_change"];
+            var sample = doc["sample_label"];
+            var gene = doc["gene_label"];
+            var type = variantCallData["mutType"] = doc["mutation_type"];
+            // var impact = variantCallData["impact"] = doc["effect_impact"];
 
             if (! utils.hasOwnProperty(mutByGene, gene)) {
                 mutByGene[gene] = {};
             }
 
             if (! utils.hasOwnProperty(mutByGene[gene], sample)) {
-                mutByGene[gene][sample] = 0;
+                mutByGene[gene][sample] = [];
             }
 
-            mutByGene[gene][sample] = mutByGene[gene][sample] + 1;
+            var findResult = _.findWhere(mutByGene[gene][sample], type);
+            if (_.isUndefined(findResult)) {
+                mutByGene[gene][sample].push(type);
+            }
+        });
+        console.log("mutByGene", mutByGene);
+
+        // add to event album
+        var genes = utils.getKeys(mutByGene);
+        var suffix = "_mutation";
+        for (var i = 0, length = genes.length; i < length; i++) {
+            var gene = genes[i];
+            var sampleData = mutByGene[gene];
+            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', allowed_values, sampleData);
+        }
+
+        return null;
+    };
+
+    /**
+     * Data about mutation impact
+     */
+    mdl.mongoMutationData_impact = function(collection, OD_eventAlbum) {
+        // iter over doc ... each doc is a mutation call
+        var allowed_values = "mutation impact";
+
+        var impactScoresMap = OD_eventAlbum.ordinalScoring[allowed_values];
+        var mutByGene = {};
+        for (var i = 0, length = collection.length; i < length; i++) {
+            var doc = collection[i];
+
+            var sample = doc["sample_label"];
+            var gene = doc["gene_label"];
+            var type = doc["mutation_type"];
+            var impact = doc["effect_impact"];
+
+            if (! utils.hasOwnProperty(mutByGene, gene)) {
+                mutByGene[gene] = {};
+            }
+
+            // TODO score by greatest impact
+            if (! utils.hasOwnProperty(mutByGene[gene], sample)) {
+                mutByGene[gene][sample] = impact;
+            } else {
+                var recordedImpact = mutByGene[gene][sample];
+                if (impactScoresMap[impact] > impactScoresMap[recordedImpact]) {
+                    mutByGene[gene][sample] = impact;
+                } else {
+                    continue;
+                }
+            }
         }
 
         // add to event album
@@ -7252,7 +7227,7 @@ var medbookDataLoader = medbookDataLoader || {};
         for (var i = 0, length = genes.length; i < length; i++) {
             var gene = genes[i];
             var sampleData = mutByGene[gene];
-            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', 'numeric', sampleData);
+            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', allowed_values, sampleData);
         }
 
         return null;
@@ -7920,7 +7895,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
     var setupContextMenus = function(config) {
         // config['querySettings']
         // first destroy old contextMenus
-        var selectors = ['.typeLabel', '.colLabel', '.rowLabel', '.mrna_exp', '.categoric'];
+        var selectors = ['.typeLabel', '.colLabel', '.rowLabel', '.mrna_exp', '.categoric', ".signature"];
         for (var i = 0; i < selectors.length; i++) {
             var selector = selectors[i];
             $.contextMenu('destroy', selector);
@@ -8535,6 +8510,21 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                             }
                         }
                     },
+                    "pathway_context" : {
+                        "name" : "view pathway context",
+                        "icon" : null,
+                        "disabled" : function() {
+                            var pathway_context_viewable = ["expression data", "mutation call"];
+                            var disabled = (_.contains(pathway_context_viewable, datatype)) ? false : true;
+                            return disabled;
+                        },
+                        "callback" : function(key, opt) {
+                            var geneSymbol = eventId.replace(/_mRNA$/, "").replace(/_mutation$/, "");
+                            var url = "/PatientCare/geneReport/" + geneSymbol;
+                            console.log("linking out to", url, "for pathway context");
+                            window.open(url, "_patientCare");
+                        }
+                    },
                     "sep2" : "---------",
                     "reset" : createResetContextMenuItem(config)
                 };
@@ -8806,7 +8796,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     rescalingData = OD_eventAlbum.yuliaExpressionRescaling(rescalingSettings['eventId'], rescalingSettings['val']);
                 } else if (rescalingSettings['method'] === 'eventwiseMedianRescaling') {
                     // rescalingData = eventAlbum.zScoreExpressionRescaling();
-                    rescalingData = OD_eventAlbum.eventwiseMedianRescaling();
+                    rescalingData = OD_eventAlbum.eventwiseMedianRescaling(["expression data"]);
                 } else if (rescalingSettings['method'] === 'zScoreExpressionRescaling') {
                     rescalingData = OD_eventAlbum.zScoreExpressionRescaling();
                 } else if (rescalingSettings['method'] === 'samplewiseMedianRescaling') {
@@ -8815,7 +8805,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     // no rescaling
                 }
             } else if (utils.hasOwnProperty(groupedEvents, 'expression data')) {
-                rescalingData = OD_eventAlbum.eventwiseMedianRescaling();
+                rescalingData = OD_eventAlbum.eventwiseMedianRescaling(["expression data"]);
             } else {
                 console.log('no expression data rescaling');
             }
@@ -8832,6 +8822,15 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 var minExpVal = rescalingData['minVal'];
                 var maxExpVal = rescalingData['maxVal'];
                 expressionColorMapper = utils.centeredRgbaColorMapper(false, 0, minExpVal, maxExpVal);
+            }
+
+            var ordinalColorMappers = {};
+            var ordinalTypes = utils.getKeys(eventAlbum.ordinalScoring);
+            for (var i = 0, length = ordinalTypes.length; i < length; i++) {
+                var allowedVals = ordinalTypes[i];
+                var scoreVals = utils.getValues(eventAlbum.ordinalScoring[allowedVals]);
+                var colorMapper = utils.centeredRgbaColorMapper(false, 0, jStat.min(scoreVals), jStat.max(scoreVals));
+                ordinalColorMappers[allowedVals] = colorMapper;
             }
 
             // assign color mappers
@@ -8866,6 +8865,9 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 } else if (allowedValues == 'expression') {
                     // shared expression color mapper
                     colorMappers[eventId] = expressionColorMapper;
+                } else if (eventAlbum.ordinalScoring.hasOwnProperty(allowedValues)) {
+                    // ordinal data
+                    colorMappers[eventId] = ordinalColorMappers[allowedValues];
                 } else {
                     colorMappers[eventId] = d3.scale.category10();
                 }
@@ -9169,20 +9171,6 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             "class" : "primer"
         });
 
-        // map event to pivot score
-        var pivotScoresMap;
-        if (pivotEventId != null) {
-            pivotScoresMap = {};
-            var pivotSortedEvents = eventAlbum.getPivotSortedEvents(pivotEventId);
-            for (var i = 0, lengthi = pivotSortedEvents.length; i < lengthi; i++) {
-                var pivotObj = pivotSortedEvents[i];
-                var key = pivotObj["key"];
-                var val = pivotObj["val"];
-                pivotScoresMap[key] = val;
-                // console.log(pivotEventId, key);
-            }
-        }
-
         // row labels
         var translateX = -6;
         var translateY = gridSize / 1.5;
@@ -9213,9 +9201,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     }
                 }
 
-                // TODO underline genes added via geneset control
-                // TODO may be better to get these from the session variable passed into the plugin
-                // console.log("geneSetControl", config["geneSetControl"])
+                // underline genes added via geneset control
                 if (pivotEventId != null) {
                     if (datatype == "expression data") {
                         var geneName = d.replace(/_mRNA$/, "");
@@ -9247,6 +9233,20 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
         });
         // rowLabels.on("click", config["rowClickback"]);
         // rowLabels.on("contextmenu", config["rowRightClickback"]);
+
+        // map event to pivot score
+        var pivotScoresMap;
+        if (pivotEventId != null) {
+            pivotScoresMap = {};
+            var pivotSortedEvents = eventAlbum.getPivotSortedEvents(pivotEventId);
+            for (var i = 0, lengthi = pivotSortedEvents.length; i < lengthi; i++) {
+                var pivotObj = pivotSortedEvents[i];
+                var key = pivotObj["key"];
+                var val = pivotObj["val"];
+                pivotScoresMap[key] = val;
+                // console.log(pivotEventId, key);
+            }
+        }
 
         rowLabels.append("title").text(function(d, i) {
             var eventObj = eventAlbum.getEvent(d);
@@ -9312,6 +9312,49 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 showDataList.push(dataListObj);
             }
         }
+
+        /**
+         * Create an SVG group element icon to put in the matrix cell.
+         * @param {Object} x
+         * @param {Object} y
+         * @param {Object} rx
+         * @param {Object} ry
+         * @param {Object} width
+         * @param {Object} height
+         * @param {Object} attributes
+         */
+        var createMutTypeSvg = function(x, y, rx, ry, width, height, attributes) {
+            var iconGroup = document.createElementNS(utils.svgNamespaceUri, "g");
+            utils.setElemAttributes(iconGroup, {
+                "class" : "mutTypeIconGroup"
+            });
+
+            var types = attributes["val"];
+            // types.push("complex");
+
+            // background of cell
+            attributes["fill"] = "lightgrey";
+            iconGroup.appendChild(utils.createSvgRectElement(x, y, rx, ry, width, height, attributes));
+            delete attributes["stroke-width"];
+
+            if ((utils.isObjInArray(types, "ins")) || (utils.isObjInArray(types, "complex"))) {
+                attributes["fill"] = "red";
+                var topHalfIcon = utils.createSvgRectElement(x, y, rx, ry, width, height / 2, attributes);
+                iconGroup.appendChild(topHalfIcon);
+            }
+            if ((utils.isObjInArray(types, "del")) || (utils.isObjInArray(types, "complex"))) {
+                attributes["fill"] = "blue";
+                var bottomHalfIcon = utils.createSvgRectElement(x, y + height / 2, rx, ry, width, height / 2, attributes);
+                iconGroup.appendChild(bottomHalfIcon);
+            }
+            if ((utils.isObjInArray(types, "snp")) || (utils.isObjInArray(types, "complex"))) {
+                attributes["fill"] = "green";
+                var centeredCircleIcon = utils.createSvgCircleElement(x + width / 2, y + height / 2, height / 4, attributes);
+                iconGroup.appendChild(centeredCircleIcon);
+            }
+            return iconGroup;
+        };
+
         var heatMap = svg.selectAll(".cell").data(showDataList).enter().append(function(d, i) {
             var getUpArrowPointsList = function(x, y, width, height) {
                 var pointsList = [];
@@ -9374,10 +9417,21 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             var width = gridSize;
             var height = gridSize;
             var colorMapper = colorMappers[d['eventId']];
+
+            var getFill = function(d) {
+                var allowed_values = eventAlbum.getEvent(d['eventId']).metadata.allowedValues;
+                if (eventAlbum.ordinalScoring.hasOwnProperty(allowed_values)) {
+                    var score = eventAlbum.ordinalScoring[allowed_values][d["val"]];
+                    return colorMapper(score);
+                } else {
+                    return colorMapper(d["val"]);
+                }
+            };
+
             var attributes = {
                 "stroke" : "#E6E6E6",
                 "stroke-width" : "2px",
-                "fill" : colorMapper(val)
+                "fill" : getFill(d)
             };
             var icon;
             if (eventAlbum.getEvent(d['eventId']).metadata.allowedValues === 'categoric') {
@@ -9392,12 +9446,21 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 attributes['sampleId'] = d['id'];
                 attributes['val'] = d['val'];
                 icon = utils.createSvgRectElement(x, y, rx, ry, width, height, attributes);
-            } else if (utils.isObjInArray(["expression signature", "kinase target activity", "tf target activity", "mutation call"], eventAlbum.getEvent(d['eventId']).metadata.datatype)) {
+            } else if (utils.isObjInArray(["expression signature", "kinase target activity", "tf target activity"], eventAlbum.getEvent(d['eventId']).metadata.datatype)) {
                 attributes['class'] = "signature";
                 attributes['eventId'] = d['eventId'];
                 attributes['sampleId'] = d['id'];
                 attributes['val'] = d['val'];
                 icon = utils.createSvgRectElement(x, y, rx, ry, width, height, attributes);
+            } else if (eventAlbum.getEvent(d['eventId']).metadata.datatype === 'mutation call') {
+                // TODO oncoprint-style icons
+                attributes['class'] = "signature";
+                attributes['eventId'] = d['eventId'];
+                attributes['sampleId'] = d['id'];
+                // val is a list of mutation types
+                attributes['val'] = d['val'].sort();
+
+                icon = createMutTypeSvg(x, y, rx, ry, width, height, attributes);
             } else if (false & eventAlbum.getEvent(d['eventId']).metadata.datatype === "datatype label") {
                 // TODO datatype label cells
                 var eventId = d["eventId"];
@@ -9467,11 +9530,19 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     headOrTail = "tail";
                 }
 
+                // https://en.wikipedia.org/wiki/List_of_Unicode_characters
+                // http://www.fileformat.info/info/unicode/char/search.htm
+                // http://shapecatcher.com/
+                // http://www.charbase.com/block/miscellaneous-symbols-and-pictographs
+                // https://stackoverflow.com/questions/12036038/is-there-unicode-glyph-symbol-to-represent-search?lq=1
+                // use "C/C++/Java source code" from search results: http://www.fileformat.info/info/unicode/char/search.htm
                 var glyphs = {
                     "upArrow" : "\u2191",
                     "downArrow" : "\u2193",
                     "upArrowBar" : "\u2912",
-                    "downArrowBar" : "\u2913"
+                    "downArrowBar" : "\u2913",
+                    "magGlass" : "\uD83D\uDD0E",
+                    "ghost" : "\uD83D\uDC7B"
                 };
 
                 attributes['class'] = "datatype";
@@ -9499,8 +9570,10 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     var labelAttributes = {
                         "font-size" : 16,
                         "fill" : "lightgray",
-                        "x" : x + 1.3,
-                        "y" : y + 13
+                        // "x" : x + 1.3,
+                        "text-anchor" : "middle",
+                        "x" : x + (gridSize / 2),
+                        "y" : y + 10
                     };
 
                     var label = document.createElementNS(utils.svgNamespaceUri, "text");
@@ -9525,8 +9598,9 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     var labelAttributes = {
                         "font-size" : 16,
                         "fill" : "lightgray",
-                        "x" : x + 1.3,
-                        "y" : y + 12
+                        "text-anchor" : "middle",
+                        "x" : x + (gridSize / 2),
+                        "y" : y + 10
                     };
 
                     var label = document.createElementNS(utils.svgNamespaceUri, "text");
@@ -9555,7 +9629,8 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     var labelAttributes = {
                         "font-size" : 16,
                         "fill" : "lightgray",
-                        "x" : x + 2.6,
+                        "text-anchor" : "middle",
+                        "x" : x + (gridSize / 2),
                         "y" : y + 12.5
                     };
 
