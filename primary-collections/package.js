@@ -33,6 +33,7 @@ Package.onUse(function(api) {
   api.export('SuperpathwayInteractions');
   api.export('Mutations');
   api.export('GeneExpression');
+  api.export("expression2");
   api.export('Jobs', 'server');
 });
 
