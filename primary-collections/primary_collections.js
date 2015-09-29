@@ -1,4 +1,3 @@
-
 var patientsSchema = new SimpleSchema({
   // hidden from user
   "patient_label": { type: String }, // Patient_ID, ex. DTB-056
@@ -125,18 +124,27 @@ var cohortSignatureSchema = new SimpleSchema({
   "gene_label": { type: String, optional: true },
 });
 
-// TODO: who can change this?
-var superpathwaySchema = new SimpleSchema({
-  "name": { type: String },
-  "version": { type: Number },
+var studyAndCollaboration = new SimpleSchema({
+  "study_label": { type: String },
+  "collaboration_label": { type: String },
 });
+
+var superpathwaySchema = new SimpleSchema([
+  studyAndCollaboration,
+  {
+    "name": { type: String },
+    "version": { type: Number },
+  },
+]);
 superpathwaySchema.fieldOrder = [
   "name",
   "version",
 ];
 
-var networkElementSchema = new SimpleSchema({
-  "label": { type: String },
+var superpathwayElementSchema = new SimpleSchema({
+  "label": {
+    type: String,
+  },
   "type": {
     type: String,
     allowedValues: [
@@ -148,14 +156,14 @@ var networkElementSchema = new SimpleSchema({
       "rna",
     ],
   },
-  "superpathway_id": { type: Meteor.ObjectID },
+  "superpathway_id": { type: String },
 });
-networkElementSchema.fieldOrder = [
+superpathwayElementSchema.fieldOrder = [
   "label",
   "type",
 ];
 
-var networkInteractionSchema = new SimpleSchema({
+var superpathwayInteractionSchema = new SimpleSchema({
   "source": { type: String },
   "target": { type: String },
   "interaction": {
@@ -169,11 +177,9 @@ var networkInteractionSchema = new SimpleSchema({
       "PPI>",
     ],
   },
-  "superpathway_id": { type: Meteor.ObjectID },
-  // scores could differ by pathway or institution (?)
-  // "score": { type: Number, optional: true, decimal: true },
+  "superpathway_id": { type: String },
 });
-networkInteractionSchema.fieldOrder = [
+superpathwayInteractionSchema.fieldOrder = [
   "source",
   "interaction",
   "target",
@@ -245,71 +251,185 @@ networkInteractionSchema.fieldOrder = [
 //   interactions: { type: [pathwayInteraction] },
 // });
 
-var mutationSchema = new SimpleSchema({
-  // required fields
-  "gene_label": { type: String },
-  "sample_label": { type: String },
-  "mutation_type": { type: String }, // variant_classification for us
-  "chromosome": { type: String },
-  "effect_impact": { type: String },
+var mutationSchema = new SimpleSchema([
+  studyAndCollaboration,
+  {
+    // required fields
+    "gene_label": { type: String },
+    "sample_label": { type: String },
 
-  "reference_allele": { type: String },
-  "variant_allele": { type: [String] },
+    "chromosome": { type: String },
+    "effect_impact": { type: String },
 
-  "start_position": { type: Number },
-  "end_position": { type: Number, optional: true },
+    "reference_allele": { type: String },
+    "variant_allele": { type: [String] },
 
+    "start_position": { type: Number },
+    "end_position": { type: Number, optional: true },
 
-  "protein_change": { type: String, optional: true },
+    // user must input these manually
+    "biological_source": {
+      type: String,
+      allowedValues: [
+        "dna_normal",
+        "dna_tumor",
+        "rna_normal",
+        "rna_tumor",
+        "cellline"
+      ],
+    },
 
+    // TODO: add these
+    "protein_change": { type: String, optional: true },
+    "mutation_type": { type: String, label: "SNP, MNP, INS, DEL, or COMPLEX" },
+    "mutation_impact_assessor": { type: String },
+    "mutation_impact": { type: String, optional: true },
+    "mutation_impact_score": { type: Number, optional: true },
 
+    "functional_class": { type: String, label: "MISSENSE, NONSENSE, or SILENT",optional: true },
+    "read_depth": { type: Number, label: "Total read depth for all samples", optional:true }, // TODO: from DP (in fake switch statement)
+    "genotype": { type: String, optional: true },
 
+    // BELOW: other fields we will likely add
+    // these fields are not yet handled by the parser
 
-  "MA_FImpact": { type: String, optional: true },
-  "MA_FIS": { type: Number, optional: true },
-  "allele_count": { type: Number, label: "Allele count in genotypes, for each ALT allele, in the same order as listed", optional:true },
-  "allele_frequency": { type: Number, decimal:true, label: "Allele frequency, for each ALT allele, in the same order as listed", optional:true },
-  "allele_number": { type: Number, label: "Number of unique alleles across all samples", optional:true },
-  "base_quality": { type: Number, decimal:true, label: "Overall average base quality", optional:true },
-  "read_depth": { type: Number, label: "Total read depth for all samples", optional:true }, // TODO: from DP (in fake switch statement)
-  // "genotype": { type: String } // GT string
-  // "genotype_quality" // GQ string
-  // "alternative_allele_observation" // AO  number
-  // "reference_allele_observation" // RO
-  // "biological_source": {
-  //   type: String,
-  //   allowedValues: [
-  //     "dna_normal",
-  //     "dna_tumor",
-  //     "rna_tumor",
-  //     "rna_tumor",
-  //     "cellline"
-  //   ],
-  //   optional: true,
-  // } // dna or rna String
-  // "alternative_allele_quality": "probability that the ALT allele is incorrectly specified, expressed on the the phred scale (-10log10(probability))" // from QUAL
-  // "qc_filter": { type: String, label: 'Either "PASS" or a semicolon-separated list of failed quality control filters' },
+    "allele_count": { type: Number, label: "Allele count in genotypes, for each ALT allele, in the same order as listed", optional:true },
+    "allele_frequency": { type: Number, decimal:true, label: "Allele frequency, for each ALT allele, in the same order as listed", optional:true },
+    "allele_number": { type: Number, label: "Number of unique alleles across all samples", optional:true },
+    "base_quality": { type: Number, decimal:true, label: "Overall average base quality", optional:true },
 
-  "fraction_alt": { type: Number, decimal:true, label: "Overall fraction of reads supporting ALT", optional:true },
-  "indel_number": { type: Number, label: "Number of indels for all samples", optional:true },
-  "modification_base_changes": { type: String, label: "Modification base changes at this position", optional:true },
-  "modification_types": { type: String, label: "Modification types at this position", optional:true },
-  "sample_number": { type: Number, label: "Number of samples with data", optional:true },
-  "origin": { type: String, label: "Where the call originated from, the tumor DNA, RNA, or both", optional:true },
-  "strand_bias": { type: Number, decimal:true, label: "Overall strand bias", optional:true },
-  "somatic": { type: Boolean, label: "Indicates if record is a somatic mutation", optional:true },
-  "variant_status": { type: Number, label: "Variant status relative to non-adjacent Normal, 0=wildtype,1=germline,2=somatic,3=LOH,4=unknown,5=rnaEditing" , optional:true},
-  "reads_at_start": { type: Number, label: "Number of reads starting at this position across all samples", optional:true },
-  "reads_at_stop": { type: Number, label: "Number of reads stopping at this position across all samples", optional:true },
-  "variant_type": { type: String, label: "Variant type, can be SNP, INS or DEL", optional:true },
-  // "effects": {
-  //   type: [
-  //     new SimpleSchema({
-  //
-  //     });
-  //   ]
-  // }
-  // "effects": { type: [Object], label:"Predicted effects Effect ( Effect_Impact | Functional_Class | Codon_Change | Amino_Acid_change| Amino_Acid_length | Gene_Name | Transcript_BioType | Gene_Coding | Transcript_ID | Exon  | GenotypeNum [ | ERRORS | WARNINGS ] )" , optional:true }
+    // "genotype": { type: String } // GT string
+    // "genotype_quality" // GQ string
+    // "alternative_allele_observation" // AO  number
+    // "reference_allele_observation" // RO
+    // "biological_source": {
+    //   type: String,
+    //   allowedValues: [
+    //     "dna_normal",
+    //     "dna_tumor",
+    //     "rna_tumor",
+    //     "rna_tumor",
+    //     "cellline"
+    //   ],
+    //   optional: true,
+    // } // dna or rna String
+    // "alternative_allele_quality": "probability that the ALT allele is incorrectly specified, expressed on the the phred scale (-10log10(probability))" // from QUAL
+    // "qc_filter": { type: String, label: 'Either "PASS" or a semicolon-separated list of failed quality control filters' },
+
+    "fraction_alt": { type: Number, decimal:true, label: "Overall fraction of reads supporting ALT", optional:true },
+    "indel_number": { type: Number, label: "Number of indels for all samples", optional:true },
+    "modification_base_changes": { type: String, label: "Modification base changes at this position", optional:true },
+    "modification_types": { type: String, label: "Modification types at this position", optional:true },
+    "sample_number": { type: Number, label: "Number of samples with data", optional:true },
+    "origin": { type: String, label: "Where the call originated from, the tumor DNA, RNA, or both", optional:true },
+    "strand_bias": { type: Number, decimal:true, label: "Overall strand bias", optional:true },
+    "somatic": { type: Boolean, label: "Indicates if record is a somatic mutation", optional:true },
+    "variant_status": { type: Number, label: "Variant status relative to non-adjacent Normal, 0=wildtype,1=germline,2=somatic,3=LOH,4=unknown,5=rnaEditing" , optional:true},
+    "reads_at_start": { type: Number, label: "Number of reads starting at this position across all samples", optional:true },
+    "reads_at_stop": { type: Number, label: "Number of reads stopping at this position across all samples", optional:true },
+    "variant_type": { type: String, label: "Variant type, can be SNP, INS or DEL", optional:true },
+    // "effects": {
+    //   type: [
+    //     new SimpleSchema({
+    //
+    //     });
+    //   ]
+    // }
+    // "effects": { type: [Object], label:"Predicted effects Effect ( Effect_Impact | Functional_Class | Codon_Change | Amino_Acid_change| Amino_Acid_length | Gene_Name | Transcript_BioType | Gene_Coding | Transcript_ID | Exon  | GenotypeNum [ | ERRORS | WARNINGS ] )" , optional:true }
+  }
+]);
+mutationSchema.fieldOrder = [
+  // TODO: ugh
+  "gene_label",
+  "sample_label",
+  "mutation_type",
+
+  "effect_impact",
+
+  "reference_allele",
+  "variant_allele",
+
+  "chromosome",
+  "start_position",
+  "end_position",
+];
+
+var normalizationSlugsAndNames = [
+  { "value": "raw_counts", "label": "raw counts" },
+  { "value": "counts", "label": "counts" },
+  { "value": "fpkm", "label": "FPKM" },
+  { "value": "tpm", "label": "TPM" },
+  { "value": "rsem_quan_log2", "label": "RSEM log(2)" },
+];
+
+var geneExpressionSchema = new SimpleSchema([
+  studyAndCollaboration,
+  {
+    "gene_label": { type: String },
+    "sample_label": { type: String },
+    "normalization": {
+      type: String,
+      allowedValues: _.pluck(normalizationSlugsAndNames, "value"),
+      autoform: {
+        options: normalizationSlugsAndNames,
+      },
+    },
+    "value": { type: Number, decimal: true },
+  }
+]);
+geneExpressionSchema.fieldOrder = [
+  "gene_label",
+  "sample_label",
+  "normalization",
+  "value",
+];
+
+// This is updated after importing new data from Wrangler
+var geneExpressionSummarySchema = new SimpleSchema([
+  studyAndCollaboration,
+  {
+    "gene_label": { type: String },
+    "study_label": { type: String },
+    "normalization": {
+      type: String,
+      allowedValues: _.pluck(normalizationSlugsAndNames, "value"),
+    },
+    "mean": { type: Number, decimal: true },
+    "variance": { type: Number, decimal: true },
+  }
+]);
+
+var jobSchema = new SimpleSchema({
+  "name": { type: String },
+  "user_id": { type: Meteor.ObjectID },
+  "date_created": { type: Date },
+  "date_modified": {
+    type: Date,
+    autoValue: function () {
+      if (this.isSet) {
+        return;
+      }
+      return new Date();
+    },
+  },
+  "args": {
+    type: Object,
+    blackbox: true,
+  },
+  "status": {
+    type: String,
+    allowedValues: [
+      "waiting",
+      "running",
+      "done",
+      "error",
+    ],
+    defaultValue: "waiting",
+  },
+  "retry_count": { type: Number, defaultValue: 0 },
+  // can be set even if status is not "error"
+  "error_description": { type: String, optional: true },
+  "prerequisite_job_id": { type: Meteor.ObjectID, optional: true },
 });
 mutationSchema.fieldOrder = [
   // TODO: ugh
@@ -346,23 +466,34 @@ CohortSignatures.attachSchema(cohortSignatureSchema);
 Mutations = new Meteor.Collection("mutations");
 Mutations.attachSchema(mutationSchema);
 
-/*
-** superpathway stuff
-*/
+GeneExpression = new Meteor.Collection("gene_expression");
+GeneExpression.attachSchema(geneExpressionSchema);
 
-Superpathways = new Meteor.Collection("superpathways");
-Superpathways.attachSchema(superpathwaySchema);
-
-NetworkElements = new Meteor.Collection("network_elements");
-NetworkElements.attachSchema(networkElementSchema);
-
-NetworkInteractions = new Meteor.Collection("network_interactions");
-NetworkInteractions.attachSchema(networkInteractionSchema);
-
-
+GeneExpressionSummary = new Meteor.Collection("gene_expression_summary");
+GeneExpressionSummary.attachSchema(geneExpressionSummarySchema);
 
 // Pathways = new Meteor.Collection("pathways");
 // Pathways.attachSchema(pathwaySchema);
 //
 // Studies = new Meteor.Collection("studies");
 // Studies.attachSchema(studiesSchema);
+
+Superpathways = new Meteor.Collection("superpathways");
+Superpathways.attachSchema(superpathwaySchema);
+
+SuperpathwayElements = new Meteor.Collection("superpathway_elements");
+SuperpathwayElements.attachSchema(superpathwayElementSchema);
+
+SuperpathwayInteractions = new Meteor.Collection("superpathway_interactions");
+SuperpathwayInteractions.attachSchema(superpathwayInteractionSchema);
+
+// not really data
+
+Jobs = new Meteor.Collection("jobs");
+Jobs.attachSchema(jobSchema);
+
+Studies = new Meteor.Collection("studies");
+Collaborations = new Meteor.Collection("collaboration");
+
+// noooo there are no schemas for these
+expression2 = new Meteor.Collection("expression2");
