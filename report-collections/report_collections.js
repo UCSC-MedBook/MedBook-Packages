@@ -207,6 +207,17 @@ var patientReportSchema = new SimpleSchema({
           optional: true
         },
         //"mutations": { type: [mutationSchema], optional: true },
+				"drugs": { 
+					type: [
+						new SimpleSchema({
+							"drug": {type: String, optional: true },
+							"variant": {type: String, optional: true },
+							"clinical_significance": {type: String, optional: true },
+							"gene_label": {type: String, optional: true },
+							"disease": {type: String, optional: true }
+						})
+					], optional: true
+				},
         "gene_sets": {
           type: [
             new SimpleSchema({
@@ -278,5 +289,3 @@ PathwayReports.attachSchema(pathwayReportSchema);
 GeneReports = new Meteor.Collection("gene_reports");
 GeneReports.attachSchema(geneReportSchema);
 
-// nooooooo
-expression2 = new Meteor.Collection("expression2");
