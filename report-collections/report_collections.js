@@ -207,7 +207,7 @@ var patientReportSchema = new SimpleSchema({
           optional: true
         },
         //"mutations": { type: [mutationSchema], optional: true },
-				"drugs": { 
+				"drugs": {
 					type: [
 						new SimpleSchema({
 							"drug": {type: String, optional: true },
@@ -268,6 +268,17 @@ var patientReportSchema = new SimpleSchema({
           return count > 0;
         }
       },
+      "has_drug_sensitivity": {
+        type: Boolean,
+        autoValue: function () {
+          return _.some(this.field("samples").value, function (sample) {
+            if (sample && sample.drugs) {
+              return true;
+            }
+            return false;
+          });
+        },
+      },
     })
   }
 });
@@ -288,4 +299,3 @@ PathwayReports.attachSchema(pathwayReportSchema);
 
 GeneReports = new Meteor.Collection("gene_reports");
 GeneReports.attachSchema(geneReportSchema);
-
