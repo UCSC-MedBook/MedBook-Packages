@@ -1,8 +1,8 @@
 WranglerSubmissions = new Meteor.Collection("wrangler_submissions");
 WranglerSubmissions.attachSchema(new SimpleSchema({
-  "user_id": { type: Meteor.ObjectID },
-  "date_created": { type: Date },
-  "status": {
+  user_id: { type: Meteor.ObjectID },
+  date_created: { type: Date },
+  status: {
     type: String,
     allowedValues: [
       "creating",
@@ -12,20 +12,20 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
       "done",
     ],
   },
-  "errors": { // errors as of last submission
+  errors: { // errors as of last submission
     type: [String],
     optional: true,
   },
-  "options": {
+  options: {
     type: Object,
     blackbox: true,
     optional: true,
   },
-  "editing_file": {
+  editing_file: {
     type: Meteor.ObjectID, // refers to WranglerFiles
     optional: true
   },
-  "editing_document": { // no functionality yet
+  editing_document: { // no functionality yet
     type: Meteor.ObjectID, // refers to WranglerDocuments
     optional: true
   },
@@ -33,13 +33,13 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
 
 // does a pick and then adds { optional: true} to it
 var fileTypeSlugsAndNames = [
-  { "slug": "mutation_vcf", "name": "Mutation VCF" },
-  { "slug": "superpathway_interactions", "name": "Superpathway interactions" },
-  { "slug": "superpathway_elements", "name": "Superpathway element definitions" },
-  { "slug": "gene_expression", "name": "Gene expression" },
-  { "slug": "rectangular_gene_expression", "name": "Rectangular gene expression" },
-  { "slug": "compressed_tar_gz", "name": "Compressed (.tar.gz)" },
-  { "slug": "error" }, // intentionally doesn't have a name
+  { slug: "mutation_vcf", name: "Mutation VCF" },
+  { slug: "superpathway_interactions", name: "Superpathway interactions" },
+  { slug: "superpathway_elements", name: "Superpathway element definitions" },
+  { slug: "gene_expression", name: "Gene expression" },
+  { slug: "rectangular_gene_expression", name: "Rectangular gene expression" },
+  { slug: "compressed_tar_gz", name: "Compressed (.tar.gz)" },
+  { slug: "error" }, // intentionally doesn't have a name
 ];
 function makePickOptional(collection, schemaAttribute) {
   var schemaObject = {};
@@ -49,7 +49,7 @@ function makePickOptional(collection, schemaAttribute) {
           .schema()[schemaAttribute],
       {
         custom: function () {
-          if (!this.value && 
+          if (!this.value &&
               (this.field("file_type").value === "gene_expression" ||
                 this.field("file_type").value ===
                     "rectangular_gene_expression")) {
@@ -62,7 +62,7 @@ function makePickOptional(collection, schemaAttribute) {
 }
 wranglerFileOptions = new SimpleSchema([
   {
-    "file_type": {
+    file_type: {
       type: String,
       allowedValues: _.pluck(fileTypeSlugsAndNames, "slug"),
       autoform: {
@@ -82,11 +82,11 @@ wranglerFileOptions = new SimpleSchema([
 ]);
 WranglerFiles = new Meteor.Collection("wrangler_files");
 WranglerFiles.attachSchema(new SimpleSchema({
-  "submission_id": { type: Meteor.ObjectID },
-  "user_id": { type: Meteor.ObjectID },
-  "blob_id": { type: Meteor.ObjectID },
-  "blob_name": { type: String },
-  "status": {
+  submission_id: { type: Meteor.ObjectID },
+  user_id: { type: Meteor.ObjectID },
+  blob_id: { type: Meteor.ObjectID },
+  blob_name: { type: String },
+  status: {
     type: String,
     allowedValues: [
       "creating",
@@ -96,21 +96,30 @@ WranglerFiles.attachSchema(new SimpleSchema({
       "error",
     ],
   },
-  "options": {
+  options: {
     type: wranglerFileOptions,
     optional: true,
   },
-  "error_description": { type: String, optional: true },
+  error_description: { type: String, optional: true },
 
   // refers to Blobs
-  "uncompressed_from_id": { type: Meteor.ObjectID, optional: true },
+  uncompressed_from_id: { type: Meteor.ObjectID, optional: true },
 }));
 
 WranglerDocuments = new Meteor.Collection("wrangler_documents");
 WranglerDocuments.attachSchema(new SimpleSchema({
-  "submission_id": { type: Meteor.ObjectID },
-  "user_id": { type: Meteor.ObjectID },
-  "collection_name": {
+  submission_id: { type: Meteor.ObjectID },
+  user_id: { type: Meteor.ObjectID },
+  submission_type: {
+    type: String,
+    allowedValues: [
+      "superpathway",
+      "mutation",
+      "gene_expression",
+      "rectangular_gene_expression",
+    ],
+  },
+  document_type: {
     type: String,
     allowedValues: [
       "superpathway_elements",
@@ -118,14 +127,16 @@ WranglerDocuments.attachSchema(new SimpleSchema({
       "mutations",
       "gene_expression",
       "superpathways",
+      "sample_label",
+      "gene_label",
     ],
   },
-  "prospective_document": {
+  prospective_document: {
     type: Object,
     blackbox: true,
   },
-  "wrangler_file_id": { type: Meteor.ObjectID, optional: true },
-  "inserted_into_database": { type: Boolean, optional: true },
+  wrangler_file_id: { type: Meteor.ObjectID, optional: true },
+  inserted_into_database: { type: Boolean, optional: true },
 }));
 
 BlobStore = new FS.Store.GridFS("blobs", {
