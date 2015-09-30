@@ -282,7 +282,17 @@ var mutationSchema = new SimpleSchema([
     // TODO: add these
     "protein_change": { type: String, optional: true },
     "mutation_type": { type: String, label: "SNP, MNP, INS, DEL, or COMPLEX" },
-    "mutation_impact_assessor": { type: String },
+    "mutation_impact_assessor": {
+      type: String,
+      allowedValues: [
+        "snpEff",
+        "VEP",
+        "Oncotator",
+        "CHASM",
+        "PolyPhen",
+        "SIFT",
+      ],
+    },
     "mutation_impact": { type: String, optional: true },
     "mutation_impact_score": { type: Number, optional: true },
 
