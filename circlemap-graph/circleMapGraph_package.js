@@ -11239,9 +11239,10 @@ var medbookDataLoader = medbookDataLoader || {};
             var gene_label = doc["gene_label"];
 
             var sample_values;
-            if (_.contains(doc, "sample_values")) {
+            var docKeys = _.keys(doc);
+            if (_.contains(docKeys, "sample_values")) {
                 sample_values = doc["sample_values"];
-            } else if (_.contains(doc, "samples")) {
+            } else if (_.contains(docKeys, "samples")) {
                 sample_values = doc["samples"];
             } else {
                 console.log("no sample data found", type, algorithm, gene_label);
