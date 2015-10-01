@@ -11237,12 +11237,21 @@ var medbookDataLoader = medbookDataLoader || {};
             var algorithm = doc["algorithm"];
             var label = doc["label"];
             var gene_label = doc["gene_label"];
-            var sample_values = doc["sample_values"];
+
+            var sample_values;
+            if (_.contains(doc, "sample_values")) {
+                sample_values = doc["sample_values"];
+            } else if (_.contains(doc, "samples")) {
+                sample_values = doc["samples"];
+            } else {
+                console.log("no sample data found", type, algorithm, gene_label);
+                continue;
+            }
 
             var sampleData = {};
             for (var j = 0, lengthj = sample_values.length; j < lengthj; j++) {
                 var sampleValue = sample_values[j];
-                var patient_label = sampleValue["patient_label"];
+                // var patient_label = sampleValue["patient_label"];
                 var sample_label = sampleValue["sample_label"];
                 var value = sampleValue["value"];
 
@@ -12331,12 +12340,14 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         $.contextMenu({
             selector : ".circleMapRingG",
             trigger : 'right',
+            // trigger : 'left',
             callback : function(key, options) {
                 // default callback
                 var elem = this[0];
                 console.log('elem', elem);
             },
             build : function($trigger, contextmenuEvent) {
+                console.log("context menu for circleMapRingG");
                 var circleMapRingGelem = utils.extractFromJq($trigger);
                 var circleMapGelem = circleMapRingGelem.parentNode;
                 var node = circleMapGelem.getAttribute("feature");
@@ -12392,12 +12403,14 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         $.contextMenu({
             selector : ".node",
             trigger : 'right',
+            // trigger : 'left',
             callback : function(key, options) {
                 // default callback
                 var elem = this[0];
                 console.log('elem', elem);
             },
             build : function($trigger, contextmenuEvent) {
+                console.log("context menu for node");
                 var circleMapSvgElem = utils.extractFromJq($trigger).getElementsByTagName("svg")[0];
                 var nodeName = circleMapSvgElem.getAttribute("name");
                 var nodeType = circleMapSvgElem.getAttribute("nodeType");
@@ -12407,10 +12420,15 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                             return nodeType + ": " + nodeName;
                         },
                         icon : null,
-                        disabled : false
-                        // ,
-                        // callback : function(key, opt) {
-                        // }
+                        disabled : function(key, opt) {
+                            var disabled = (nodeType === "protein") ? false : true;
+                            return disabled;
+                        },
+                        callback : function(key, opt) {
+                            // TODO link-out to PatientCare geneReport
+                            console.log("nodeName", nodeName);
+                            window.open("/PatientCare/geneReport/" + nodeName, "_parent");
+                        }
                     },
                     "sep1" : "---------",
                     "toggle_size" : {
@@ -12422,13 +12440,18 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                         callback : function(key, opt) {
                             if (cmGraph.circleMapMode) {
                                 // var circleMapSvgElem = document.getElementById('circleMapSvg' + d['name']);
-                                var circleMapGElement = circleMapSvgElem.getElementsByClassName("circleMapG");
-                                var scale = circleMapGElement[0].getAttribute("transform");
-                                if (scale === cmGraph.smallScale) {
-                                    circleMapGElement[0].setAttributeNS(null, 'transform', cmGraph.largeScale);
+                                var circleMapGElement = circleMapSvgElem.getElementsByClassName("circleMapG")[0];
+                                var d3circleMapGElement = d3.select(circleMapGElement);
+                                var zoomed = d3circleMapGElement.attr("zoomed");
+                                var newScale;
+                                if (_.isNull(zoomed) || zoomed === "false") {
+                                    newScale = cmGraph.largeScale;
+                                    d3circleMapGElement.attr("zoomed", "true");
                                 } else {
-                                    circleMapGElement[0].setAttributeNS(null, 'transform', cmGraph.smallScale);
+                                    newScale = cmGraph.smallScale;
+                                    d3circleMapGElement.attr("zoomed", "false");
                                 }
+                                d3circleMapGElement.transition().duration(300).attr('transform', newScale);
                             }
                         }
                     },
@@ -12488,12 +12511,22 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                         icon : null,
                         disabled : false,
                         callback : function(key, opt) {
-                            var transparent = 0.3;
-                            var opacity = circleMapSvgElem.getAttribute("opacity");
-                            var newOpacity = (opacity == transparent) ? 1 : transparent;
-                            utils.setElemAttributes(circleMapSvgElem, {
-                                "opacity" : newOpacity
-                            });
+                            var circleMapGElement = circleMapSvgElem.getElementsByClassName("circleMapG")[0];
+                            var d3circleMapGElement = d3.select(circleMapGElement);
+
+                            var isTransparent = d3circleMapGElement.attr("isTransparent");
+                            var newOpacity;
+                            if (_.isNull(isTransparent) || isTransparent === "false") {
+                                if (_.isNull(isTransparent)) {
+                                    d3circleMapGElement.attr("opacity", 1);
+                                }
+                                newOpacity = 0.3;
+                                d3circleMapGElement.attr("isTransparent", "true");
+                            } else {
+                                newOpacity = 1;
+                                d3circleMapGElement.attr("isTransparent", "false");
+                            }
+                            d3circleMapGElement.transition().duration(500).attr("opacity", newOpacity);
                         }
                     }
                 };
@@ -12530,6 +12563,11 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
 
         // for d3 color mapping.
         cmGraph.colorMapper = d3.scale.category10();
+        // preset color mapping for paradigm relations
+        var paradigmRelations = ["-t|", "-t>", "-a|", "-a>", "component>", "member>"];
+        _.each(paradigmRelations, function(relation) {
+            cmGraph.colorMapper(relation);
+        });
 
         // for d3 layout and rendering
         // cmGraph.force = d3.layout.force().size([windowWidth, windowHeight]).linkDistance(d3_config['linkDistance']).linkStrength(d3_config['linkStrength']).friction(d3_config['friction']).gravity(d3_config['gravity']);
@@ -12748,7 +12786,18 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                 var nodeGelem = circleMapSvgElement.parentNode;
                 utils.pullElemToFront(nodeGelem);
 
-                // TODO highlight connecting edges
+                // enlarge
+                // var circleMapGElem = circleMapSvgElement.getElementsByClassName("circleMapG")[0];
+                // var d3Selection = d3.select(circleMapGElem);
+                // d3Selection.transition().duration(500).attr("transform", cmGraph.largeScale);
+                // }).on('mouseout', function(d, i) {
+                // // mouseout event for node
+                // var circleMapSvgElement = document.getElementById('circleMapSvg' + d['name']);
+                //
+                // // cancel enlarge
+                // var circleMapGElem = circleMapSvgElement.getElementsByClassName("circleMapG")[0];
+                // var d3Selection = d3.select(circleMapGElem);
+                // d3Selection.transition().duration(500).attr("transform", cmGraph.smallScale);
             });
         } else {
             // mouse events for sbgn nodes
@@ -12827,7 +12876,9 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         });
 
         // node labels
-        nodeSelection.append("svg:text").attr("text-anchor", "middle").attr('dy', "2.7em").text(function(d) {
+        // var textdy = "2.7em";
+        var textdy = "3em";
+        nodeSelection.append("svg:text").attr("text-anchor", "middle").attr('dy', textdy).text(function(d) {
             return d.name;
         });
 
