@@ -50,7 +50,7 @@ function makePickOptional(collection, schemaAttribute) {
           .schema()[schemaAttribute],
       {
         custom: function () {
-          if (!this.value &&
+          if (!this.value && // if it's set it's not required again (duh)
               (this.field("file_type").value === "gene_expression" ||
                 this.field("file_type").value ===
                     "rectangular_gene_expression")) {
