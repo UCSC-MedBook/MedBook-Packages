@@ -90,6 +90,7 @@ WranglerFiles.attachSchema(new SimpleSchema({
     type: String,
     allowedValues: [
       "creating",
+      "waiting",
       "uploading", "saving", // same step
       "processing",
       "done",
