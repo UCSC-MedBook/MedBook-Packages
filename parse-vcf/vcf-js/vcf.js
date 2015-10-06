@@ -1,5 +1,5 @@
 // setting up (U defined as _)
-let U = _;
+var U = _;
 
   //////////////////////////
  //   Parsing VCF Files  //

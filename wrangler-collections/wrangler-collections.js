@@ -33,13 +33,14 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
 
 // does a pick and then adds { optional: true} to it
 var fileTypeSlugsAndNames = [
-  { slug: "mutation_vcf", name: "Mutation VCF" },
-  { slug: "superpathway_interactions", name: "Superpathway interactions" },
-  { slug: "superpathway_elements", name: "Superpathway element definitions" },
-  { slug: "gene_expression", name: "Single patient expression" }, // TODO: remove this
-  { slug: "rectangular_gene_expression", name: "Rectangular gene expression" },
-  { slug: "tcga_gene_expression", name: "TCGA gene expression" }, // Olena file
-  { slug: "compressed_tar_gz", name: "Compressed (.tar.gz)" },
+  { slug: "MutationVCF", name: "Mutation VCF" },
+  { slug: "SuperpathwayInteractions", name: "Superpathway interactions" },
+  { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
+  { slug: "BD2KGeneExpression", name: "Single patient expression (BD2K pipeline)" },
+  { slug: "BD2KSampleLabelMap", name: "Sample label mapping (BD2K pipeline)" },
+  { slug: "GeneExpression", name: "Rectangular gene expression" },
+  { slug: "TCGAGeneExpression", name: "TCGA gene expression" }, // Olena file
+  { slug: "CompressedTarGz", name: "Compressed (.tar.gz)" },
   { slug: "error" }, // intentionally doesn't have a name
 ];
 function makePickOptional(collection, schemaAttribute) {
@@ -134,7 +135,7 @@ WranglerDocuments.attachSchema(new SimpleSchema({
       "gene_label",
     ],
   },
-  prospective_document: {
+  contents: {
     type: Object,
     blackbox: true,
   },
