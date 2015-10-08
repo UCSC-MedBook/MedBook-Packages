@@ -33,14 +33,14 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
 
 // does a pick and then adds { optional: true} to it
 var fileTypeSlugsAndNames = [
-  { slug: "MutationVCF", name: "Mutation VCF" },
-  { slug: "SuperpathwayInteractions", name: "Superpathway interactions" },
-  { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
+  { slug: "mutationVCF", name: "Mutation VCF" },
+  // { slug: "SuperpathwayInteractions", name: "Superpathway interactions" },
+  // { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
   { slug: "BD2KGeneExpression", name: "Single patient expression (BD2K pipeline)" },
-  { slug: "BD2KSampleLabelMap", name: "Sample label mapping (BD2K pipeline)" },
-  { slug: "GeneExpression", name: "Rectangular gene expression" },
-  { slug: "TCGAGeneExpression", name: "TCGA gene expression" }, // Olena file
-  { slug: "CompressedTarGz", name: "Compressed (.tar.gz)" },
+  // { slug: "BD2KSampleLabelMap", name: "Sample label mapping (BD2K pipeline)" },
+  // { slug: "GeneExpression", name: "Rectangular gene expression" },
+  // { slug: "TCGAGeneExpression", name: "TCGA gene expression" }, // Olena file
+  // { slug: "CompressedTarGz", name: "Compressed (.tar.gz)" },
   { slug: "error" }, // intentionally doesn't have a name
 ];
 function makePickOptional(collection, schemaAttribute) {
@@ -117,23 +117,32 @@ WranglerDocuments.attachSchema(new SimpleSchema({
   submission_type: {
     type: String,
     allowedValues: [
-      "superpathway",
+      // "superpathway",
       "mutation",
-      "gene_expression",
-      "rectangular_gene_expression",
+      // "gene_expression",
+      // "rectangular_gene_expression",
     ],
   },
   document_type: {
     type: String,
     allowedValues: [
-      "superpathway_elements",
-      "superpathway_interactions",
-      "mutations",
-      "gene_expression",
-      "superpathways",
-      "sample_label",
-      "gene_label",
+      "prospective_document",
+      // "sample_label",
+      // "gene_label",
     ],
+  },
+  collection_name: {
+    type: String,
+    allowedValues: [
+      "mutations",
+    ],
+    custom: function () {
+      // TODO: don't allow if document_type is not "prospective_document"
+      if (!this.value && // if it's set it's not required again (duh)
+          (this.field("document_type").value === "prospective_document")) {
+        return "required";
+      }
+    },
   },
   contents: {
     type: Object,

@@ -299,8 +299,8 @@ function parser() {
   Record.prototype.initializeRecord = function(vals, header) {
     this.__HEADER__ = header;
     for (var idx = 0; idx < header.columns.length; idx++) {
-      var colname = header.columns[idx],
-          val = vals[idx].trim();
+      var colname = header.columns[idx];
+      var val = vals[idx].trim();
       if (!val || val === '.') val = null;
       this[colname] = val;
     }
