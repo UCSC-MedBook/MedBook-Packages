@@ -34,6 +34,7 @@ Package.onUse(function(api) {
   api.export('Mutations');
   api.export('GeneExpression');
   api.export("expression2");
+  api.export("genes");
   api.export('Jobs', 'server');
 });
 

@@ -21,14 +21,6 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
     blackbox: true,
     optional: true,
   },
-  editing_file: {
-    type: Meteor.ObjectID, // refers to WranglerFiles
-    optional: true
-  },
-  editing_document: { // no functionality yet
-    type: Meteor.ObjectID, // refers to WranglerDocuments
-    optional: true
-  },
 }));
 
 // does a pick and then adds { optional: true} to it
@@ -117,16 +109,17 @@ WranglerDocuments.attachSchema(new SimpleSchema({
   submission_type: {
     type: String,
     allowedValues: [
-      // "superpathway",
       "mutation",
-      // "gene_expression",
+      "gene_expression",
       // "rectangular_gene_expression",
+      // "superpathway",
     ],
   },
   document_type: {
     type: String,
     allowedValues: [
       "prospective_document",
+      "sample_normalization",
       // "sample_label",
       // "gene_label",
     ],
@@ -143,6 +136,7 @@ WranglerDocuments.attachSchema(new SimpleSchema({
         return "required";
       }
     },
+    optional: true,
   },
   contents: {
     type: Object,
@@ -181,8 +175,8 @@ Blobs.allow({
   }
 });
 
-ensureSubmissionEditable = function (userId, submissionId) {
-  var submission = WranglerSubmissions.findOne(submissionId);
+ensureSubmissionEditable = function (userId, submission_id) {
+  var submission = WranglerSubmissions.findOne(submission_id);
   if (submission.user_id !== userId) {
     throw new Meteor.Error("submission-not-available",
         "The submission _id provided does not exist or is not available" +

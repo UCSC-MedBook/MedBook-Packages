@@ -535,8 +535,11 @@ Jobs.attachSchema(jobSchema);
 Studies = new Meteor.Collection("studies");
 Collaborations = new Meteor.Collection("collaboration");
 
-// noooo there are no schemas for these
-expression2 = new Meteor.Collection("expression2");
+
 
 QualityControlPlots = new Meteor.Collection("quality_control_plots");
 QualityControlPlots.attachSchema(qualityControlPlotSchema);
+
+// noooo there are no schemas for these
+expression2 = new Meteor.Collection("expression2");
+genes = new Meteor.Collection("genes");
