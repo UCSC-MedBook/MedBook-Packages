@@ -29,7 +29,7 @@ var fileTypeSlugsAndNames = [
   // { slug: "SuperpathwayInteractions", name: "Superpathway interactions" },
   // { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
   { slug: "BD2KGeneExpression", name: "Single patient expression (BD2K pipeline)" },
-  // { slug: "BD2KSampleLabelMap", name: "Sample label mapping (BD2K pipeline)" },
+  { slug: "BD2KSampleLabelMap", name: "Sample label mapping (BD2K pipeline)" },
   // { slug: "GeneExpression", name: "Rectangular gene expression" },
   // { slug: "TCGAGeneExpression", name: "TCGA gene expression" }, // Olena file
   // { slug: "CompressedTarGz", name: "Compressed (.tar.gz)" },
@@ -69,6 +69,11 @@ wranglerFileOptions = new SimpleSchema([
           return value !== undefined;
         }),
       },
+      optional: true,
+    },
+    sample_label: {
+      type: String,
+      // TODO: custom function?
       optional: true,
     },
   },
@@ -120,6 +125,7 @@ WranglerDocuments.attachSchema(new SimpleSchema({
     allowedValues: [
       "prospective_document",
       "sample_normalization",
+      "sample_label_map",
       // "sample_label",
       // "gene_label",
     ],
