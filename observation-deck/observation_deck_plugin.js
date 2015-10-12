@@ -7064,12 +7064,22 @@ var medbookDataLoader = medbookDataLoader || {};
             var algorithm = doc["algorithm"];
             var label = doc["label"];
             var gene_label = doc["gene_label"];
-            var sample_values = doc["sample_values"];
+
+            var sample_values;
+            var docKeys = _.keys(doc);
+            if (_.contains(docKeys, "sample_values")) {
+                sample_values = doc["sample_values"];
+            } else if (_.contains(docKeys, "samples")) {
+                sample_values = doc["samples"];
+            } else {
+                console.log("no sample data found", type, algorithm, gene_label);
+                continue;
+            }
 
             var sampleData = {};
             for (var j = 0, lengthj = sample_values.length; j < lengthj; j++) {
                 var sampleValue = sample_values[j];
-                var patient_label = sampleValue["patient_label"];
+                // var patient_label = sampleValue["patient_label"];
                 var sample_label = sampleValue["sample_label"];
                 var value = sampleValue["value"];
 
@@ -9089,7 +9099,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
         var rowNames = getRowNames(querySettings, eventAlbum, colSortSteps, rowSortSteps);
         // console.log("rowNames", rowNames);
 
-        // TODO hack
+        // bring pivot event to top the top
         var pivotEventId = null;
         if (querySettings['pivot_event'] != null) {
             pivotEventId = querySettings['pivot_event']['id'];
@@ -9202,9 +9212,13 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 }
 
                 // underline genes added via geneset control
+                // underline to indicate user-selected events
                 if (pivotEventId != null) {
-                    if (datatype == "expression data") {
-                        var geneName = d.replace(/_mRNA$/, "");
+                    var underlineableDatatypes = ["expression data", "mutation call"];
+                    if (_.contains(underlineableDatatypes, datatype)) {
+                        var suffix = eventAlbum.datatypeSuffixMapping[datatype];
+                        var regex = new RegExp(suffix + "$");
+                        var geneName = d.replace(regex, "");
                         var geneSetControl = config["geneSetControl"] || [];
                         if (utils.isObjInArray(geneSetControl, geneName)) {
                             s = s + " underline";
@@ -9380,42 +9394,16 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 return group;
             }
 
+            var strokeWidth = 2;
             var x = (colNameMapping[d['id']] * gridSize);
             var y = (rowNameMapping[d['eventId']] * gridSize);
-            var rx = 4;
-            var ry = 4;
-            var width = gridSize;
-            var height = gridSize;
-            var attributes = {
-                // "fill" : "lightgrey",
-                "class" : "bordered"
-            };
+            var rx = 0;
+            var ry = rx;
+            var width = gridSize - (0.5 * strokeWidth);
+            var height = width;
+
             var type = d['eventId'];
-            if ((type == null) || (d['val'] == null)) {
-                // final rectangle for null values
-                attributes["fill"] = "lightgrey";
-                group.appendChild(utils.createSvgRectElement(x, y, rx, ry, width, height, attributes));
-            } else {
-                // draw over the primer rectangle instead of drawing a background for each cell
-                // background for icons
-                // attributes["fill"] = "white";
-                // attributes["fill"] = rowLabelColorMapper(eventAlbum.getEvent(d['eventId']).metadata.datatype)
-            }
-            // group.appendChild(utils.createSvgRectElement(x, y, rx, ry, width, height, attributes));
-
-            // draw icons .. possibly multiple ones
-            if ((type == null) || (d['val'] == null)) {
-                return group;
-            }
-
             var val = d['val'];
-
-            var x = (colNameMapping[d['id']] * gridSize);
-            var y = (rowNameMapping[d['eventId']] * gridSize);
-            var rx = 4;
-            var ry = 4;
-            var width = gridSize;
-            var height = gridSize;
             var colorMapper = colorMappers[d['eventId']];
 
             var getFill = function(d) {
@@ -9428,10 +9416,56 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 }
             };
 
+            var pivotEventObj;
+            var pivotEventColorMapper;
+            var strokeOpacity = 1;
+            if (pivotEventId != null) {
+                pivotEventObj = eventAlbum.getEvent(pivotEventId);
+                pivotEventColorMapper = colorMappers[pivotEventId];
+                strokeOpacity = 0.4;
+            }
+            var getStroke = function(d) {
+                var grey = "#E6E6E6";
+                var stroke;
+                if (pivotEventId == null || d["eventId"] === pivotEventId) {
+                    stroke = grey;
+                } else {
+                    // use fill for sample pivot event value
+                    var sampleId = d["id"];
+                    var data = pivotEventObj.data.getData([sampleId]);
+                    var val = data[0]["val"];
+                    if (val == null) {
+                        stroke = grey;
+                    } else {
+                        stroke = pivotEventColorMapper(val);
+                    }
+                }
+                return stroke;
+            };
+
+            if ((type == null) || (d['val'] == null)) {
+                // final rectangle for null values
+                var attributes = {
+                    "fill" : "lightgrey",
+                    "stroke" : getStroke(d),
+                    "stroke-width" : strokeWidth,
+                    "stroke-opacity" : strokeOpacity
+                };
+                group.appendChild(utils.createSvgRectElement(x, y, rx, ry, width, height, attributes));
+                return group;
+            } else {
+                // draw over the primer rectangle instead of drawing a background for each cell
+                // background for icons
+                // attributes["fill"] = "white";
+                // attributes["fill"] = rowLabelColorMapper(eventAlbum.getEvent(d['eventId']).metadata.datatype)
+            }
+            // group.appendChild(utils.createSvgRectElement(x, y, rx, ry, width, height, attributes));
+
             var attributes = {
-                "stroke" : "#E6E6E6",
-                "stroke-width" : "2px",
-                "fill" : getFill(d)
+                "stroke" : getStroke(d),
+                "stroke-width" : strokeWidth,
+                "fill" : getFill(d),
+                "stroke-opacity" : strokeOpacity
             };
             var icon;
             if (eventAlbum.getEvent(d['eventId']).metadata.allowedValues === 'categoric') {
