@@ -251,8 +251,22 @@ superpathwayInteractionSchema.fieldOrder = [
 //   interactions: { type: [pathwayInteraction] },
 // });
 
+var biologicalSourceSchema = new SimpleSchema({
+  "biological_source": {
+    type: String,
+    allowedValues: [
+      "dna_normal",
+      "dna_tumor",
+      "rna_normal",
+      "rna_tumor",
+      "cellline"
+    ],
+  },
+});
+
 var mutationSchema = new SimpleSchema([
   studyAndCollaboration,
+  biologicalSourceSchema,
   {
     // required fields
     "gene_label": { type: String },
@@ -266,18 +280,6 @@ var mutationSchema = new SimpleSchema([
 
     "start_position": { type: Number },
     "end_position": { type: Number, optional: true },
-
-    // user must input these manually
-    "biological_source": {
-      type: String,
-      allowedValues: [
-        "dna_normal",
-        "dna_tumor",
-        "rna_normal",
-        "rna_tumor",
-        "cellline"
-      ],
-    },
 
     // TODO: add these
     "protein_change": { type: String, optional: true },
@@ -457,6 +459,34 @@ mutationSchema.fieldOrder = [
   "end_position",
 ];
 
+var qualityControlPlotSchema = new SimpleSchema([
+  biologicalSourceSchema,
+  {
+    sample_label: { type: String },
+    study_label: { type: String },
+    collaboration: { type: String },
+    plots: {
+      type: new SimpleSchema({
+        blob_id: { type: Meteor.ObjectID },
+        plot_type: {
+          type: String,
+          allowedValues: [
+            "duplicate_rate",
+            "gene_body_coverage",
+            "inner_distance",
+            "junction_saturation",
+            "NVC",
+            "quality_boxplot",
+            "quality_heatmap",
+            "splice_events",
+            "splice_junction",
+          ],
+        }
+      }),
+    },
+  }
+]);
+
 //
 // declare the collections
 //
@@ -505,5 +535,11 @@ Jobs.attachSchema(jobSchema);
 Studies = new Meteor.Collection("studies");
 Collaborations = new Meteor.Collection("collaboration");
 
+
+
+QualityControlPlots = new Meteor.Collection("quality_control_plots");
+QualityControlPlots.attachSchema(qualityControlPlotSchema);
+
 // noooo there are no schemas for these
 expression2 = new Meteor.Collection("expression2");
+genes = new Meteor.Collection("genes");

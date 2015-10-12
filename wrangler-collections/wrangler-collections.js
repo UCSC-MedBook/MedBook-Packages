@@ -21,24 +21,18 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
     blackbox: true,
     optional: true,
   },
-  editing_file: {
-    type: Meteor.ObjectID, // refers to WranglerFiles
-    optional: true
-  },
-  editing_document: { // no functionality yet
-    type: Meteor.ObjectID, // refers to WranglerDocuments
-    optional: true
-  },
 }));
 
 // does a pick and then adds { optional: true} to it
 var fileTypeSlugsAndNames = [
-  { slug: "mutation_vcf", name: "Mutation VCF" },
-  { slug: "superpathway_interactions", name: "Superpathway interactions" },
-  { slug: "superpathway_elements", name: "Superpathway element definitions" },
-  { slug: "gene_expression", name: "Gene expression" },
-  { slug: "rectangular_gene_expression", name: "Rectangular gene expression" },
-  { slug: "compressed_tar_gz", name: "Compressed (.tar.gz)" },
+  { slug: "mutationVCF", name: "Mutation VCF" },
+  // { slug: "SuperpathwayInteractions", name: "Superpathway interactions" },
+  // { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
+  { slug: "BD2KGeneExpression", name: "Single patient expression (BD2K pipeline)" },
+  { slug: "BD2KSampleLabelMap", name: "Sample label mapping (BD2K pipeline)" },
+  // { slug: "GeneExpression", name: "Rectangular gene expression" },
+  // { slug: "TCGAGeneExpression", name: "TCGA gene expression" }, // Olena file
+  // { slug: "CompressedTarGz", name: "Compressed (.tar.gz)" },
   { slug: "error" }, // intentionally doesn't have a name
 ];
 function makePickOptional(collection, schemaAttribute) {
@@ -49,7 +43,7 @@ function makePickOptional(collection, schemaAttribute) {
           .schema()[schemaAttribute],
       {
         custom: function () {
-          if (!this.value &&
+          if (!this.value && // if it's set it's not required again (duh)
               (this.field("file_type").value === "gene_expression" ||
                 this.field("file_type").value ===
                     "rectangular_gene_expression")) {
@@ -77,6 +71,11 @@ wranglerFileOptions = new SimpleSchema([
       },
       optional: true,
     },
+    sample_label: {
+      type: String,
+      // TODO: custom function?
+      optional: true,
+    },
   },
   makePickOptional(GeneExpression, "normalization"),
 ]);
@@ -90,8 +89,9 @@ WranglerFiles.attachSchema(new SimpleSchema({
     type: String,
     allowedValues: [
       "creating",
-      "waiting",
-      "uploading", "saving", // same step
+      "uploading",
+      "waiting", // done uploading, waiting for processing
+      "saving", // on the server already (same as uploading kind of)
       "processing",
       "done",
       "error",
@@ -114,25 +114,37 @@ WranglerDocuments.attachSchema(new SimpleSchema({
   submission_type: {
     type: String,
     allowedValues: [
-      "superpathway",
       "mutation",
       "gene_expression",
-      "rectangular_gene_expression",
+      // "rectangular_gene_expression",
+      // "superpathway",
     ],
   },
   document_type: {
     type: String,
     allowedValues: [
-      "superpathway_elements",
-      "superpathway_interactions",
-      "mutations",
-      "gene_expression",
-      "superpathways",
-      "sample_label",
-      "gene_label",
+      "prospective_document",
+      "sample_normalization",
+      "sample_label_map",
+      // "sample_label",
+      // "gene_label",
     ],
   },
-  prospective_document: {
+  collection_name: {
+    type: String,
+    allowedValues: [
+      "mutations",
+    ],
+    custom: function () {
+      // TODO: don't allow if document_type is not "prospective_document"
+      if (!this.value && // if it's set it's not required again (duh)
+          (this.field("document_type").value === "prospective_document")) {
+        return "required";
+      }
+    },
+    optional: true,
+  },
+  contents: {
     type: Object,
     blackbox: true,
   },
@@ -169,8 +181,8 @@ Blobs.allow({
   }
 });
 
-ensureSubmissionEditable = function (userId, submissionId) {
-  var submission = WranglerSubmissions.findOne(submissionId);
+ensureSubmissionEditable = function (userId, submission_id) {
+  var submission = WranglerSubmissions.findOne(submission_id);
   if (submission.user_id !== userId) {
     throw new Meteor.Error("submission-not-available",
         "The submission _id provided does not exist or is not available" +
