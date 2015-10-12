@@ -255,11 +255,11 @@ var biologicalSourceSchema = new SimpleSchema({
   "biological_source": {
     type: String,
     allowedValues: [
-      "dna_normal",
-      "dna_tumor",
-      "rna_normal",
-      "rna_tumor",
-      "cellline"
+      "DNA normal",
+      "DNA tumor",
+      "RNA normal",
+      "RNA tumor",
+      "Cellline"
     ],
   },
 });
@@ -542,4 +542,4 @@ QualityControlPlots.attachSchema(qualityControlPlotSchema);
 
 // noooo there are no schemas for these
 expression2 = new Meteor.Collection("expression2");
-genes = new Meteor.Collection("genes");
+Genes = new Meteor.Collection("genes");

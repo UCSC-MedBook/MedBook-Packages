@@ -26,6 +26,7 @@ Package.onUse(function(api) {
   api.export('WranglerSubmissions');
   api.export('WranglerDocuments');
   api.export('WranglerFiles');
+  api.export('SlugsAndNames');
   api.export('Blobs');
 
   // TODO: remove this when we move the schemas to collections

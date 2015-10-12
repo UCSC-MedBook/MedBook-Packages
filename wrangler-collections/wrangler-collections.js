@@ -1,3 +1,5 @@
+var SlugsAndNames = {};
+
 WranglerSubmissions = new Meteor.Collection("wrangler_submissions");
 WranglerSubmissions.attachSchema(new SimpleSchema({
   user_id: { type: Meteor.ObjectID },
@@ -24,7 +26,7 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
 }));
 
 // does a pick and then adds { optional: true} to it
-var fileTypeSlugsAndNames = [
+SlugsAndNames.file_type = [
   { slug: "mutationVCF", name: "Mutation VCF" },
   // { slug: "SuperpathwayInteractions", name: "Superpathway interactions" },
   // { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
@@ -58,9 +60,9 @@ wranglerFileOptions = new SimpleSchema([
   {
     file_type: {
       type: String,
-      allowedValues: _.pluck(fileTypeSlugsAndNames, "slug"),
+      allowedValues: _.pluck(SlugsAndNames.file_type, "slug"),
       autoform: {
-        options: _.filter(_.map(fileTypeSlugsAndNames, function (value) {
+        options: _.filter(_.map(SlugsAndNames.file_type, function (value) {
           if (value.name) {
             return { label: value.name, value: value.slug };
           }
@@ -71,11 +73,11 @@ wranglerFileOptions = new SimpleSchema([
       },
       optional: true,
     },
-    sample_label: {
-      type: String,
-      // TODO: custom function?
-      optional: true,
-    },
+    // sample_label: {
+    //   type: String,
+    //   // TODO: custom function?
+    //   optional: true,
+    // },
   },
   makePickOptional(GeneExpression, "normalization"),
 ]);
@@ -126,6 +128,7 @@ WranglerDocuments.attachSchema(new SimpleSchema({
       "prospective_document",
       "sample_normalization",
       "sample_label_map",
+      "gene_label_map",
       // "sample_label",
       // "gene_label",
     ],
