@@ -35,7 +35,6 @@ SlugsAndNames.file_type = [
   // { slug: "GeneExpression", name: "Rectangular gene expression" },
   // { slug: "TCGAGeneExpression", name: "TCGA gene expression" }, // Olena file
   // { slug: "CompressedTarGz", name: "Compressed (.tar.gz)" },
-  { slug: "error" }, // intentionally doesn't have a name
 ];
 function makePickOptional(collection, schemaAttribute) {
   var schemaObject = {};
@@ -44,14 +43,14 @@ function makePickOptional(collection, schemaAttribute) {
           .pick(schemaAttribute) // so it doesn't set on the original
           .schema()[schemaAttribute],
       {
-        custom: function () {
-          if (!this.value && // if it's set it's not required again (duh)
-              (this.field("file_type").value === "gene_expression" ||
-                this.field("file_type").value ===
-                    "rectangular_gene_expression")) {
-            return "required";
-          }
-        },
+        // custom: function () {
+        //   if (!this.value && // if it's set it's not required again (duh)
+        //       (this.field("file_type").value === "gene_expression" ||
+        //         this.field("file_type").value ===
+        //             "rectangular_gene_expression")) {
+        //     return "required";
+        //   }
+        // },
         optional: true,
       });
   return new SimpleSchema(schemaObject);
@@ -62,13 +61,8 @@ wranglerFileOptions = new SimpleSchema([
       type: String,
       allowedValues: _.pluck(SlugsAndNames.file_type, "slug"),
       autoform: {
-        options: _.filter(_.map(SlugsAndNames.file_type, function (value) {
-          if (value.name) {
-            return { label: value.name, value: value.slug };
-          }
-          // return undefined
-        }), function (value) {
-          return value !== undefined;
+        options: _.map(SlugsAndNames.file_type, function (value) {
+          return { label: value.name, value: value.slug };
         }),
       },
       optional: true,

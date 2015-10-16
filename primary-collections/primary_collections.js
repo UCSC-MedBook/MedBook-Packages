@@ -412,7 +412,13 @@ var geneExpressionSummarySchema = new SimpleSchema([
 ]);
 
 var jobSchema = new SimpleSchema({
-  "name": { type: String },
+  "name": {
+    type: String,
+    allowedValues: [
+      "GuessWranglerFileType",
+      "ParseWranglerFile"
+    ],
+  },
   "user_id": { type: Meteor.ObjectID },
   "date_created": { type: Date },
   "date_modified": {
