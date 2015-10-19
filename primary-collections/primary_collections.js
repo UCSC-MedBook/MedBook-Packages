@@ -415,8 +415,10 @@ var jobSchema = new SimpleSchema({
   "name": {
     type: String,
     allowedValues: [
-      "GuessWranglerFileType",
-      "ParseWranglerFile"
+      "ParseWranglerFile",
+      "SubmitWranglerFile",
+      "SubmitWranglerSubmission",
+      "FinishWranglerSubmission",
     ],
   },
   "user_id": { type: Meteor.ObjectID },
@@ -447,7 +449,7 @@ var jobSchema = new SimpleSchema({
   "retry_count": { type: Number, defaultValue: 0 },
   // can be set even if status is not "error"
   "error_description": { type: String, optional: true },
-  "prerequisite_job_id": { type: Meteor.ObjectID, optional: true },
+  "prerequisite_job_ids": { type: [Meteor.ObjectID], optional: true },
 });
 mutationSchema.fieldOrder = [
   // TODO: ugh

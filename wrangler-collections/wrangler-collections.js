@@ -27,7 +27,7 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
 
 // does a pick and then adds { optional: true} to it
 SlugsAndNames.file_type = [
-  { slug: "mutationVCF", name: "Mutation VCF" },
+  { slug: "MutationVCF", name: "Mutation VCF" },
   // { slug: "SuperpathwayInteractions", name: "Superpathway interactions" },
   // { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
   { slug: "BD2KGeneExpression", name: "Single patient expression (BD2K pipeline)" },
@@ -97,6 +97,7 @@ WranglerFiles.attachSchema(new SimpleSchema({
     type: wranglerFileOptions,
     optional: true,
   },
+  written_to_database: { type: Boolean, defaultValue: false },
   error_description: { type: String, optional: true },
 
   // refers to Blobs
@@ -110,7 +111,7 @@ WranglerDocuments.attachSchema(new SimpleSchema({
   submission_type: {
     type: String,
     allowedValues: [
-      "mutation",
+      "mutations",
       "gene_expression",
       // "rectangular_gene_expression",
       // "superpathway",
