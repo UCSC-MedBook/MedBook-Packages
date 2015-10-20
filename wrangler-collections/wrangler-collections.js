@@ -32,8 +32,7 @@ SlugsAndNames.file_type = [
   // { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
   { slug: "BD2KGeneExpression", name: "Single patient expression (BD2K pipeline)" },
   { slug: "BD2KSampleLabelMap", name: "Sample label mapping (BD2K pipeline)" },
-  // { slug: "GeneExpression", name: "Rectangular gene expression" },
-  // { slug: "TCGAGeneExpression", name: "TCGA gene expression" }, // Olena file
+  { slug: "TCGAGeneExpression", name: "TCGA gene expression" },
   // { slug: "CompressedTarGz", name: "Compressed (.tar.gz)" },
 ];
 function makePickOptional(collection, schemaAttribute) {

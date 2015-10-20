@@ -422,7 +422,19 @@ var jobSchema = new SimpleSchema({
     ],
   },
   "user_id": { type: Meteor.ObjectID },
-  "date_created": { type: Date },
+  "date_created": {
+    type: Date,
+    // https://github.com/aldeed/meteor-collection2#autovalue
+    autoValue: function() {
+      if (this.isInsert) {
+        return new Date();
+      } else if (this.isUpsert) {
+        return { $setOnInsert: new Date() };
+      } else {
+        this.unset();  // Prevent user from supplying their own value
+      }
+    },
+  },
   "date_modified": {
     type: Date,
     autoValue: function () {
