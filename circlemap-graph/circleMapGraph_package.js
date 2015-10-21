@@ -1581,9 +1581,9 @@ var cola;
         function intersects(l, P) {
             var ints = [];
             for (var i = 1, n = P.length; i < n; ++i) {
-                var int = cola.vpsc.Rectangle.lineIntersection(l.x1, l.y1, l.x2, l.y2, P[i - 1].x, P[i - 1].y, P[i].x, P[i].y);
-                if (int)
-                    ints.push(int);
+                var intersect = cola.vpsc.Rectangle.lineIntersection(l.x1, l.y1, l.x2, l.y2, P[i - 1].x, P[i - 1].y, P[i].x, P[i].y);
+                if (intersect)
+                    ints.push(intersect);
             }
             return ints;
         }
@@ -7851,6 +7851,20 @@ var utils = utils || {};
     u.xlinkUri = "http://www.w3.org/1999/xlink";
 
     /**
+     * convert radian to degree
+     */
+    u.toDegrees = function(angle) {
+        return angle * (180 / Math.PI);
+    };
+
+    /**
+     * convert degree to radian
+     */
+    u.toRadians = function(angle) {
+        return angle * (Math.PI / 180);
+    };
+
+    /**
      * Check if an object has the specified property.
      */
     u.hasOwnProperty = function(obj, prop) {
@@ -11871,51 +11885,23 @@ var circleMapGenerator = {};
 
         this.sortSamples();
 
-        /**
-         * get a color for a score that straddles 0
-         * @param {Object} score
-         * @param {Object} cohortMin
-         * @param {Object} cohortMax
-         */
         function getHexColor(score, cohortMin, cohortMax) {
-            if (! utils.isNumerical(score)) {
+            if (_.isUndefined(score) || ! utils.isNumerical(score)) {
                 return "grey";
             }
-            var isPositive = (score >= 0) ? true : false;
 
-            var maxR = 255;
-            var maxG = 0;
-            var maxB = 0;
+            cohortMin = (_.isNumber(cohortMin)) ? cohortMin : -1;
+            cohortMax = (_.isNumber(cohortMax)) ? cohortMax : 1;
 
-            var minR = 255;
-            var minG = 255;
-            var minB = 255;
+            var posColor = "red";
+            var negColor = "blue";
+            var zeroColor = "white";
 
-            var normalizedScore = (score / cohortMax);
+            var colorMapper = d3.scale.linear();
+            colorMapper.domain([cohortMin, 0, cohortMax]).range([negColor, zeroColor, posColor]);
+            var returnColor = colorMapper(score);
 
-            if (!isPositive) {
-                maxR = 0;
-                maxG = 0;
-                maxB = 255;
-
-                minR = 255;
-                minG = 255;
-                minB = 255;
-
-                normalizedScore = (score / cohortMin);
-            }
-
-            var newR = utils.linearInterpolation(normalizedScore, minR, maxR);
-            var newG = utils.linearInterpolation(normalizedScore, minG, maxG);
-            var newB = utils.linearInterpolation(normalizedScore, minB, maxB);
-
-            newR = utils.rangeLimit(newR, 0, 255);
-            newG = utils.rangeLimit(newG, 0, 255);
-            newB = utils.rangeLimit(newB, 0, 255);
-
-            var hexColor = utils.rgbToHex(Math.floor(newR), Math.floor(newG), Math.floor(newB));
-
-            return hexColor;
+            return returnColor;
         }
 
         /**
@@ -11979,7 +11965,7 @@ var circleMapGenerator = {};
                     fill = "grey";
                 } else {
                     // color center
-                    fill = getHexColor(centerScore, -1, 1);
+                    fill = getHexColor(centerScore);
                 }
                 var centerCircleElem = utils.createSvgCircleElement(0, 0, ringThickness, {
                     "fill" : fill
@@ -12000,8 +11986,6 @@ var circleMapGenerator = {};
 
                 circleMapGroup.appendChild(centerCircleElem);
             }
-
-            var legendColorMapper;
 
             // iterate over rings
             for (var i = 0; i < ringsList.length; i++) {
@@ -12025,18 +12009,7 @@ var circleMapGenerator = {};
 
                 var ringData = this.getRingData(dataName);
 
-                if (feature.toLowerCase() === 'legend') {
-                    if ( typeof legendColorMapper === 'undefined') {
-                        legendColorMapper = d3.scale.category10();
-                    }
-                    var arc = createD3Arc(innerRadius, innerRadius + ringThickness, 0, 360);
-                    var pathElem = document.createElementNS(utils.svgNamespaceUri, 'path');
-                    utils.setElemAttributes(pathElem, {
-                        'd' : arc(),
-                        'fill' : legendColorMapper(dataName)
-                    });
-                    ringGroupElem.appendChild(pathElem);
-                } else if (ringData == null) {
+                if (ringData == null) {
                     // draw a grey ring for no data.
                     var arc = createD3Arc(innerRadius, innerRadius + ringThickness, 0, 360);
                     var pathElem = document.createElementNS(utils.svgNamespaceUri, 'path');
@@ -12064,7 +12037,7 @@ var circleMapGenerator = {};
                     };
                     this.sortedSamples.forEach(function(val, idx, arr) {
                         var sampleName = val;
-                        var hexColor = "grey";
+                        var hexColor;
 
                         var score = null;
                         if ( sampleName in ringData) {
@@ -12072,7 +12045,6 @@ var circleMapGenerator = {};
                             if ((eventStats != null) && (ringName !== "expression data")) {
                                 // assign color for numerical data
                                 hexColor = getHexColor(score, eventStats['min'], eventStats['max']);
-                                // hexColor = getHexColor(score, -1.0, 1.0);
                             } else {
                                 // assign color categorical data
                                 hexColor = colorMapper(score);
@@ -12082,6 +12054,7 @@ var circleMapGenerator = {};
                         var arc = createD3Arc(innerRadius, innerRadius + ringThickness, startDegrees, startDegrees + degreeIncrements);
                         var pathElem = document.createElementNS(utils.svgNamespaceUri, 'path');
 
+                        // TODO aaa
                         utils.setElemAttributes(pathElem, {
                             'd' : arc(),
                             'fill' : hexColor,
@@ -12120,12 +12093,300 @@ var circleMapGenerator = {};
         };
 
         /**
+         * Generate an svg:group DOM element to be appended to an svg element.
+         */
+        this.generateCircleMapSvgGElem_legend = function(radius, interactive) {
+            var feature = "legend";
+            var interactive = interactive || false;
+            var ringsList = this.cmgParams['ringsList'];
+
+            var fullRadius = ( typeof radius === 'undefined') ? 100 : radius;
+
+            // var expressionEventIds = this.eventAlbum.getEventIdsByType()['expression data'];
+            var numDatasets = ringsList.length;
+
+            // +1 for the center
+            var ringThickness = fullRadius / (numDatasets + 1);
+            var innerRadius = ringThickness;
+
+            var usedAngles = [];
+
+            // arc paths will be added to this SVG group
+            var circleMapGroup = document.createElementNS(utils.svgNamespaceUri, 'g');
+            utils.setElemAttributes(circleMapGroup, {
+                'class' : 'circleMapG',
+                "feature" : feature
+            });
+
+            // white palete
+            circleMapGroup.appendChild(utils.createSvgCircleElement(0, 0, fullRadius, {
+                "fill" : "white"
+            }));
+
+            // node centers
+            var fill;
+            if (_.isUndefined(this.cmgParams["centerScores"]) || (_.keys(this.cmgParams["centerScores"]).length == 0 )) {
+                // no node center
+            } else {
+                var centerScore = this.cmgParams["centerScores"][feature];
+                if (_.isUndefined(centerScore)) {
+                    // check if node center data exists
+                    fill = "grey";
+                } else {
+                    // color center
+                    fill = getHexColor(centerScore);
+                }
+                var centerCircleElem = utils.createSvgCircleElement(0, 0, ringThickness, {
+                    "fill" : fill
+                });
+                // additional interactive features
+                if (interactive) {
+                    // tooltip for node center
+                    if (_.isUndefined(centerScore)) {
+                        centerScore = "N/A";
+                    } else {
+                        // use centerScore
+                    }
+                    var titleText = "node center score for " + feature + ": " + centerScore;
+                    var titleElem = document.createElementNS(utils.svgNamespaceUri, "title");
+                    titleElem.innerHTML = titleText;
+                    centerCircleElem.appendChild(titleElem);
+                }
+
+                circleMapGroup.appendChild(centerCircleElem);
+            }
+
+            /**
+             * convert radial position to x,y position.
+             */
+            var radialPos2xyPos = function(radius, angle) {
+                var pos = {};
+
+                var radians = utils.toRadians(angle);
+                var oppo = radius * Math.sin(radians);
+                var adj = radius * Math.cos(radians);
+
+                pos["x"] = oppo;
+                pos["y"] = adj;
+
+                return pos;
+            };
+
+            // TODO addLegendScoreArcs
+            var addLegendScoreArcs = function(scores, ringGroupElem, colorMapper, innerRadius, ringThickness, ringName, isContinuousScore, ringNamePosition, additionalPathElemAttribs) {
+                var startDegrees = 0;
+                var degreeIncrements = (360 / scores.length);
+                var pathElemAttribs = (_.isUndefined(additionalPathElemAttribs)) ? {} : additionalPathElemAttribs;
+
+                var labelledScoreIndices = [];
+                labelledScoreIndices.push(0);
+                labelledScoreIndices.push(scores.length - 1);
+                labelledScoreIndices.push(scores.length - 2);
+                labelledScoreIndices.push(Math.floor((scores.length - 1) / 2));
+
+                _.each(scores, function(score) {
+                    var scoresIndex = _.indexOf(scores, score);
+
+                    // arc
+                    var color = colorMapper(score);
+                    var arc = createD3Arc(innerRadius, innerRadius + ringThickness, startDegrees, startDegrees + degreeIncrements);
+                    var pathElem = document.createElementNS(utils.svgNamespaceUri, 'path');
+
+                    pathElemAttribs["d"] = arc();
+                    pathElemAttribs["fill"] = color;
+
+                    utils.setElemAttributes(pathElem, pathElemAttribs);
+                    ringGroupElem.appendChild(pathElem);
+
+                    var labelGroupElem = document.createElementNS(utils.svgNamespaceUri, 'g');
+                    ringGroupElem.appendChild(labelGroupElem);
+
+                    // label swatch
+                    if ((isContinuousScore == false) || (_.contains(labelledScoreIndices, scoresIndex))) {
+                        var angle = Math.floor(startDegrees + (degreeIncrements / 2));
+                        while (_.contains(usedAngles, angle)) {
+                            angle = Math.floor(angle + 3);
+                            if (angle >= startDegrees + degreeIncrements) {
+                                angle = Math.floor(startDegrees + 3);
+                            }
+                        }
+                        usedAngles.push(angle);
+
+                        var xyPos1 = radialPos2xyPos(innerRadius + (ringThickness * (2 / 3)), angle);
+
+                        var xyPos = radialPos2xyPos(innerRadius + (80), angle);
+                        // var testElem = utils.createSvgRectElement(xyPos["x"] - 4.5, -xyPos["y"] - 4.5, 0, 0, 9, 9, {
+                        // "fill" : color
+                        // // "stroke" : "black"
+                        // });
+                        // labelGroupElem.appendChild(testElem);
+
+                        // label line
+                        var lineElem = document.createElementNS(utils.svgNamespaceUri, 'line');
+                        var lineAttribs = {
+                            "stroke" : "darkgray",
+                            "x1" : xyPos1["x"],
+                            "y1" : -xyPos1["y"],
+                            "x2" : xyPos["x"],
+                            "y2" : -xyPos["y"]
+                        };
+                        utils.setElemAttributes(lineElem, lineAttribs);
+                        labelGroupElem.appendChild(lineElem);
+
+                        // label text
+                        var legendLabelElem = document.createElementNS(utils.svgNamespaceUri, 'text');
+                        var labelAttribs = {
+                            "fill" : "black",
+                            "font-size" : "8",
+                            "dx" : xyPos["x"],
+                            "dy" : -xyPos["y"]
+                        };
+                        if (xyPos["x"] < 0) {
+                            labelAttribs["text-anchor"] = "end";
+                        }
+                        utils.setElemAttributes(legendLabelElem, labelAttribs);
+                        legendLabelElem.innerHTML = score;
+                        labelGroupElem.appendChild(legendLabelElem);
+                    }
+
+                    // additional interactive features
+                    // tooltip for arc
+                    // score = (utils.isNumerical(score)) ? score.toFixed(3) : score;
+                    var titleText = score + " value for " + ringName + " data";
+                    var titleElem = document.createElementNS(utils.svgNamespaceUri, "title");
+                    titleElem.innerHTML = titleText;
+                    pathElem.appendChild(titleElem);
+
+                    // clockwise from 12 o clock
+                    startDegrees = startDegrees + degreeIncrements;
+                });
+
+                // add ringName label
+                var angle = 360 * ringNamePosition;
+                while (_.contains(usedAngles, angle)) {
+                    angle = Math.floor(angle + 3);
+                }
+                usedAngles.push(angle);
+                var xyPos1 = radialPos2xyPos(innerRadius + (ringThickness * 0.5), angle);
+                var xyPos2 = radialPos2xyPos(innerRadius + 100, angle);
+
+                var lineElem = document.createElementNS(utils.svgNamespaceUri, 'line');
+                var lineAttribs = {
+                    "stroke" : "darkgray",
+                    "stroke-width" : 2,
+                    "x1" : xyPos1["x"],
+                    "y1" : -xyPos1["y"],
+                    "x2" : xyPos2["x"],
+                    "y2" : -xyPos2["y"]
+                };
+                utils.setElemAttributes(lineElem, lineAttribs);
+                ringGroupElem.appendChild(lineElem);
+
+                var legendLabelElem = document.createElementNS(utils.svgNamespaceUri, 'text');
+                var labelAttribs = {
+                    "fill" : "black",
+                    "font-size" : "10",
+                    "dx" : xyPos2["x"],
+                    "dy" : -xyPos2["y"]
+                };
+                if (xyPos2["x"] < 0) {
+                    labelAttribs["text-anchor"] = "end";
+                }
+                utils.setElemAttributes(legendLabelElem, labelAttribs);
+                legendLabelElem.innerHTML = ringName + " ring";
+                ringGroupElem.appendChild(legendLabelElem);
+            };
+
+            // iterate over rings
+            for (var i = 0, lengthi = ringsList.length; i < lengthi; i++) {
+                var ringName = ringsList[i];
+                var dataName = null;
+
+                var ringNamePosition = (i + 1) / (lengthi + 2);
+
+                // find data name suffix at runtime
+                if ( ringName in this.eventAlbum.datatypeSuffixMapping && (this.eventAlbum.datatypeSuffixMapping[ringName] !== "")) {
+                    dataName = feature + this.eventAlbum.datatypeSuffixMapping[ringName];
+                } else {
+                    dataName = ringName;
+                }
+
+                var ringGroupElem = document.createElementNS(utils.svgNamespaceUri, 'g');
+                utils.setElemAttributes(ringGroupElem, {
+                    'class' : ringName,
+                    'ringName' : ringName,
+                    'dataName' : dataName
+                });
+                circleMapGroup.appendChild(ringGroupElem);
+
+                var ringData = this.getRingData(dataName);
+
+                // determine numeric, categoric, mutation, etc.
+                var eventObj = this.eventAlbum.getEvent(dataName);
+                if (_.isUndefined(eventObj)) {
+                    // console.log("no eventObj for", dataName);
+                    // var sampleNum = this.sortedSamples.length;
+                    var sampleNum = 20;
+
+                    var simulatedScores = [-1, 0, 1];
+                    for (var k = 1, lengthk = sampleNum / 2; k < lengthk; k++) {
+                        var simulatedScore = k * (1 / lengthk);
+                        simulatedScore = simulatedScore.toPrecision(2);
+                        simulatedScores.push(simulatedScore);
+                        simulatedScores.push(-1 * simulatedScore);
+                    }
+                    simulatedScores = simulatedScores.sort(function(a, b) {
+                        return (a - b);
+                    });
+                    simulatedScores.push("no data");
+
+                    var isContinuousScore = true;
+
+                    addLegendScoreArcs(simulatedScores, ringGroupElem, getHexColor, innerRadius, ringThickness, ringName, isContinuousScore, ringNamePosition);
+                } else {
+                    // console.log("got an eventObj for", dataName);
+                    var scores = eventObj.data.getValues(true);
+                    var colorMapper = this.colorMappers[dataName];
+
+                    var isContinuousScore = false;
+
+                    addLegendScoreArcs(scores, ringGroupElem, colorMapper, innerRadius, ringThickness, ringName, isContinuousScore, ringNamePosition);
+                }
+
+                innerRadius = innerRadius + ringThickness;
+            }
+
+            // reorder placement of circleMapRingG elems
+            var revRingsList = ringsList.slice();
+            revRingsList.reverse();
+            _.each(revRingsList, function(ringName) {
+                var elem = circleMapGroup.getElementsByClassName(ringName)[0];
+                utils.pullElemToFront(elem);
+            });
+
+            return circleMapGroup;
+        };
+
+        /**
+         * Wrapper for building SVGs
+         */
+        this.generateCircleMapSvgGElemWrapper = function(feature, radius, interactive) {
+            var svgGElem;
+            if (feature === "legend") {
+                svgGElem = this.generateCircleMapSvgGElem_legend(radius, interactive);
+            } else {
+                svgGElem = this.generateCircleMapSvgGElem(feature, radius, interactive);
+            }
+            return svgGElem;
+        };
+
+        /**
          *Get a data URI for the circleMap svg.
          */
         this.getCircleMapDataUri = function(feature) {
             var radius = 100;
 
-            var svgGElem = this.generateCircleMapSvgGElem(feature, radius);
+            var svgGElem = this.generateCircleMapSvgGElemWrapper(feature, radius);
 
             var svgTagOpen = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + (-1 * radius) + ' ' + (-1 * radius) + ' ' + (2 * radius) + ' ' + (2 * radius) + '">';
             var stringifiedSvg = svgTagOpen + svgGElem.outerHTML + '</svg>';
@@ -12147,7 +12408,7 @@ var circleMapGenerator = {};
         this.drawCircleMap = function(feature, d3SvgTagElement, radius, interactive) {
             var interactive = interactive || true;
             var radius = radius || 100;
-            var svgGElem = this.generateCircleMapSvgGElem(feature, radius, interactive);
+            var svgGElem = this.generateCircleMapSvgGElemWrapper(feature, radius, interactive);
 
             var svgElem = document.createElementNS(utils.svgNamespaceUri, 'svg');
             // svgElem.setAttributeNS('null', 'xmlns', 'http://www.w3.org/2000/svg');
@@ -12551,6 +12812,17 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
             'id' : 'circleMaps'
         });
 
+        // styling the outer svg element
+        cmGraph.svgElem.style({
+            "font-family" : "Verdana",
+            "background-color" : "#FFF",
+            "-webkit-user-select" : "none",
+            "-moz-user-select" : "none",
+            "-ms-user-select" : "none",
+            "-o-user-select" : "none",
+            "user-select" : "none"
+        });
+
         // http://www.w3.org/TR/SVG/painting.html#MarkerElement
         var defsElem = cmGraph.svgElem.append('defs');
         cmGraph.addMarkerDefs(defsElem);
@@ -12576,6 +12848,16 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         // using cola layout package with d3 adapter
         // var d3cola = cola.d3adaptor().linkDistance(30).size([width, height]);
         cmGraph.force = cola.d3adaptor().linkDistance(d3_config['linkDistance']).size([windowWidth, windowHeight]);
+
+        // add legend node
+        cmGraph.graphDataObj.addNode({
+            "name" : "legend",
+            "group" : "legend",
+            // to set starting position, set fixed to true and provide (x,y)
+            "fixed" : true,
+            "x" : 50,
+            "y" : 50
+        });
     };
 
     // addMarkerDefs
@@ -12656,7 +12938,7 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         var circleMapSvgSelection = svgNodeLayer.selectAll(".node").selectAll(".circleMapSvg");
         circleMapSvgSelection.each(function(d, i) {
             var feature = d.name;
-            var svgGElem = cmGraph.circleMapGeneratorObj.generateCircleMapSvgGElem(feature, radius, interactive);
+            var svgGElem = cmGraph.circleMapGeneratorObj.generateCircleMapSvgGElemWrapper(feature, radius, interactive);
             svgGElem.setAttributeNS(null, 'transform', cmGraph.smallScale);
             this.appendChild(svgGElem);
         });
@@ -12688,7 +12970,7 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
             'class' : "link"
         }).style("stroke", function(d) {
             return cmGraph.colorMapper(d.relation);
-        });
+        }).style("stroke-opacity", ".6");
 
         // initial setting of decoration styles
         linkSelection.style('marker-end', function(d, i) {
@@ -12874,13 +13156,16 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
             }
         }).style("fill", function(d) {
             return cmGraph.colorMapper(d.group);
-        });
+        }).style("overflow", "visible");
 
         // node labels
         // var textdy = "2.7em";
         var textdy = "3em";
         nodeSelection.append("svg:text").attr("text-anchor", "middle").attr('dy', textdy).text(function(d) {
             return d.name;
+        }).style({
+            "stroke" : "darkslategrey",
+            "fill" : "darkslategrey"
         });
 
         // edge tooltips
