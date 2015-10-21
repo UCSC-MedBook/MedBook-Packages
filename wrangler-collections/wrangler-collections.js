@@ -33,6 +33,7 @@ SlugsAndNames.file_type = [
   { slug: "BD2KGeneExpression", name: "Single patient expression (BD2K pipeline)" },
   { slug: "BD2KSampleLabelMap", name: "Sample label mapping (BD2K pipeline)" },
   { slug: "TCGAGeneExpression", name: "TCGA gene expression" },
+  { slug: "BasicClinical", name: "Fusion bare minimum clinical" },
   // { slug: "CompressedTarGz", name: "Compressed (.tar.gz)" },
 ];
 function makePickOptional(collection, schemaAttribute) {
