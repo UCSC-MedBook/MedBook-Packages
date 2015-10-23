@@ -4172,6 +4172,20 @@ var utils = utils || {};
     u.xlinkUri = "http://www.w3.org/1999/xlink";
 
     /**
+     * convert radian to degree
+     */
+    u.toDegrees = function(angle) {
+        return angle * (180 / Math.PI);
+    };
+
+    /**
+     * convert degree to radian
+     */
+    u.toRadians = function(angle) {
+        return angle * (Math.PI / 180);
+    };
+
+    /**
      * Check if an object has the specified property.
      */
     u.hasOwnProperty = function(obj, prop) {
@@ -8237,7 +8251,6 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                             return;
                         }
                     },
-                    // TODO experimental features here
                     "test_fold" : {
                         "name" : "dev_features",
                         "disabled" : function() {
@@ -8291,7 +8304,6 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
         });
     };
 
-    // TODO setupRowLabelContextMenu
     /**
      *context menu uses http://medialize.github.io/jQuery-contextMenu
      */
@@ -8524,15 +8536,50 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                         "name" : "view pathway context",
                         "icon" : null,
                         "disabled" : function() {
-                            var pathway_context_viewable = ["expression data", "mutation call"];
+                            var pathway_context_viewable = ["expression data", "mutation call", "kinase target activity", "tf target activity"];
                             var disabled = (_.contains(pathway_context_viewable, datatype)) ? false : true;
                             return disabled;
                         },
                         "callback" : function(key, opt) {
-                            var geneSymbol = eventId.replace(/_mRNA$/, "").replace(/_mutation$/, "");
+                            var geneSymbol = eventId.replace(/_mRNA$/, "").replace(/_mutation$/, "").replace(/_kinase_viper_v.+$/, "").replace(/_tf_viper_v.+$/, "");
                             var url = "/PatientCare/geneReport/" + geneSymbol;
                             console.log("linking out to", url, "for pathway context");
                             window.open(url, "_patientCare");
+                        }
+                    },
+                    "pathway_genes" : {
+                        "name" : "add gene set",
+                        "icon" : null,
+                        "disabled" : function() {
+                            var pathway_context_viewable = ["kinase target activity", "tf target activity"];
+                            var disabled = (_.contains(pathway_context_viewable, datatype)) ? false : true;
+                            return disabled;
+                        },
+                        "callback" : function(key, opt) {
+                            var sigName = eventId.replace(/_v\d+$/, "");
+                            console.log("add gene set for", sigName);
+                            // add gene set for signature
+                            var geneSetSelectElem = document.getElementById("geneset");
+                            if (_.isUndefined(geneSetSelectElem) || _.isNull(geneSetSelectElem)) {
+                                console.log("no geneSetSelectElem with ID", "geneset");
+                                return;
+                            }
+                            var geneSetOptions = geneSetSelectElem.getElementsByTagName("option");
+                            var foundMatch = false;
+                            _.each(geneSetOptions, function(option, index) {
+                                var text = option.innerHTML;
+                                text = text.replace(/ \(\d+\)$/, "").replace(/_targets_viper/, "_viper");
+                                // var val = option.getAttribute("value");
+                                // var geneList = val.split(/,/);
+                                if (text === sigName) {
+                                    option.selected = true;
+                                    $(geneSetSelectElem).trigger("change");
+                                    foundMatch = true;
+                                }
+                            });
+                            if (!foundMatch) {
+                                alert("No gene set found for " + sigName + ".");
+                            }
                         }
                     },
                     "sep2" : "---------",
@@ -8772,7 +8819,6 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
      * @param {Object} config
      */
     var drawMatrix = function(containingDiv, config) {
-        // TODO begin drawMatrix
         console.log("*** BEGIN DRAWMATRIX ***");
 
         var thisElement = utils.removeChildElems(containingDiv);
@@ -8831,17 +8877,82 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             /**
              * premap some colors
              */
-            var premapColors = function(d3OrdinalColorMapper10) {
-                var preassignedVals = ["blue", "orange", "green", "red", "purple", "brown", "pink", "grey", "chartreuse", "cyan"];
-                preassignedVals = preassignedVals.concat(["small cell", "xyz1", "naive", "resistant", "xyz4", "xyz5", "xyz6", "exclude", "xyz8", "xyz9"]);
-                preassignedVals = preassignedVals.concat(["neg", "xyz11", "yes", "adeno", "xyz14", "xyz15", "xyz16", "xyz17", "xyz18", "xyz19"]);
-                preassignedVals = preassignedVals.concat(["not adeno", "xyz21", "xyz22", "no", "xyz24", "xyz25", "xyz26", "xyz27", "xyz28", "xyz29"]);
-                preassignedVals = preassignedVals.concat(["xyz30", "xyz31", "xyz32", "pos", "xyz34", "xyz35", "xyz36", "xyz37", "xyz38", "xyz39"]);
-                preassignedVals = preassignedVals.concat(["xyz40", "xyz41", "xyz42", "not small cell", "xyz44", "xyz45", "xyz46", "xyz47", "xyz48", "xyz49"]);
-                _.each(preassignedVals, function(value) {
-                    d3OrdinalColorMapper10(value);
+            var premapColors = function(d3ScaleColormapper, colorSet) {
+                var colorSets = {
+                    "exclude" : {
+                        "exclude" : "gray"
+                    },
+                    "small cell" : {
+                        "exclude" : "gray",
+                        "small cell" : "blue",
+                        "not small cell" : "red"
+                    },
+                    "resistance" : {
+                        "exclude" : "gray",
+                        "naive" : "green",
+                        "resistant" : "red"
+                    },
+                    "pos_neg" : {
+                        "exclude" : "gray",
+                        "pos" : "red",
+                        "neg" : "blue"
+                    },
+                    "yes_no" : {
+                        "exclude" : "gray",
+                        "yes" : "green",
+                        "no" : "red"
+                    },
+                    "adeno" : {
+                        "exclude" : "gray",
+                        "adeno" : "red",
+                        "not adeno" : "blue"
+                    }
+                };
+
+                // d3.scale.category10().range()
+                var colorNames = {
+                    "blue" : "#1f77b4",
+                    "orange" : "#ff7f0e",
+                    "green" : "#2ca02c",
+                    "red" : "#d62728",
+                    "purple" : "#9467bd",
+                    "brown" : "#8c564b",
+                    "pink" : "#e377c2",
+                    "gray" : "#7f7f7f",
+                    "chartreuse" : "#bcbd22",
+                    "cyan" : "#17becf"
+                };
+
+                var mapping = (_.isUndefined(colorSets[colorSet])) ? {} : colorSets[colorSet];
+
+                // map named colors to color code
+                var inputMappings = {};
+                if (!_.isUndefined(mapping)) {
+                    _.each(mapping, function(value, key) {
+                        var color = (_.isUndefined(colorNames[value])) ? value : colorNames[value];
+                        inputMappings[key] = color;
+                    });
+                }
+
+                //  assign pre-mapped colors
+                var range = _.values(inputMappings);
+                var domain = _.keys(inputMappings);
+
+                // fill in remaining color range
+                _.each(_.values(colorNames), function(color) {
+                    if (!_.contains(range, color)) {
+                        range.push(color);
+                    }
                 });
+
+                // assign domain and range to color mapper
+                d3ScaleColormapper.domain(domain);
+                d3ScaleColormapper.range(range);
+
+                // console.log("range", d3ScaleColormapper.range());
+                // console.log("domain", d3ScaleColormapper.domain());
             };
+
             var expressionColorMapper = utils.centeredRgbaColorMapper(false);
             if (rescalingData != null) {
                 var minExpVal = rescalingData['minVal'];
@@ -8864,8 +8975,24 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 var eventId = eventList[i];
                 var allowedValues = eventAlbum.getEvent(eventId).metadata.allowedValues;
                 if (allowedValues == 'categoric') {
-                    colorMappers[eventId] = d3.scale.category10();
-                    premapColors(colorMappers[eventId]);
+                    var colorMapper = d3.scale.category10();
+                    // TODO set a premapping color scheme dependent upon event
+                    // colorSets ["exclude", "small cell", "resistance", "pos_neg", "yes_no", "adeno"]
+                    var eventId_lc = eventId.toLowerCase();
+                    var colorSet;
+                    if (eventId_lc === "smallcell") {
+                        colorSet = "small cell";
+                    } else if (_.contains(["enzalutamide", "abiraterone", "docetaxel"], eventId_lc)) {
+                        colorSet = "resistance";
+                    } else if (_.contains(["mutations", "primary hr"], eventId_lc)) {
+                        colorSet = "yes_no";
+                    } else if (_.contains(["pten-ihc", "ar-fish"], eventId_lc)) {
+                        colorSet = "pos_neg";
+                    } else {
+                        colorSet = "exclude";
+                    }
+                    premapColors(colorMapper, colorSet);
+                    colorMappers[eventId] = colorMapper;
                 } else if (allowedValues == 'numeric') {
                     // 0-centered color mapper
                     var eventObj = eventAlbum.getEvent(eventId);
@@ -8895,8 +9022,8 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     // ordinal data
                     colorMappers[eventId] = ordinalColorMappers[allowedValues];
                 } else {
-                    colorMappers[eventId] = d3.scale.category10();
-                    premapColors(colorMappers[eventId]);
+                    var colorMapper = d3.scale.category10();
+                    colorMappers[eventId] = colorMapper;
                 }
             }
             return colorMappers;
@@ -9331,7 +9458,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             return s;
         });
 
-        // TODO SVG elements for heatmap cells
+        // SVG elements for heatmap cells
         var dataList = eventAlbum.getAllDataAsList();
         var showDataList = [];
         for (var i = 0; i < dataList.length; i++) {
@@ -9426,7 +9553,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             var getFill = function(d) {
                 var allowed_values = eventAlbum.getEvent(d['eventId']).metadata.allowedValues;
                 var val = d["val"];
-                if (!_.isNumber(val)) {
+                if (_.isString(val)) {
                     val = val.toLowerCase();
                 }
                 // if (eventAlbum.ordinalScoring.hasOwnProperty(allowed_values)) {
@@ -9438,6 +9565,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 return colorMapper(val);
             };
 
+            // pivot background
             var pivotEventObj;
             var pivotEventColorMapper;
             var strokeOpacity = 1;
@@ -9446,26 +9574,31 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 pivotEventColorMapper = colorMappers[pivotEventId];
                 strokeOpacity = 0.4;
             }
+
             var getStroke = function(d) {
                 var grey = "#E6E6E6";
                 var stroke;
-                if (pivotEventId == null || d["eventId"] === pivotEventId) {
+                if (_.isUndefined(pivotEventColorMapper) || d["eventId"] === pivotEventId) {
                     stroke = grey;
                 } else {
                     // use fill for sample pivot event value
                     var sampleId = d["id"];
                     var data = pivotEventObj.data.getData([sampleId]);
                     var val = data[0]["val"];
-                    if (val == null) {
+                    if (val === null) {
                         stroke = grey;
                     } else {
+                        // !!! colors are mapped to lowercase of strings !!!
+                        if (_.isString(val)) {
+                            val = val.toLowerCase();
+                        }
                         stroke = pivotEventColorMapper(val);
                     }
                 }
                 return stroke;
             };
 
-            if ((type == null) || (d['val'] == null)) {
+            if ((type === null) || (d['val'] === null)) {
                 // final rectangle for null values
                 var attributes = {
                     "fill" : "lightgrey",
@@ -9509,7 +9642,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 attributes['val'] = d['val'];
                 icon = utils.createSvgRectElement(x, y, rx, ry, width, height, attributes);
             } else if (eventAlbum.getEvent(d['eventId']).metadata.datatype === 'mutation call') {
-                // TODO oncoprint-style icons
+                // oncoprint-style icons
                 attributes['class'] = "signature";
                 attributes['eventId'] = d['eventId'];
                 attributes['sampleId'] = d['id'];
@@ -9518,7 +9651,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
 
                 icon = createMutTypeSvg(x, y, rx, ry, width, height, attributes);
             } else if (false & eventAlbum.getEvent(d['eventId']).metadata.datatype === "datatype label") {
-                // TODO datatype label cells
+                // datatype label cells
                 var eventId = d["eventId"];
                 var datatype;
                 var headOrTail;
@@ -9707,7 +9840,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             return group;
         });
 
-        // TODO heatmap click event
+        // heatmap click event
         // heatMap.on("click", config["cellClickback"]).on("contextmenu", config["cellRightClickback"]);
 
         // heatmap titles
@@ -9759,7 +9892,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
 
         console.log("*** END DRAWMATRIX ***");
         return config;
-        // TODO end drawMatrix
+        // end drawMatrix
     };
 
 })(observation_deck);
