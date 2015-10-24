@@ -461,6 +461,7 @@ var jobSchema = new SimpleSchema({
   "retry_count": { type: Number, defaultValue: 0 },
   // can be set even if status is not "error"
   "error_description": { type: String, optional: true },
+  stack_trace: { type: String, optional: true },
   "prerequisite_job_ids": { type: [Meteor.ObjectID], optional: true },
 });
 mutationSchema.fieldOrder = [

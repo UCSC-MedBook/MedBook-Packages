@@ -55,32 +55,13 @@ function makePickOptional(collection, schemaAttribute) {
       });
   return new SimpleSchema(schemaObject);
 }
-wranglerFileOptions = new SimpleSchema([
-  {
-    file_type: {
-      type: String,
-      allowedValues: _.pluck(SlugsAndNames.file_type, "slug"),
-      autoform: {
-        options: _.map(SlugsAndNames.file_type, function (value) {
-          return { label: value.name, value: value.slug };
-        }),
-      },
-      optional: true,
-    },
-    // sample_label: {
-    //   type: String,
-    //   // TODO: custom function?
-    //   optional: true,
-    // },
-  },
-  makePickOptional(GeneExpression, "normalization"),
-]);
 WranglerFiles = new Meteor.Collection("wrangler_files");
 WranglerFiles.attachSchema(new SimpleSchema({
   submission_id: { type: Meteor.ObjectID },
   user_id: { type: Meteor.ObjectID },
   blob_id: { type: Meteor.ObjectID },
   blob_name: { type: String },
+  blob_text_sample: { type: String, optional: true },
   status: {
     type: String,
     allowedValues: [
@@ -94,8 +75,27 @@ WranglerFiles.attachSchema(new SimpleSchema({
     ],
   },
   options: {
-    type: wranglerFileOptions,
-    optional: true,
+    type: new SimpleSchema([
+      {
+        file_type: {
+          type: String,
+          allowedValues: _.pluck(SlugsAndNames.file_type, "slug"),
+          autoform: {
+            options: _.map(SlugsAndNames.file_type, function (value) {
+              return { label: value.name, value: value.slug };
+            }),
+          },
+          optional: true,
+        },
+        // sample_label: {
+        //   type: String,
+        //   // TODO: custom function?
+        //   optional: true,
+        // },
+      },
+      makePickOptional(GeneExpression, "normalization"),
+    ]),
+    defaultValue: {},
   },
   written_to_database: { type: Boolean, defaultValue: false },
   error_description: { type: String, optional: true },
@@ -133,13 +133,13 @@ WranglerDocuments.attachSchema(new SimpleSchema({
     allowedValues: [
       "mutations",
     ],
-    custom: function () {
-      // TODO: don't allow if document_type is not "prospective_document"
-      if (!this.value && // if it's set it's not required again (duh)
-          (this.field("document_type").value === "prospective_document")) {
-        return "required";
-      }
-    },
+    // custom: function () {
+    //   // TODO: don't allow if document_type is not "prospective_document"
+    //   if (!this.value && // if it's set it's not required again (duh)
+    //       (this.field("document_type").value === "prospective_document")) {
+    //     return "required";
+    //   }
+    // },
     optional: true,
   },
   contents: {

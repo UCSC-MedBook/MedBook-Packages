@@ -30,7 +30,6 @@ Package.onUse(function(api) {
   api.export('Blobs');
 
   // TODO: remove this when we move the schemas to collections
-  api.export('wranglerFileOptions');
   api.export('getCollectionByName');
 
   api.export('BlobStore', 'server');
