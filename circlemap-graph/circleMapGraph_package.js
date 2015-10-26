@@ -10510,6 +10510,14 @@ var graphData = {};
         this.links = new Array();
 
         /**
+         * Get a list of link relations in this graph.
+         */
+        this.getRelations = function() {
+            var linkTypes = _.pluck(this.links, "relation");
+            return _.uniq(linkTypes);
+        };
+
+        /**
          * Get all the node names in the graph.
          */
         this.getAllNodeNames = function() {
@@ -12858,6 +12866,38 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
             "x" : 50,
             "y" : 50
         });
+
+        // add link legend
+        var legendLayer = cmGraph.svgElem.append('g').attr({
+            id : 'legendLayer'
+        });
+        var relations = cmGraph.graphDataObj.getRelations();
+        console.log("relations", relations);
+        _.each(relations, function(relation, index) {
+            var y = 150 + 25 * index;
+            var x = 25;
+            var length = 75;
+            var lineElem = legendLayer.append("line").attr({
+                "x1" : x,
+                "y1" : y,
+                "x2" : x + length,
+                "y2" : y
+            });
+            var decorations = cmGraph.getLinkDecorations(relation, 3);
+            lineElem.style(decorations);
+
+            var textElem = legendLayer.append("text").attr({
+                "x" : x + length,
+                "y" : y,
+                "dx" : "1em",
+                "dy" : "0.3em",
+                "text-anchor" : "start"
+            }).style({
+                "stroke" : "darkslategrey",
+                "fill" : "darkslategrey"
+            }).text(relation);
+            ;
+        });
     };
 
     // addMarkerDefs
@@ -12944,6 +12984,32 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         });
     };
 
+    /**
+     * Get style properties for use as link decorations.
+     * @param {Object} relationType
+     */
+    cmGraph.getLinkDecorations = function(relationType, value) {
+        var styles = {};
+        // marker-end
+        if (utils.beginsWith(relationType, "-") && utils.endsWith(relationType, ">")) {
+            styles["marker-end"] = "url(#Triangle)";
+        } else if (utils.beginsWith(relationType, "-") && utils.endsWith(relationType, "|")) {
+            styles["marker-end"] = "url(#Bar)";
+        } else if (utils.beginsWith(relationType, "component") && utils.endsWith(relationType, ">")) {
+            styles["marker-end"] = "url(#Circle)";
+        }
+        // stroke-dasharray
+        if (utils.beginsWith(relationType, "-a")) {
+            styles["stroke-dasharray"] = "6,3";
+        }
+
+        styles["stroke"] = cmGraph.colorMapper(relationType);
+        styles["stroke-width"] = (value);
+        styles["stroke-opacity"] = 0.6;
+
+        return styles;
+    };
+
     // requires svg, force, graph, cmg, circleDataLoaded, and various constants
     cmGraph.renderGraph = function(svg, force, graph, cmg, circleDataLoaded) {
 
@@ -13000,33 +13066,12 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
             }
         });
 
-        /**
-         * Get style properties for use as link decorations.
-         * @param {Object} relationType
-         */
-        var getLinkDecorations = function(relationType) {
-            var styles = {};
-            // marker-end
-            if (utils.beginsWith(relationType, "-") && utils.endsWith(relationType, ">")) {
-                styles["marker-end"] = "url(#Triangle)";
-            } else if (utils.beginsWith(relationType, "-") && utils.endsWith(relationType, "|")) {
-                styles["marker-end"] = "url(#Bar)";
-            } else if (utils.beginsWith(relationType, "component") && utils.endsWith(relationType, ">")) {
-                styles["marker-end"] = "url(#Circle)";
-            }
-            // stroke-dasharray
-            if (utils.beginsWith(relationType, "-a")) {
-                styles["stroke-dasharray"] = "6,3";
-            }
-            return styles;
-        };
-
         // mouse events for links - thicken on mouseover
         linkSelection.on('mouseover', function(d, i) {
             // mouseover event for link
             var linkElement = document.getElementById('link' + i);
-            var decorations = getLinkDecorations(d.relation);
-            var styleString = 'stroke-width:' + (d.value * 3) + ' ; stroke:' + cmGraph.colorMapper(d.relation);
+            var decorations = cmGraph.getLinkDecorations(d.relation, d.value * 3);
+            var styleString = "";
 
             for (var key in decorations) {
                 var val = decorations[key];
@@ -13037,8 +13082,8 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         }).on('mouseout', function(d, i) {
             // mouseout event for link
             var linkElement = document.getElementById('link' + i);
-            var decorations = getLinkDecorations(d.relation);
-            var styleString = 'stroke-width:' + d.value + ' ; stroke:' + cmGraph.colorMapper(d.relation);
+            var decorations = cmGraph.getLinkDecorations(d.relation, d.value);
+            var styleString = "";
 
             for (var key in decorations) {
                 var val = decorations[key];
@@ -13068,19 +13113,6 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                 var circleMapSvgElement = document.getElementById('circleMapSvg' + d['name']);
                 var nodeGelem = circleMapSvgElement.parentNode;
                 utils.pullElemToFront(nodeGelem);
-
-                // enlarge
-                // var circleMapGElem = circleMapSvgElement.getElementsByClassName("circleMapG")[0];
-                // var d3Selection = d3.select(circleMapGElem);
-                // d3Selection.transition().duration(500).attr("transform", cmGraph.largeScale);
-                // }).on('mouseout', function(d, i) {
-                // // mouseout event for node
-                // var circleMapSvgElement = document.getElementById('circleMapSvg' + d['name']);
-                //
-                // // cancel enlarge
-                // var circleMapGElem = circleMapSvgElement.getElementsByClassName("circleMapG")[0];
-                // var d3Selection = d3.select(circleMapGElem);
-                // d3Selection.transition().duration(500).attr("transform", cmGraph.smallScale);
             });
         } else {
             // mouse events for sbgn nodes
