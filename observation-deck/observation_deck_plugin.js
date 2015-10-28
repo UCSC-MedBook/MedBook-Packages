@@ -8906,6 +8906,17 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                         "exclude" : "gray",
                         "adeno" : "red",
                         "not adeno" : "blue"
+                    },
+                    //Response Evaluation Criteria in Solid Tumors (RECIST)
+                    "recist" : {
+                        // Complete Response
+                        "cr" : "green",
+                        // Partial Response
+                        "pr" : "chartreuse",
+                        // Stable Disease
+                        "sd" : "orange",
+                        // Progression of Disease
+                        "pd" : "red"
                     }
                 };
 
@@ -8980,7 +8991,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     // colorSets ["exclude", "small cell", "resistance", "pos_neg", "yes_no", "adeno"]
                     var eventId_lc = eventId.toLowerCase();
                     var colorSet;
-                    if (eventId_lc === "smallcell") {
+                    if (_.contains(["smallcell", "small_cell", "trichotomy"], eventId_lc)) {
                         colorSet = "small cell";
                     } else if (_.contains(["enzalutamide", "abiraterone", "docetaxel"], eventId_lc)) {
                         colorSet = "resistance";
@@ -9250,6 +9261,32 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             console.log('moving pivot event to top:', pivotEventId);
             rowNames.unshift(pivotEventId);
             rowNames = utils.eliminateDuplicates(rowNames);
+        }
+
+        // TODO determine boundaries between pos/neg-correlated events
+        if (!_.isNull(pivotEventId)) {
+            var rowNames_copy = rowNames.slice();
+            rowNames_copy.reverse();
+            var boundaries = {};
+            _.each(rowNames_copy, function(rowName, index) {
+                var eventObj = eventAlbum.getEvent(rowName);
+                var datatype = eventObj.metadata.datatype;
+                if (datatype === "datatype label") {
+                    return;
+                }
+                if (_.isUndefined(boundaries[datatype])) {
+                    boundaries[datatype] = {
+                        "first" : index,
+                        "last" : index
+                    };
+                } else {
+                    if (boundaries[datatype]["last"] == index - 1) {
+                        boundaries[datatype]["last"] = index;
+                    }
+                }
+                boundaries[datatype]["range"] = boundaries[datatype]["last"] - boundaries[datatype]["first"] + 1;
+            });
+            console.log("boundaries", boundaries);
         }
 
         // assign row numbers to row names
