@@ -366,50 +366,38 @@ mutationSchema.fieldOrder = [
   "end_position",
 ];
 
-var normalizationSlugsAndNames = [
-  { "value": "raw_counts", "label": "raw counts" },
-  { "value": "counts", "label": "counts" },
-  { "value": "fpkm", "label": "FPKM" },
-  { "value": "tpm", "label": "TPM" },
-  { "value": "rsem_quan_log2", "label": "RSEM log(2)" },
-];
 
-var geneExpressionSchema = new SimpleSchema([
-  studyAndCollaboration,
-  {
-    "gene_label": { type: String },
-    "sample_label": { type: String },
-    "normalization": {
-      type: String,
-      allowedValues: _.pluck(normalizationSlugsAndNames, "value"),
-      autoform: {
-        options: normalizationSlugsAndNames,
-      },
-    },
-    "value": { type: Number, decimal: true },
-  }
-]);
-geneExpressionSchema.fieldOrder = [
-  "gene_label",
-  "sample_label",
-  "normalization",
-  "value",
-];
 
-// This is updated after importing new data from Wrangler
-var geneExpressionSummarySchema = new SimpleSchema([
-  studyAndCollaboration,
-  {
-    "gene_label": { type: String },
-    "study_label": { type: String },
-    "normalization": {
-      type: String,
-      allowedValues: _.pluck(normalizationSlugsAndNames, "value"),
-    },
-    "mean": { type: Number, decimal: true },
-    "variance": { type: Number, decimal: true },
-  }
-]);
+// var geneExpressionSchema = new SimpleSchema([
+//   studyAndCollaboration,
+//   {
+//     "gene_label": { type: String },
+//     "sample_label": { type: String },
+//
+//     "value": { type: Number, decimal: true },
+//   }
+// ]);
+// geneExpressionSchema.fieldOrder = [
+//   "gene_label",
+//   "sample_label",
+//   "normalization",
+//   "value",
+// ];
+//
+// // This is updated after importing new data from Wrangler
+// var geneExpressionSummarySchema = new SimpleSchema([
+//   studyAndCollaboration,
+//   {
+//     "gene_label": { type: String },
+//     "study_label": { type: String },
+//     "normalization": {
+//       type: String,
+//       allowedValues: _.pluck(normalizationSlugsAndNames, "value"),
+//     },
+//     "mean": { type: Number, decimal: true },
+//     "variance": { type: Number, decimal: true },
+//   }
+// ]);
 
 var jobSchema = new SimpleSchema({
   "name": {
@@ -527,11 +515,11 @@ CohortSignatures.attachSchema(cohortSignatureSchema);
 Mutations = new Meteor.Collection("mutations");
 Mutations.attachSchema(mutationSchema);
 
-GeneExpression = new Meteor.Collection("gene_expression");
-GeneExpression.attachSchema(geneExpressionSchema);
-
-GeneExpressionSummary = new Meteor.Collection("gene_expression_summary");
-GeneExpressionSummary.attachSchema(geneExpressionSummarySchema);
+// GeneExpression = new Meteor.Collection("gene_expression");
+// GeneExpression.attachSchema(geneExpressionSchema);
+//
+// GeneExpressionSummary = new Meteor.Collection("gene_expression_summary");
+// GeneExpressionSummary.attachSchema(geneExpressionSummarySchema);
 
 // Pathways = new Meteor.Collection("pathways");
 // Pathways.attachSchema(pathwaySchema);
@@ -554,7 +542,7 @@ Jobs = new Meteor.Collection("jobs");
 Jobs.attachSchema(jobSchema);
 
 Studies = new Meteor.Collection("studies");
-Collaborations = new Meteor.Collection("collaboration");
+Collabs = new Meteor.Collection("collaboration");
 
 
 

@@ -1,5 +1,3 @@
-var SlugsAndNames = {};
-
 WranglerSubmissions = new Meteor.Collection("wrangler_submissions");
 WranglerSubmissions.attachSchema(new SimpleSchema({
   user_id: { type: Meteor.ObjectID },
@@ -26,35 +24,28 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
 }));
 
 // does a pick and then adds { optional: true} to it
-SlugsAndNames.file_type = [
+var fileTypeSlugsAndNames = [
   { slug: "MutationVCF", name: "Mutation VCF" },
-  // { slug: "SuperpathwayInteractions", name: "Superpathway interactions" },
-  // { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
-  { slug: "BD2KGeneExpression", name: "Single patient expression (BD2K pipeline)" },
+  {
+    slug: "BD2KGeneExpression",
+    name: "Single patient gene expression (BD2K pipeline)"
+  },
   { slug: "BD2KSampleLabelMap", name: "Sample label mapping (BD2K pipeline)" },
   { slug: "TCGAGeneExpression", name: "TCGA gene expression" },
   { slug: "BasicClinical", name: "Fusion bare minimum clinical" },
+  // { slug: "SuperpathwayInteractions", name: "Superpathway interactions" },
+  // { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
   // { slug: "CompressedTarGz", name: "Compressed (.tar.gz)" },
 ];
-function makePickOptional(collection, schemaAttribute) {
-  var schemaObject = {};
-  schemaObject[schemaAttribute] = _.extend(collection
-          .simpleSchema()
-          .pick(schemaAttribute) // so it doesn't set on the original
-          .schema()[schemaAttribute],
-      {
-        // custom: function () {
-        //   if (!this.value && // if it's set it's not required again (duh)
-        //       (this.field("file_type").value === "gene_expression" ||
-        //         this.field("file_type").value ===
-        //             "rectangular_gene_expression")) {
-        //     return "required";
-        //   }
-        // },
-        optional: true,
-      });
-  return new SimpleSchema(schemaObject);
-}
+// function optionalAndCustom(collection, schemaAttribute, extension) {
+//   var schemaObject = {};
+//   schemaObject[schemaAttribute] = _.extend(collection
+//           .simpleSchema()
+//           .pick(schemaAttribute) // so it doesn't set on the original
+//           .schema()[schemaAttribute],
+//       extension);
+//   return new SimpleSchema(schemaObject);
+// }
 WranglerFiles = new Meteor.Collection("wrangler_files");
 WranglerFiles.attachSchema(new SimpleSchema({
   submission_id: { type: Meteor.ObjectID },
@@ -62,13 +53,12 @@ WranglerFiles.attachSchema(new SimpleSchema({
   blob_id: { type: Meteor.ObjectID },
   blob_name: { type: String },
   blob_text_sample: { type: String, optional: true },
+  blob_line_count: { type: Number, optional: true },
   status: {
     type: String,
     allowedValues: [
       "creating",
       "uploading",
-      "waiting", // done uploading, waiting for processing
-      "saving", // on the server already (same as uploading kind of)
       "processing",
       "done",
       "error",
@@ -76,27 +66,36 @@ WranglerFiles.attachSchema(new SimpleSchema({
   },
   options: {
     type: new SimpleSchema([
+      // NOTE: the schema is blackboxed, but it still contains file_type
+      // so that autoform can be used in Wrangler
       {
         file_type: {
           type: String,
-          allowedValues: _.pluck(SlugsAndNames.file_type, "slug"),
+          allowedValues: _.pluck(fileTypeSlugsAndNames, "slug"),
           autoform: {
-            options: _.map(SlugsAndNames.file_type, function (value) {
+            options: _.map(fileTypeSlugsAndNames, function (value) {
               return { label: value.name, value: value.slug };
             }),
           },
           optional: true,
         },
-        // sample_label: {
-        //   type: String,
-        //   // TODO: custom function?
-        //   optional: true,
-        // },
       },
-      makePickOptional(GeneExpression, "normalization"),
+      // optionalAndCustom(GeneExpression, "normalization", {
+      //   custom: function () {
+      //     if (!this.value && // if it's set it's not required again (duh)
+      //         (this.field("file_type").value === "BD2KGeneExpression" ||
+      //           this.field("file_type").value === "TCGAGeneExpression")) {
+      //       return "required";
+      //     }
+      //   },
+      //   optional: true,
+      // }),
     ]),
     defaultValue: {},
+    blackbox: true,
   },
+  // has it gone through the options parsing part of ParseWranglerFile
+  parsed_options_once_already: { type: Boolean, defaultValue: false },
   written_to_database: { type: Boolean, defaultValue: false },
   error_description: { type: String, optional: true },
 

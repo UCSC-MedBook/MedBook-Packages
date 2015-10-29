@@ -13,7 +13,7 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
-  api.use('aldeed:autoform@5.5.0');
+  api.use('aldeed:autoform@5.5.1');
   api.use('aldeed:simple-schema@1.3.3');
   api.use('aldeed:collection2@2.3.3');
   api.use('underscore');
@@ -22,7 +22,7 @@ Package.onUse(function(api) {
 
   // symbol exports
   api.export('Studies');
-  api.export('Collaborations');
+  api.export('Collabs'); // it won't work when called Collaborations
 
   api.export('Patients');
   api.export('Signatures');
