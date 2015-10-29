@@ -450,7 +450,10 @@ var jobSchema = new SimpleSchema({
   // can be set even if status is not "error"
   "error_description": { type: String, optional: true },
   stack_trace: { type: String, optional: true },
-  "prerequisite_job_ids": { type: [Meteor.ObjectID], optional: true },
+  "prerequisite_job_ids": {
+    type: [Meteor.ObjectID],
+    defaultValue: [],
+  },
 });
 mutationSchema.fieldOrder = [
   // TODO: ugh

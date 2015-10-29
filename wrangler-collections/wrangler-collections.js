@@ -5,7 +5,6 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
   status: {
     type: String,
     allowedValues: [
-      "creating",
       "editing",
       "validating",
       "writing",
@@ -57,7 +56,6 @@ WranglerFiles.attachSchema(new SimpleSchema({
   status: {
     type: String,
     allowedValues: [
-      "creating",
       "uploading",
       "processing",
       "done",
