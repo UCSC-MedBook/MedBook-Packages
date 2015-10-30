@@ -343,7 +343,7 @@ function RectangularGeneExpression (wrangler_file_id, isSimulation) {
   RectangularFile.call(this, wrangler_file_id, isSimulation);
 
   // for use in validateGeneLabel
-  this.validGenes = expression2.aggregate([
+  this.validGenes = Expression2.aggregate([
       {$match: {gene: {$exists: true}}},
       {$project: {gene: 1}},
       {
@@ -375,7 +375,7 @@ RectangularGeneExpression.prototype.validateExpressionStrings =
     }
   }
 };
-RectangularGeneExpression.prototype.expression2Insert =
+RectangularGeneExpression.prototype.Expression2Insert =
     function(gene, sampleLabels, expressionStrings) {
   // do some checks
   if (sampleLabels.length !== expressionStrings.length) {
@@ -390,7 +390,7 @@ RectangularGeneExpression.prototype.expression2Insert =
     var setAttribute = "samples." + sampleLabels[index] + "." + normalization;
     setObject[setAttribute] = parseFloat(value);
   }
-  expression2.upsert({
+  Expression2.upsert({
     gene: gene,
     Study_ID: this.submission.options.study_label,
     Collaborations: [this.submission.options.collaboration_label],
@@ -466,7 +466,7 @@ BD2KGeneExpression.prototype.parseLine =
       this.gene_count++;
     } else {
       var sampleLabels = [this.sample_label];
-      this.expression2Insert.call(this, gene_label,
+      this.Expression2Insert.call(this, gene_label,
           sampleLabels, expressionStrings);
     }
   }
@@ -528,7 +528,8 @@ function TCGAGeneExpression (wrangler_file_id, isSimulation) {
 TCGAGeneExpression.prototype =
     Object.create(RectangularGeneExpression.prototype);
 TCGAGeneExpression.prototype.constructor = TCGAGeneExpression;
-TCGAGeneExpression.schema = geneExpressionSchema;
+// // only accepts quantile normalized counts
+// TCGAGeneExpression.schema = geneExpressionSchema;
 function verifySampleLabels(sampleLabels) {
   for (var index in sampleLabels) {
     var label = sampleLabels[index];
@@ -582,7 +583,7 @@ TCGAGeneExpression.prototype.parseLine =
     if (this.isSimulation) {
       this.gene_count++;
     } else {
-      this.expression2Insert.call(this, gene_label,
+      this.Expression2Insert.call(this, gene_label,
           this.sampleLabels, expressionStrings);
     }
   }
@@ -604,14 +605,79 @@ TCGAGeneExpression.prototype.endOfFile = function () {
 };
 
 
+// > db.Clinical_Info.findOne()
+// {
+// 	"_id" : "oFFkytCFwaikQgemq",
+// 	"Sample_ID" : "DTB-165",      // "Tumor RNA"
+// 	"site" : "OHSU",              // from file options
+// 	"Patient_ID" : "DTB-165",     // OLENA: which row?
+// 	"age" : 79,                   // "Age"
+// 	"On_Study_Date" : ISODate("2015-06-04T00:00:00Z"), // OLENA: where to get?
+// 	"Study_ID" : "prad_wcdt"      // from submission options
+// }
 function BasicClinical (wrangler_file_id, isSimulation) {
   RectangularGeneExpression.call(this, wrangler_file_id, isSimulation);
 }
 BasicClinical.prototype = Object.create(RectangularFile.prototype);
+BasicClinical.schema = new SimpleSchema({
+  // TODO:
+});
 BasicClinical.prototype.constructor = BasicClinical;
 BasicClinical.prototype.parseLine =
     function (brokenTabs, lineNumber, line) {
-  console.log("I have a workbook!");
+  console.log("line:", line);
+  if (lineNumber === 1) { // header line
+    // ensure we have the required headings
+    this.sampleLabelTabIndex = brokenTabs.indexOf("Tumor RNA");
+    if (this.sampleLabelTabIndex < 0) {
+      throw "'Tumor RNA' row required";
+    }
+
+    this.ageTabIndex = brokenTabs.indexOf("Age");
+    if (this.ageTabIndex < 0) {
+      throw "'Age' row required";
+    }
+  } else { // rest of file
+    var Sample_ID = brokenTabs[this.sampleLabelTabIndex];
+    verifySampleLabels([Sample_ID]);
+
+    var ageString = brokenTabs[this.ageLabelIndex];
+    if (isNaN(ageString)) {
+      throw "age value not a string: " + ageString;
+    }
+    var age = parseInt(ageString);
+
+    var clinicalInfoObject = {
+      Sample_ID: Sample_ID,
+    	site: study_site,
+    	Patient_ID: "CHOC-patient-label", // NOTE: hardcoded
+    	age: age,
+    	On_Study_Date: ISODate("2015-06-04T00:00:00Z"), // NOTE: hardcoded
+    	Study_ID: this.submission.options.study_label,
+    };
+
+    console.log("inserting:", clinicalInfoObject);
+    if (this.isSimulation) {
+      this.insertDocument.call(this, Clinical_Info, clinicalInfoObject);
+    } else {
+      Clinical_Info.insert(clinicalInfoObject);
+    }
+  }
+};
+BasicClinical.prototype.endOfFile = function () {
+  if (this.isSimulation) {
+    for (var index in this.sampleLabels) {
+      this.insertWranglerDocument.call(this, {
+        submission_type: "gene_expression",
+        document_type: "sample_normalization",
+        contents: {
+          sample_label: this.sampleLabels[index],
+          normalization: this.wranglerFile.options.normalization,
+          gene_count: this.gene_count,
+        },
+      });
+    }
+  }
 };
 
 

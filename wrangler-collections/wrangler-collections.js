@@ -94,11 +94,15 @@ WranglerFiles.attachSchema(new SimpleSchema({
   },
   // has it gone through the options parsing part of ParseWranglerFile
   parsed_options_once_already: { type: Boolean, defaultValue: false },
+
   written_to_database: { type: Boolean, defaultValue: false },
   error_description: { type: String, optional: true },
 
-  // refers to Blobs
-  uncompressed_from_id: { type: Meteor.ObjectID, optional: true },
+  // // idea:
+  // parsing_comments: { type: [String], defaultValue: [] },
+
+  // // refers to Blobs
+  // uncompressed_from_id: { type: Meteor.ObjectID, optional: true },
 }));
 
 WranglerDocuments = new Meteor.Collection("wrangler_documents");
