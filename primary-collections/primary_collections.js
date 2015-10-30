@@ -400,16 +400,37 @@ mutationSchema.fieldOrder = [
 // ]);
 
 var jobSchema = new SimpleSchema({
-  "name": {
+  // fields needed to insert a Job
+  name: {
     type: String,
     allowedValues: [
       "ParseWranglerFile",
       "SubmitWranglerFile",
       "SubmitWranglerSubmission",
       "FinishWranglerSubmission",
+      "RunLimma",
     ],
   },
-  "user_id": { type: Meteor.ObjectID },
+  user_id: { type: Meteor.ObjectID },
+  args: { // input
+    type: Object,
+    blackbox: true,
+  },
+
+  // optional fields
+  "prerequisite_job_ids": {
+    type: [Meteor.ObjectID],
+    defaultValue: [],
+  },
+
+  // don't include this in input obviously...
+  output: {
+    type: Object,
+    blackbox: true,
+    optional: true,
+  },
+
+  // automatically generated fields
   "date_created": {
     type: Date,
     // https://github.com/aldeed/meteor-collection2#autovalue
@@ -432,10 +453,6 @@ var jobSchema = new SimpleSchema({
       return new Date();
     },
   },
-  "args": {
-    type: Object,
-    blackbox: true,
-  },
   "status": {
     type: String,
     allowedValues: [
@@ -450,26 +467,7 @@ var jobSchema = new SimpleSchema({
   // can be set even if status is not "error"
   "error_description": { type: String, optional: true },
   stack_trace: { type: String, optional: true },
-  "prerequisite_job_ids": {
-    type: [Meteor.ObjectID],
-    defaultValue: [],
-  },
 });
-mutationSchema.fieldOrder = [
-  // TODO: ugh
-  "gene_label",
-  "sample_label",
-  "mutation_type",
-
-  "effect_impact",
-
-  "reference_allele",
-  "variant_allele",
-
-  "chromosome",
-  "start_position",
-  "end_position",
-];
 
 var qualityControlPlotSchema = new SimpleSchema([
   biologicalSourceSchema,
@@ -499,11 +497,64 @@ var qualityControlPlotSchema = new SimpleSchema([
   }
 ]);
 
-//
-// declare the collections
-//
 
-// we should have genes (already defined well)
+
+
+
+var contrastSchema = new SimpleSchema({
+    name: {
+        type: String,
+        label: "Name",
+        max: 200
+    },
+    studyID: {
+        type: String,
+        label: "Study"
+    },
+  collaborations: {
+    type: [String]
+  },
+  group1: {
+      type: String,
+      label: "Group1"
+  },
+  group2: {
+      type: String,
+      label: "Group2"
+  },
+  list1: {
+      type: [String],
+      label: "List of Samples for Group1"
+  },
+  list2: {
+      type: [String],
+      label: "List of Samples for Group2"
+  },
+  userId: {
+    type: String
+  },
+  default_signature_id: {
+    type: Object,
+    blackbox: true,
+    optional: true,
+  },
+  default_signature_name: {
+    type: String,
+    optional: true
+  },
+  default_signature_version: {
+      type: Number,
+      decimal: true,
+      unique: false
+  }
+});
+
+
+
+
+
+
+// declare the collections
 
 Patients = new Meteor.Collection("patients");
 Patients.attachSchema(patientsSchema);
@@ -539,13 +590,15 @@ SuperpathwayElements.attachSchema(superpathwayElementSchema);
 SuperpathwayInteractions = new Meteor.Collection("superpathway_interactions");
 SuperpathwayInteractions.attachSchema(superpathwayInteractionSchema);
 
+Contrast = new Meteor.Collection('contrast');
+Contrast.attachSchema(contrastSchema);
+
 // not really data
 
 Jobs = new Meteor.Collection("jobs");
 Jobs.attachSchema(jobSchema);
 
-Studies = new Meteor.Collection("studies");
-Collabs = new Meteor.Collection("collaboration");
+
 
 
 
@@ -553,5 +606,10 @@ QualityControlPlots = new Meteor.Collection("quality_control_plots");
 QualityControlPlots.attachSchema(qualityControlPlotSchema);
 
 // noooo there are no schemas for these
-expression2 = new Meteor.Collection("expression2");
+Expression2 = new Meteor.Collection("expression2");
 Genes = new Meteor.Collection("genes");
+Clinical_Info = new Meteor.Collection("Clinical_Info");
+
+Studies = new Meteor.Collection("studies");
+Collabs = new Meteor.Collection("collaboration"); // pls
+Collaboration = Collabs;

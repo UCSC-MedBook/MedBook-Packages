@@ -13,7 +13,7 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
-  api.use('aldeed:autoform@5.5.1');
+  api.use('aldeed:autoform@4.2.2 || 5.0.0');
   api.use('aldeed:simple-schema@1.3.3');
   api.use('aldeed:collection2@2.3.3');
   api.use('underscore');
@@ -23,6 +23,7 @@ Package.onUse(function(api) {
   // symbol exports
   api.export('Studies');
   api.export('Collabs'); // it won't work when called Collaborations
+  api.export('Collaboration');
 
   api.export('Patients');
   api.export('Signatures');
@@ -33,9 +34,10 @@ Package.onUse(function(api) {
   api.export('SuperpathwayInteractions');
   api.export('Mutations');
   api.export('GeneExpression');
-  api.export("expression2");
+  api.export("Expression2");
   api.export("Genes");
-  api.export('Jobs', 'server');
+  api.export('Jobs');
+  api.export('Contrast');
 });
 
 Package.onTest(function(api) {
