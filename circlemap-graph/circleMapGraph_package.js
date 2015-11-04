@@ -12868,16 +12868,27 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         });
 
         // add link legend
-        var legendLayer = cmGraph.svgElem.append('g').attr({
-            id : 'legendLayer'
+        var legendG = cmGraph.svgElem.append('g').attr({
+            id : 'legendG'
         });
+
+        var legendBackground = legendG.append("rect").attr({
+            "id" : "legendBackground"
+            // ,
+            // "width" : 20,
+            // "height" : 20
+        }).style({
+            "stroke-width" : 0.5,
+            "stroke" : "black",
+            "fill" : "white"
+        });
+
         var relations = cmGraph.graphDataObj.getRelations();
-        console.log("relations", relations);
         _.each(relations, function(relation, index) {
-            var y = 150 + 25 * index;
-            var x = 25;
+            var y = 10 + 25 * index;
+            var x = 0;
             var length = 75;
-            var lineElem = legendLayer.append("line").attr({
+            var lineElem = legendG.append("line").attr({
                 "x1" : x,
                 "y1" : y,
                 "x2" : x + length,
@@ -12886,7 +12897,7 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
             var decorations = cmGraph.getLinkDecorations(relation, 3);
             lineElem.style(decorations);
 
-            var textElem = legendLayer.append("text").attr({
+            var textElem = legendG.append("text").attr({
                 "x" : x + length,
                 "y" : y,
                 "dx" : "1em",
@@ -12894,9 +12905,43 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                 "text-anchor" : "start"
             }).style({
                 "stroke" : "darkslategrey",
-                "fill" : "darkslategrey"
+                "fill" : "darkslategrey",
+                "overflow" : "visible"
             }).text(relation);
-            ;
+        });
+
+        // set dimensions
+        var elem = document.getElementById(legendG.attr("id"));
+        var brect = elem.getBoundingClientRect();
+        legendBackground.attr({
+            "width" : brect.width,
+            "height" : brect.height
+        });
+
+        // dragging
+        var drag = d3.behavior.drag();
+        legendG.call(drag);
+
+        drag.origin(function() {
+            // d3.event.sourceEvent.preventDefault();
+            // d3.event.sourceEvent.stopPropagation();
+            var d3Mouse = d3.mouse(cmGraph.svgElem.node());
+            var origin = {
+                "x" : d3Mouse[0],
+                "y" : d3Mouse[1]
+            };
+            return origin;
+        });
+
+        drag.on("drag", function() {
+            d3.event.sourceEvent.preventDefault();
+            d3.event.sourceEvent.stopPropagation();
+            var d3Mouse = d3.mouse(cmGraph.svgElem.node());
+            var x = d3Mouse[0];
+            var y = d3Mouse[1];
+            legendG.attr({
+                "transform" : "translate(" + x + "," + y + ")"
+            });
         });
     };
 
