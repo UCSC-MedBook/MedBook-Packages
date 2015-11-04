@@ -12869,12 +12869,14 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
 
         var legendG = document.createElementNS(utils.svgNamespaceUri, 'g');
         utils.setElemAttributes(legendG, {
-            "id" : "legendG"
+            "id" : "legendG",
+            "transform" : "translate(150,5)"
         });
 
         cmGraph.svgElem.append(function() {
             return legendG;
         });
+        utils.pushElemToBack(legendG);
 
         var d3LegendG = d3.select(legendG);
 
