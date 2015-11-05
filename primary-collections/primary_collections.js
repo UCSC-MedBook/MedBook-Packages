@@ -95,6 +95,7 @@ var geneValuePair = new SimpleSchema({
 
 var signaturesSchema = new SimpleSchema({
   // update with fields from cohortSignatureSchema (?)
+  // TODO: add training set
   "description": { type: String }, // ABL1_kinase_viper_v4
   "type": { type: String },
   "algorithm": { type: String },
@@ -107,9 +108,35 @@ var signaturesSchema = new SimpleSchema({
 
 var cohortSignatureSchema = new SimpleSchema({
   "signature_id": { type: Meteor.ObjectID, optional: true }, // should it be optional?
-  "type": { type: String },
-  "algorithm": { type: String },
-  "label": { type: String },
+  "type": {
+    type: String,
+    allowedValues: [
+      "tf",
+      "kinase",
+      "drug",
+      "mutation",
+      "other",
+    ],
+  },
+  "algorithm": { type: String }, // ex. viper
+  "label": { type: String }, // ex. "KEAP1 non-silent mutation"
+  training_set: { type: String }, // ex. "TCGA LUAD expression non-silent tumors vs. silent tumors"
+  input_data_normalization: {
+    type: String,
+    allowedValues: [
+      "quantile_normalized_counts",
+
+    ],
+  },
+  input_data_type: {
+    type: String,
+    // allowedValues: [
+    //   "RNA-Seq",
+    //   "microarray",
+    //   "RNA-Seq or microarray",
+    //
+    // ],
+  },
   "samples": { // contains data
     type: [
       new SimpleSchema({
