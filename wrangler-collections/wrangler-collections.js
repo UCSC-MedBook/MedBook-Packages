@@ -22,29 +22,12 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
   },
 }));
 
-// does a pick and then adds { optional: true} to it
-var fileTypeSlugsAndNames = [
-  { slug: "MutationVCF", name: "Mutation VCF" },
-  {
-    slug: "BD2KGeneExpression",
-    name: "Single patient gene expression (BD2K pipeline)"
-  },
-  { slug: "BD2KSampleLabelMap", name: "Sample label mapping (BD2K pipeline)" },
-  { slug: "TCGAGeneExpression", name: "TCGA gene expression" },
-  { slug: "BasicClinical", name: "Fusion bare minimum clinical" },
-  // { slug: "SuperpathwayInteractions", name: "Superpathway interactions" },
-  // { slug: "SuperpathwayElements", name: "Superpathway element definitions" },
-  // { slug: "CompressedTarGz", name: "Compressed (.tar.gz)" },
-];
-// function optionalAndCustom(collection, schemaAttribute, extension) {
-//   var schemaObject = {};
-//   schemaObject[schemaAttribute] = _.extend(collection
-//           .simpleSchema()
-//           .pick(schemaAttribute) // so it doesn't set on the original
-//           .schema()[schemaAttribute],
-//       extension);
-//   return new SimpleSchema(schemaObject);
-// }
+var fileTypeNames = _.map(WranglerFileTypes, function (value, file_type) {
+  return {
+    file_type: file_type,
+    description: value.description,
+  };
+});
 WranglerFiles = new Meteor.Collection("wrangler_files");
 WranglerFiles.attachSchema(new SimpleSchema({
   submission_id: { type: Meteor.ObjectID },
@@ -69,25 +52,15 @@ WranglerFiles.attachSchema(new SimpleSchema({
       {
         file_type: {
           type: String,
-          allowedValues: _.pluck(fileTypeSlugsAndNames, "slug"),
+          allowedValues: _.pluck(fileTypeNames, "file_type"),
           autoform: {
-            options: _.map(fileTypeSlugsAndNames, function (value) {
-              return { label: value.name, value: value.slug };
+            options: _.map(fileTypeNames, function (value) {
+              return { label: value.description, value: value.file_type };
             }),
           },
           optional: true,
         },
       },
-      // optionalAndCustom(GeneExpression, "normalization", {
-      //   custom: function () {
-      //     if (!this.value && // if it's set it's not required again (duh)
-      //         (this.field("file_type").value === "BD2KGeneExpression" ||
-      //           this.field("file_type").value === "TCGAGeneExpression")) {
-      //       return "required";
-      //     }
-      //   },
-      //   optional: true,
-      // }),
     ]),
     defaultValue: {},
     blackbox: true,

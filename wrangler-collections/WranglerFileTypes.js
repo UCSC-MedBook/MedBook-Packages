@@ -69,6 +69,7 @@ function MutationVCF (wrangler_file_id, isSimulation) {
 }
 MutationVCF.prototype = Object.create(FileHandler.prototype);
 MutationVCF.prototype.constructor = MutationVCF;
+MutationVCF.description = "Mutation VCF";
 MutationVCF.prototype.insertDocument = function(collection, contents) {
   if (this.isSimulation) {
     var collection_name = collection._name;
@@ -407,6 +408,7 @@ BD2KGeneExpression.prototype =
     Object.create(RectangularGeneExpression.prototype);
 BD2KGeneExpression.prototype.constructor = BD2KGeneExpression;
 BD2KGeneExpression.schema = geneExpressionSchema;
+BD2KGeneExpression.description = "Single patient gene expression (BD2K pipeline)";
 function parseSampleLabel(possibleOptions) {
   for (var i in possibleOptions) {
     var label = wrangleSampleLabel(possibleOptions[i]);
@@ -492,6 +494,7 @@ function BD2KSampleLabelMap (wrangler_file_id, isSimulation) {
 BD2KSampleLabelMap.prototype =
     Object.create(RectangularFile.prototype);
 BD2KSampleLabelMap.prototype.constructor = BD2KSampleLabelMap;
+BD2KSampleLabelMap.description = "Sample label mapping (BD2K pipeline)";
 BD2KSampleLabelMap.prototype.parseLine =
     function (brokenTabs, lineNumber, line) {
   if (this.isSimulation) {
@@ -528,6 +531,7 @@ function TCGAGeneExpression (wrangler_file_id, isSimulation) {
 TCGAGeneExpression.prototype =
     Object.create(RectangularGeneExpression.prototype);
 TCGAGeneExpression.prototype.constructor = TCGAGeneExpression;
+TCGAGeneExpression.description = "TCGA gene expression";
 // // only accepts quantile normalized counts
 // TCGAGeneExpression.schema = geneExpressionSchema;
 function verifySampleLabels(sampleLabels) {
@@ -622,6 +626,7 @@ BasicClinical.prototype = Object.create(RectangularFile.prototype);
 BasicClinical.schema = new SimpleSchema({
   // TODO:
 });
+BasicClinical.description = "Fusion bare minimum clinical";
 BasicClinical.prototype.constructor = BasicClinical;
 BasicClinical.prototype.parseLine =
     function (brokenTabs, lineNumber, line) {

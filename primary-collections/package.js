@@ -21,6 +21,10 @@ Package.onUse(function(api) {
   api.addFiles('primary_collections.js');
 
   // symbol exports
+
+  // already have their own files
+  api.export("CopyNumber");
+
   api.export('Studies');
   api.export('Collabs'); // it won't work when called Collaborations
   api.export('Collaboration');
@@ -38,6 +42,8 @@ Package.onUse(function(api) {
   api.export("Genes");
   api.export('Jobs');
   api.export('Contrast');
+
+
 });
 
 Package.onTest(function(api) {
