@@ -8195,6 +8195,42 @@ var utils = utils || {};
     };
 
     /**
+     * Compare as string
+     */
+    u.compareAsString_medbook = function(a, b) {
+        var valA = new String(a).valueOf().toLowerCase();
+        var valB = new String(b).valueOf().toLowerCase();
+
+        // if exactly one is "null"
+        if ((valA == 'null') && (valB != 'null')) {
+            return 1;
+        } else if ((valA != 'null') && (valB == 'null')) {
+            return -1;
+        }
+
+        // if exactly one is "exclude"
+        if ((valA == 'exclude') && (valB != 'exclude')) {
+            return 1;
+        } else if ((valA != 'exclude') && (valB == 'exclude')) {
+            return -1;
+        }
+
+        // if at least one is "exclude"
+        switch (valA + valB) {
+            case "excludenull":
+                return -1;
+                break;
+            case "nullexclude":
+                return 1;
+                break;
+            default:
+                return valA.localeCompare(valB);
+        }
+
+        // return valA.localeCompare(valB);
+    };
+
+    /*
      * Compare as date
      */
     u.compareAsDate = function(a, b) {
@@ -9493,13 +9529,13 @@ var eventData = eventData || {};
                     if (allowedValues == 'numeric') {
                         comparator = utils.compareAsNumeric;
                     } else if (allowedValues == 'categoric') {
-                        comparator = utils.compareAsString;
+                        comparator = utils.compareAsString_medbook;
                     } else if (allowedValues == 'expression') {
                         comparator = utils.compareAsNumeric;
                     } else if (allowedValues == 'date') {
                         comparator = utils.compareAsDate;
                     } else {
-                        comparator = utils.compareAsString;
+                        comparator = utils.compareAsString_medbook;
                     }
 
                     // compare this step's values
@@ -10248,6 +10284,7 @@ var eventData = eventData || {};
         /**
          * compare sample scores and return sorted list of sample IDs. If sortType == numeric, then numeric sort.  Else, sort as strings.
          */
+        // TODO dead code?
         this.sortSamples = function(sampleIdList, sortType) {
             // sortingData has to be an array
             var sortingData = this.getData(sampleIdList);
@@ -12192,7 +12229,7 @@ var circleMapGenerator = {};
                 labelledScoreIndices.push(scores.length - 2);
                 labelledScoreIndices.push(Math.floor((scores.length - 1) / 2));
 
-                _.each(scores, function(score) {
+                _.each(scores, function(score, index) {
                     var scoresIndex = _.indexOf(scores, score);
 
                     // arc
@@ -12206,6 +12243,18 @@ var circleMapGenerator = {};
                     utils.setElemAttributes(pathElem, pathElemAttribs);
                     ringGroupElem.appendChild(pathElem);
 
+                    // separator to visually separate the rings in the legend
+                    arc = createD3Arc(innerRadius + ringThickness - 0.5, innerRadius + ringThickness, startDegrees, startDegrees + degreeIncrements);
+                    pathElem = document.createElementNS(utils.svgNamespaceUri, 'path');
+
+                    pathElemAttribs = {};
+                    pathElemAttribs["d"] = arc();
+                    pathElemAttribs["fill"] = "black";
+
+                    utils.setElemAttributes(pathElem, pathElemAttribs);
+                    ringGroupElem.appendChild(pathElem);
+
+                    // label
                     var labelGroupElem = document.createElementNS(utils.svgNamespaceUri, 'g');
                     ringGroupElem.appendChild(labelGroupElem);
 
@@ -12253,6 +12302,21 @@ var circleMapGenerator = {};
                             labelAttribs["text-anchor"] = "end";
                         }
                         utils.setElemAttributes(legendLabelElem, labelAttribs);
+
+                        switch (new String(score).valueOf()) {
+                            case "0":
+                                score = "0";
+                                break;
+                            case "1":
+                                score = "max";
+                                break;
+                            case "-1":
+                                score = "min";
+                                break;
+                            default:
+                                score = score;
+                        };
+
                         legendLabelElem.innerHTML = score;
                         labelGroupElem.appendChild(legendLabelElem);
                     }
