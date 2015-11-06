@@ -8582,6 +8582,27 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                             }
                         }
                     },
+                    "test_fold" : {
+                        "name" : "dev_features",
+                        "disabled" : function() {
+                            return (!getDevMode());
+                        },
+                        "items" : {
+                            "add_events_for_gene" : {
+                                "name" : "see expression of targets",
+                                "icon" : null,
+                                "disabled" : function() {
+                                    return (datatype === "clinical data");
+                                },
+                                "callback" : function(key, opt) {
+                                    var gene = eventId.split(/_/)[0];
+                                    setSession("eventSearch", gene);
+                                    // TODO search for and add events related to this gene
+                                    console.log("search for and add events related to this gene", gene);
+                                }
+                            }
+                        }
+                    },
                     "sep2" : "---------",
                     "reset" : createResetContextMenuItem(config)
                 };
@@ -9263,15 +9284,26 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             rowNames = utils.eliminateDuplicates(rowNames);
         }
 
-        // TODO determine boundaries between pos/neg-correlated events
-        if (!_.isNull(pivotEventId)) {
+        /**
+         * For each submatrix, find first index, last index, and row count.
+         */
+        var getBoundariesBetweenDatatypes = function() {
+            var pivotEventObj = eventAlbum.getEvent(pivotEventId);
+            if (_.isUndefined(pivotEventObj)) {
+                return {};
+            }
+            var pivotEventDatatype = pivotEventObj.metadata.datatype;
+            // pivot results for clinical data give top 5 only due to ANOVA score
+            // var pageSize = (pivotEventDatatype === "clinical data") ? 5 : 10;
+            var pageSize = 5;
+
             var rowNames_copy = rowNames.slice();
             rowNames_copy.reverse();
             var boundaries = {};
             _.each(rowNames_copy, function(rowName, index) {
                 var eventObj = eventAlbum.getEvent(rowName);
                 var datatype = eventObj.metadata.datatype;
-                if (datatype === "datatype label") {
+                if (datatype === "datatype label" && datatype !== "mutation call") {
                     return;
                 }
                 if (_.isUndefined(boundaries[datatype])) {
@@ -9284,9 +9316,41 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                         boundaries[datatype]["last"] = index;
                     }
                 }
-                boundaries[datatype]["range"] = boundaries[datatype]["last"] - boundaries[datatype]["first"] + 1;
+                boundaries[datatype]["count"] = boundaries[datatype]["last"] - boundaries[datatype]["first"] + 1;
             });
-            console.log("boundaries", boundaries);
+
+            var sessionGeneList = getSession("geneList");
+            var rowNames_copy = rowNames.slice();
+            rowNames_copy.reverse();
+            var taggedEvents = {};
+            _.each(_.keys(boundaries), function(datatype) {
+                if (datatype !== "clinical data" && datatype !== "mutation call") {
+                    var data = boundaries[datatype];
+                    var datatypeNames = [];
+                    var suffix = eventAlbum.datatypeSuffixMapping[datatype];
+                    for (var i = data["first"]; i < data["last"] + 1; i++) {
+                        var rowName = rowNames_copy[i];
+                        var geneName = rowName.replace(suffix, "");
+                        if (! _.contains(sessionGeneList, geneName)) {
+                            datatypeNames.push(rowName);
+                        }
+                    }
+                    var corrEvents = datatypeNames.reverse();
+                    _.each(corrEvents.slice(0, pageSize), function(posEvent) {
+                        taggedEvents[posEvent] = "+";
+                    });
+                    _.each(corrEvents.slice(pageSize), function(negEvent) {
+                        taggedEvents[negEvent] = "-";
+                    });
+                }
+            });
+
+            return taggedEvents;
+        };
+
+        // TODO determine boundaries between pos/neg-correlated events
+        if (!_.isNull(pivotEventId)) {
+            var taggedEvents = getBoundariesBetweenDatatypes();
         }
 
         // assign row numbers to row names
@@ -9325,6 +9389,8 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             gridSize = minGridSize;
             fullWidth = (gridSize * denom) + margin.left + margin.right;
         }
+
+        gridSize = minGridSize;
         console.log('gridSize', gridSize, 'margin', (margin));
 
         // document.documentElement.clientHeight
@@ -9371,6 +9437,14 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             if (eventObj.metadata.datatype === "datatype label") {
                 displayName = displayName.toUpperCase();
             }
+
+            if (!_.isUndefined(taggedEvents)) {
+                var tag = taggedEvents[d];
+                if (!_.isUndefined(tag)) {
+                    displayName = displayName + " " + tag;
+                }
+            }
+
             return displayName;
         }).attr({
             "x" : 0,
