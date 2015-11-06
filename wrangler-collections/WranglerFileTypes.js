@@ -260,58 +260,72 @@ RectangularFile.prototype.parse = function () {
     // lineBufferMax chosen based on crude yet effective testing:
     // https://docs.google.com/spreadsheets/d/1wA4KPXEhE4eroZaiKUL92dP0Gi1uFG8qCGSDjCaMcwo/edit?usp=sharing
     // "Show me the data!" - Ted
+
+    // The parser parses line-by-line for the first headerLineCount lines
+    // and then runs lineBufferMax lines simultaneously to speed it up.
+    // This is so that any variables in the header are set for future
+    // lines if needed.
+    // ex. this.sample_label requires a mongodb lookup for UUID mapping
     var lineBufferMax = 50;
+    var headerLineCount = 10;
+
     var lineBufferPromises = [];
     var allLinePromises = [];
-    var lineNumber = 0; // starts at one
+    var lineNumber = 0; // starts at one (no really, I promise!)
     var tabCount;
 
     // store stream in a variable so it can be paused
     var bylineStream = byLine(self.blob.createReadStream("blobs"));
     bylineStream.on('data', Meteor.bindEnvironment(function (lineObject) {
-        var deferred = Q.defer();
-        lineBufferPromises.push(deferred.promise);
-        allLinePromises.push(deferred.promise);
+      var deferred = Q.defer();
+      lineBufferPromises.push(deferred.promise);
+      allLinePromises.push(deferred.promise);
 
-        // reads up to lineBufferMax lines and then waits for those lines
-        // to finish completely before moving on
-        if (lineBufferPromises.length >= lineBufferMax) {
-          bylineStream.pause();
-          Q.allSettled(lineBufferPromises)
-            .then(Meteor.bindEnvironment(function (values) {
-              lineBufferPromises = [];
-              bylineStream.resume();
-            }, reject));
-        }
+      var line = lineObject.toString();
+      var brokenTabs = line.split("\t");
 
-        var line = lineObject.toString();
-        var brokenTabs = line.split("\t");
+      lineNumber++;
+      var thisLineNumber = lineNumber; // so that it has function scope
 
-        // so that it has function scope
-        lineNumber++;
-        var thisLineNumber = lineNumber;
-
-        // make sure file is rectangular
-        if (tabCount === undefined) {
-          tabCount = brokenTabs.length;
-        } else if (tabCount !== brokenTabs.length) {
-          var message = "File not rectangular. " +
-              "Line " + thisLineNumber + " has " + brokenTabs.length +
-              " columns, not " + tabCount;
-          deferred.reject(message);
-        }
-
-        self.parseLine.call(self, brokenTabs, thisLineNumber, line);
-        deferred.resolve();
-      }, reject))
-      .on('end', Meteor.bindEnvironment(function () {
-        // console.log("allLinePromises.slice(0, 5:)", allLinePromises.slice(0, 5));
-        Q.all(allLinePromises)
-          .then(Meteor.bindEnvironment(function () {
-            self.endOfFile.call(self);
-            resolve();
+      // This reads up to lineBufferMax lines and then waits for those lines
+      // to finish completely before moving on.
+      // NOTE: the rest of the function will still run even after the
+      //       stream has been paused
+      if (lineBufferPromises.length >= lineBufferMax ||
+          thisLineNumber < headerLineCount) {
+        bylineStream.pause();
+        Q.allSettled(lineBufferPromises)
+          .then(Meteor.bindEnvironment(function (values) {
+            lineBufferPromises = [];
+            bylineStream.resume();
           }, reject));
-      }, reject));
+      }
+
+      // make sure file is rectangular
+      if (tabCount === undefined) {
+        tabCount = brokenTabs.length;
+      } else if (tabCount !== brokenTabs.length) {
+        var message = "File not rectangular. " +
+            "Line " + thisLineNumber + " has " + brokenTabs.length +
+            " columns, not " + tabCount;
+        deferred.reject(message);
+      }
+
+      // I guess we should parse the line eventually...
+      self.parseLine.call(self, brokenTabs, thisLineNumber, line);
+
+      deferred.resolve();
+    }, reject));
+
+    bylineStream.on('end', Meteor.bindEnvironment(function () {
+      // console.log("allLinePromises.slice(0, 5:)", allLinePromises.slice(0, 5));
+      Q.all(allLinePromises)
+        .then(Meteor.bindEnvironment(function () {
+          self.endOfFile.call(self);
+          resolve();
+        }, reject))
+        .catch(reject);
+    }, reject));
   });
 };
 RectangularFile.prototype.parseLine = function (brokenTabs, lineNumber, line) {
@@ -453,6 +467,7 @@ BD2KGeneExpression.prototype.parseLine =
     }
 
     this.sample_label = getSampleLabel(brokenTabs, this.blob);
+    console.log("this.sample_label:", this.sample_label);
     if (!this.sample_label) {
       throw "Error: could not parse sample label from header line or file name";
     }
