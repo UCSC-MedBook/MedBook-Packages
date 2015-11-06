@@ -4516,6 +4516,42 @@ var utils = utils || {};
     };
 
     /**
+     * Compare as string
+     */
+    u.compareAsString_medbook = function(a, b) {
+        var valA = new String(a).valueOf().toLowerCase();
+        var valB = new String(b).valueOf().toLowerCase();
+
+        // if exactly one is "null"
+        if ((valA == 'null') && (valB != 'null')) {
+            return 1;
+        } else if ((valA != 'null') && (valB == 'null')) {
+            return -1;
+        }
+
+        // if exactly one is "exclude"
+        if ((valA == 'exclude') && (valB != 'exclude')) {
+            return 1;
+        } else if ((valA != 'exclude') && (valB == 'exclude')) {
+            return -1;
+        }
+
+        // if at least one is "exclude"
+        switch (valA + valB) {
+            case "excludenull":
+                return -1;
+                break;
+            case "nullexclude":
+                return 1;
+                break;
+            default:
+                return valA.localeCompare(valB);
+        }
+
+        // return valA.localeCompare(valB);
+    };
+
+    /*
      * Compare as date
      */
     u.compareAsDate = function(a, b) {
@@ -5812,13 +5848,13 @@ var eventData = eventData || {};
                     if (allowedValues == 'numeric') {
                         comparator = utils.compareAsNumeric;
                     } else if (allowedValues == 'categoric') {
-                        comparator = utils.compareAsString;
+                        comparator = utils.compareAsString_medbook;
                     } else if (allowedValues == 'expression') {
                         comparator = utils.compareAsNumeric;
                     } else if (allowedValues == 'date') {
                         comparator = utils.compareAsDate;
                     } else {
-                        comparator = utils.compareAsString;
+                        comparator = utils.compareAsString_medbook;
                     }
 
                     // compare this step's values
@@ -6567,6 +6603,7 @@ var eventData = eventData || {};
         /**
          * compare sample scores and return sorted list of sample IDs. If sortType == numeric, then numeric sort.  Else, sort as strings.
          */
+        // TODO dead code?
         this.sortSamples = function(sampleIdList, sortType) {
             // sortingData has to be an array
             var sortingData = this.getData(sampleIdList);
@@ -8548,7 +8585,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                         }
                     },
                     "pathway_genes" : {
-                        "name" : "add gene set",
+                        "name" : "see expression of targets",
                         "icon" : null,
                         "disabled" : function() {
                             var pathway_context_viewable = ["kinase target activity", "tf target activity"];
@@ -8589,7 +8626,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                         },
                         "items" : {
                             "add_events_for_gene" : {
-                                "name" : "see expression of targets",
+                                "name" : "add events for gene",
                                 "icon" : null,
                                 "disabled" : function() {
                                     return (datatype === "clinical data");
