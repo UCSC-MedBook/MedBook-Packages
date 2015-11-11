@@ -29,6 +29,13 @@ Package.onUse(function(api) {
   api.addFiles('ExportedFiles.js');
   api.export("ExportedFiles");
 
+  // Blobs
+  api.use('cfs:gridfs@0.0.33');
+  api.use('cfs:standard-packages@0.5.9');
+  api.addFiles('Blobs.js');
+  api.export('Blobs');
+  api.export('BlobStore', 'server');
+
   api.export('Studies');
   api.export('Collabs'); // it won't work when called Collaborations
   api.export('Collaboration');

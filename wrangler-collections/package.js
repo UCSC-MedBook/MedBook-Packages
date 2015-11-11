@@ -17,8 +17,7 @@ Package.onUse(function(api) {
 
   api.use('aldeed:simple-schema@1.3.3');
   api.use('aldeed:autoform@5.5.1');
-  api.use('cfs:gridfs@0.0.33');
-  api.use('cfs:standard-packages@0.5.9');
+
   api.use('medbook:primary-collections');
   api.use('underscore');
 
@@ -35,8 +34,6 @@ Package.onUse(function(api) {
   api.export('WranglerSubmissions');
   api.export('WranglerDocuments');
   api.export('WranglerFiles');
-  api.export('Blobs');
-  api.export('BlobStore', 'server');
 
   // TODO: remove this when we move the schemas to collections
   api.export('getCollectionByName');
