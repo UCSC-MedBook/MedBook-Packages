@@ -1,5 +1,6 @@
 // https://docs.google.com/drawings/d/1I8TVxsWXivIIxxwENUbExBQHZ1xE1D9Mdo09eTSMLj4/edit?usp=sharing
 
+// load npm packages
 if (Meteor.isServer) {
   var npmBinarySearch = Npm.require('binary-search');
   var binarysearch = function (array, item) {
@@ -12,6 +13,36 @@ if (Meteor.isServer) {
       return 0;
     });
   };
+}
+
+// define some helper functions
+
+// ensure that each sampleLabel is the text returned by wrangleSampleLabel
+function verifySampleLabelsExactly(sampleLabels) {
+  for (var index in sampleLabels) {
+    var label = sampleLabels[index];
+    var found = Wrangler.wrangleSampleLabel(label);
+    if (found !== label) {
+      throw "could not find sample label in " + label;
+    }
+  }
+}
+
+// make sure that each string has some semblance of a sample_label in it
+// (wrangleSampleLabel returns something, not necessarily exactly the same text
+// as the text it was called with)
+function verifySampleLabelsExist(uglySampleLabels) {
+  var niceSampleLabels = new Array(uglySampleLabels.length);
+
+  for (var index in uglySampleLabels) {
+    var label = uglySampleLabels[index];
+    niceSampleLabels[index] = Wrangler.wrangleSampleLabel(label);
+    if (!niceSampleLabels[index]) {
+      throw "could not find sample label in " + label;
+    }
+  }
+
+  return niceSampleLabels;
 }
 
 function FileHandler (wrangler_file_id, isSimulation) {
@@ -139,7 +170,7 @@ MutationVCF.prototype.parse = function () {
         //
         // }
 
-        var sampleLabel = wrangleSampleLabel(self.blob.original.name);
+        var sampleLabel = Wrangler.wrangleSampleLabel(self.blob.original.name);
         if (!sampleLabel) {
           throw "Could not parse sample label from file name";
         }
@@ -266,7 +297,7 @@ RectangularFile.prototype.parse = function () {
     // This is so that any variables in the header are set for future
     // lines if needed.
     // ex. this.sample_label requires a mongodb lookup for UUID mapping
-    var lineBufferMax = 50;
+    var lineBufferMax = 1;
     var headerLineCount = 10;
 
     var lineBufferPromises = [];
@@ -357,8 +388,33 @@ var geneExpressionSchema = new SimpleSchema({
 function RectangularGeneExpression (wrangler_file_id, isSimulation) {
   RectangularFile.call(this, wrangler_file_id, isSimulation);
 
-  // for use in validateGeneLabel
-  this.validGenes = Expression2.aggregate([
+  // set this.validGenes for use in validateGeneLabel
+  console.log("loading valid genes");
+  var genesStrings = [];
+  Genes.find({
+        gene: {$exists: true},
+        status: "Approved"
+      })
+    .forEach(function (genesDoc) {
+      genesStrings.push(genesDoc.gene);
+
+      var index; // multiple for loops
+      // if (genesDoc.previous &&
+      //     genesDoc.previous[0] !== "") {
+      //   for (index in genesDoc.previous) {
+      //     genesStrings.push(genesDoc.previous[index]);
+      //   }
+      // }
+      if (genesDoc.synonym &&
+          genesDoc.synonym[0] !== "") {
+        for (index in genesDoc.synonym) {
+          genesStrings.push(genesDoc.synonym[index]);
+        }
+      }
+    });
+  genesStrings.sort();
+
+  var expressionStrings = Expression2.aggregate([
       {$match: {gene: {$exists: true}}},
       {$project: {gene: 1}},
       {
@@ -368,8 +424,62 @@ function RectangularGeneExpression (wrangler_file_id, isSimulation) {
         }
       },
     ])[0].validGenes;
+  expressionStrings.sort();
 
-  this.validGenes.sort();
+  // do a merge of the two arrays, given they're sorted
+  // (N time vs. N^2 using _.union)
+  var validGenes = [];
+  var genesIndex = 0;
+  var expressionIndex = 0;
+  while (genesIndex < genesStrings.length ||
+      expressionIndex < expressionStrings.length) {
+    var nextGeneString = genesStrings[genesIndex];
+    var nextExpressionString = expressionStrings[expressionIndex];
+
+    // figure out what to push onto the array
+    if (nextGeneString === undefined) {
+      validGenes.push(nextExpressionString);
+      expressionIndex++;
+    } else if (nextExpressionString === undefined) {
+      validGenes.push(nextGeneString);
+      genesIndex++;
+    } else {
+      // decide between them...
+      if (nextGeneString < nextExpressionString) {
+        validGenes.push(nextGeneString);
+        genesIndex++;
+      } else if (nextGeneString > nextExpressionString) {
+        validGenes.push(nextExpressionString);
+        expressionIndex++;
+      } else { // they're equal
+        validGenes.push(nextGeneString);
+        genesIndex++;
+        expressionIndex++;
+      }
+    }
+  }
+
+  // NOTE: I'm keeping this here to show the testing I did to make sure
+  // my above code works
+  // console.log("about to do union");
+  // var oldValidGenes = _.union(genesStrings, expressionStrings);
+  // oldValidGenes.sort();
+  //
+  // // console.log("validGenes:", validGenes);
+  // // console.log("oldValidGenes:", oldValidGenes);
+  // if (oldValidGenes.length !== validGenes.length) {
+  //   throw "lengths not equal!";
+  // }
+  //
+  // for (var i in oldValidGenes) {
+  //   if (oldValidGenes[i] !== validGenes[i]) {
+  //     throw oldValidGenes[i] + " not equal to " + validGenes[i] +
+  //         ", index: " + i;
+  //   }
+  // }
+
+  this.validGenes = validGenes;
+  console.log("done loading valid genes");
 }
 RectangularGeneExpression.prototype = Object.create(RectangularFile.prototype);
 RectangularGeneExpression.prototype.constructor = RectangularGeneExpression;
@@ -378,7 +488,9 @@ RectangularGeneExpression.prototype.validateGeneLabel = function (gene_label) {
   if (binarysearch(this.validGenes, gene_label) >= 0) {
     return true;
   } else {
-    throw "Invalid gene: " + gene_label;
+    // throw "Invalid gene: " + gene_label;
+    console.log("invalid gene:", gene_label);
+    // TODO: add a WranglerDocument if simulation, otherwise throw error
   }
 };
 RectangularGeneExpression.prototype.validateExpressionStrings =
@@ -413,6 +525,31 @@ RectangularGeneExpression.prototype.Expression2Insert =
     $set: setObject
   });
 };
+RectangularGeneExpression.prototype.CopyNumberInsert =
+    function(gene_label, sampleLabels, expressionStrings) {
+  // do some checks
+  if (sampleLabels.length !== expressionStrings.length) {
+    throw "Internal error: sampleLabels not the same length as " +
+        " expressionStrings!";
+  }
+
+  for (var index in sampleLabels) {
+    var baseline_progression = "baseline";
+    if (sampleLabels[index].match(/pro/gi)) {
+      baseline_progression = "progression";
+    }
+
+    CopyNumber.insert({
+      study_label: this.submission.options.study_label,
+      collaborations: [this.submission.options.collaboration_label],
+      sample_label: sampleLabels[index],
+      baseline_progression: baseline_progression,
+      normalization: "gistic",
+      gene_label: gene_label,
+      value: parseFloat(expressionStrings[index]),
+    });
+  }
+};
 
 
 function BD2KGeneExpression (wrangler_file_id, isSimulation) {
@@ -425,7 +562,7 @@ BD2KGeneExpression.schema = geneExpressionSchema;
 BD2KGeneExpression.description = "Single patient gene expression (BD2K pipeline)";
 function parseSampleLabel(possibleOptions) {
   for (var i in possibleOptions) {
-    var label = wrangleSampleLabel(possibleOptions[i]);
+    var label = Wrangler.wrangleSampleLabel(possibleOptions[i]);
     if (label) {
       return label;
     }
@@ -547,17 +684,6 @@ TCGAGeneExpression.prototype =
     Object.create(RectangularGeneExpression.prototype);
 TCGAGeneExpression.prototype.constructor = TCGAGeneExpression;
 TCGAGeneExpression.description = "TCGA gene expression";
-// // only accepts quantile normalized counts
-// TCGAGeneExpression.schema = geneExpressionSchema;
-function verifySampleLabels(sampleLabels) {
-  for (var index in sampleLabels) {
-    var label = sampleLabels[index];
-    var found = wrangleSampleLabel(label);
-    if (found !== label) {
-      throw "could not find sample label in " + label;
-    }
-  }
-}
 TCGAGeneExpression.prototype.parseLine =
     function (brokenTabs, lineNumber, line) {
   if (lineNumber === 1) { // header line
@@ -570,7 +696,7 @@ TCGAGeneExpression.prototype.parseLine =
     }
 
     this.sampleLabels = brokenTabs.slice(1);
-    verifySampleLabels(this.sampleLabels);
+    verifySampleLabelsExactly(this.sampleLabels);
   } else if (lineNumber === 2) { // second header line
     if (brokenTabs[0] !== "gene_id") {
       throw "expected 'gene_id' to lead second line";
@@ -624,6 +750,66 @@ TCGAGeneExpression.prototype.endOfFile = function () {
 };
 
 
+function CopyNumberExpression (wrangler_file_id, isSimulation) {
+  RectangularGeneExpression.call(this, wrangler_file_id, isSimulation);
+}
+CopyNumberExpression.prototype =
+    Object.create(RectangularGeneExpression.prototype);
+CopyNumberExpression.prototype.constructor = CopyNumberExpression;
+CopyNumberExpression.description = "Copy number";
+CopyNumberExpression.prototype.parseLine =
+    function (brokenTabs, lineNumber, line) {
+  if (lineNumber === 1) { // header line
+    if (this.isSimulation) {
+      this.gene_count = 0;
+    }
+
+    if (brokenTabs[0] !== 'Gene Symbol' ||
+        brokenTabs[1] !== 'Locus ID' ||
+        brokenTabs[2] !== 'Cytoband') {
+      throw 'expected "Gene Symbol\tLocus ID\tCytoband\t" to start file';
+    }
+
+    this.sampleLabels = verifySampleLabelsExist(brokenTabs.slice(3));
+  } else { // rest of file
+    var brokenOnPipe = brokenTabs[0].split("|");
+    if (brokenOnPipe.length === 2 && brokenOnPipe[1].slice(0, 3) !== 'chr') {
+      throw 'expected "GENE" or "GENE|chrNUM" in "Gene Symbol" field';
+    }
+
+    var gene_label = brokenOnPipe[0];
+    var expressionStrings = brokenTabs.slice(3);
+
+    // error checking
+    this.validateGeneLabel.call(this, gene_label);
+    this.validateExpressionStrings.call(this, expressionStrings);
+
+    if (this.isSimulation) {
+      this.gene_count++;
+    } else {
+      this.CopyNumberInsert.call(this, gene_label,
+          this.sampleLabels, expressionStrings);
+    }
+  }
+};
+CopyNumberExpression.prototype.endOfFile = function () {
+  if (this.isSimulation) {
+    for (var index in this.sampleLabels) {
+      this.insertWranglerDocument.call(this, {
+        submission_type: "gene_expression",
+        document_type: "sample_normalization",
+        contents: {
+          sample_label: this.sampleLabels[index],
+          normalization: "gistic",
+          gene_count: this.gene_count,
+        },
+      });
+    }
+  }
+};
+
+
+
 // > db.Clinical_Info.findOne()
 // {
 // 	"_id" : "oFFkytCFwaikQgemq",
@@ -659,7 +845,7 @@ BasicClinical.prototype.parseLine =
     }
   } else { // rest of file
     var Sample_ID = brokenTabs[this.sampleLabelTabIndex];
-    verifySampleLabels([Sample_ID]);
+    verifySampleLabelsExactly([Sample_ID]);
 
     var ageString = brokenTabs[this.ageLabelIndex];
     if (isNaN(ageString)) {
@@ -706,6 +892,7 @@ WranglerFileTypes = {
   BD2KGeneExpression: BD2KGeneExpression,
   BD2KSampleLabelMap: BD2KSampleLabelMap,
   TCGAGeneExpression: TCGAGeneExpression,
+  CopyNumberExpression: CopyNumberExpression,
   BasicClinical: BasicClinical,
 };
 

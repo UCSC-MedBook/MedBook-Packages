@@ -1,7 +1,7 @@
 CopyNumber = new Meteor.Collection("copy_number");
 
 CopyNumber.attachSchema(new SimpleSchema({
-  study_label: { type: String },
+  study_label: { type: String, optional: true },
   collaborations: { type: [String] },
 
   sample_label: { type: String },
@@ -20,12 +20,6 @@ CopyNumber.attachSchema(new SimpleSchema({
     ],
   },
 
-  values: {
-    type: [
-      new SimpleSchema({
-        gene_label: { type: String },
-        value: { type: String },
-      })
-    ],
-  },
+  gene_label: { type: String },
+  value: { type: Number, decimal: true },
 }));

@@ -23,6 +23,7 @@ Package.onUse(function(api) {
   // symbol exports
 
   // already have their own files
+  api.addFiles('CopyNumber.js');
   api.export("CopyNumber");
 
   api.export('Studies');

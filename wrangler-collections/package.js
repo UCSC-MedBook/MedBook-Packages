@@ -22,10 +22,13 @@ Package.onUse(function(api) {
   api.use('medbook:primary-collections');
   api.use('underscore');
 
+  api.addFiles('Wrangler.js');
+
   api.addFiles('WranglerFileTypes.js');
   api.addFiles('wrangler-collections.js');
   api.addFiles('createIndexes.js', 'server');
 
+  api.export('Wrangler');
   api.export("WranglerFileTypes", "server");
   api.export("WranglerFileTypeSchemas", "client");
 

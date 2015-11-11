@@ -1,0 +1,80 @@
+Wrangler = {};
+
+Wrangler.wrangleSampleLabel = function (text) {
+  // TODO: what if it's ProR3 or something?
+  var proIfPro = "";
+  if (text.match(/pro/gi)) {
+    proIfPro = "Pro";
+  }
+
+  // try to match something like "DTB-000"
+  var matches = text.match(/DTB-[0-9][0-9][0-9]/g);
+  if (matches) {
+    return matches[0] + proIfPro;
+  }
+
+  // match weird .vcf file names (e.g. "DTB-OH-014-Pro-AC.anno.fix.vcf")
+  // http://regexr.com/3c0kn
+  matches = text.match(/DTB-[A-Z]{1,4}-[0-9]{3}/g);
+  if (matches) {
+    return matches[0] + proIfPro;
+  }
+
+  // match TCGA sample labels (e.g. "TCGA-02-0055-01A-01R-1849-01")
+  // https://wiki.nci.nih.gov/display/TCGA/TCGA+barcode
+  // http://regexr.com/3c1b7
+  var tcgaRegex =
+  /TCGA-[A-Z0-9]{2}-[A-Z0-9]{1,4}-[0-9]{2}[A-Z]-[0-9]{2}[DGHRTWX]-[A-Z0-9]{4}-[0-9]{2}/g;
+  matches = text.match(tcgaRegex);
+  if (matches) {
+    return matches[0];
+  }
+
+  // match samples like "DTB_097_Pro_T" (copy number data)
+  // http://regexr.com/3c5p8
+  // DTB_097_BL_T ==> DTB-097
+  // DTB_097_BL2_T ==> DTB-097Dup
+  // DTB_097_BL3_T ==> error thrown!
+  // DTB_097_Pro_T ==> DTB-097Pro
+  // DTB_097_Pro5_T ==> DTB-097Pro5
+  matches = text.match(/DTB_[0-9]{3}_(BL|Pro)([0-9]|)_T/g);
+  if (matches) {
+    var firstMatch = matches[0];
+    var numbers = firstMatch.match(/[0-9]{3}/g)[0];
+
+    var replicateNumber = "";
+    // NOTE: no | after [0-9]
+    var replicateMatches = firstMatch.match(/(BL|Pro)([0-9])/g);
+    if (replicateMatches) {
+      var replicatePart = replicateMatches[0];
+      if (proIfPro === "") {
+        if (replicatePart === "BL2") {
+          replicateNumber = "Dup";
+        } else {
+          throw "Unclear what to do with third BL duplicate for " + text;
+        }
+      } else {
+        replicateNumber = replicatePart.match(/[0-9]/g)[0];
+      }
+    }
+
+    return "DTB-" + numbers + proIfPro + replicateNumber;
+  }
+};
+
+Wrangler.wrangleSampleUUID = function (text, submission_id) {
+  var sample_label;
+
+  WranglerDocuments.find({
+    submission_id: submission_id,
+    document_type: "sample_label_map",
+  }).forEach(function (wranglerDoc) {
+    // check if sample_uuid in text
+    var index = text.indexOf(wranglerDoc.contents.sample_uuid);
+    if (index >= 0) {
+      sample_label = wranglerDoc.contents.sample_label;
+    }
+  });
+
+  return sample_label;
+};
