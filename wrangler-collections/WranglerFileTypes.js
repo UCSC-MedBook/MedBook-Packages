@@ -297,7 +297,7 @@ RectangularFile.prototype.parse = function () {
     // This is so that any variables in the header are set for future
     // lines if needed.
     // ex. this.sample_label requires a mongodb lookup for UUID mapping
-    var lineBufferMax = 1;
+    var lineBufferMax = 50;
     var headerLineCount = 10;
 
     var lineBufferPromises = [];
@@ -340,12 +340,12 @@ RectangularFile.prototype.parse = function () {
             "Line " + thisLineNumber + " has " + brokenTabs.length +
             " columns, not " + tabCount;
         deferred.reject(message);
+        return; // don't parse that line
       }
 
       // I guess we should parse the line eventually...
-      self.parseLine.call(self, brokenTabs, thisLineNumber, line);
-
-      deferred.resolve();
+      Q.resolve(self.parseLine.call(self, brokenTabs, thisLineNumber, line))
+        .then(deferred.resolve);
     }, reject));
 
     bylineStream.on('end', Meteor.bindEnvironment(function () {
@@ -360,7 +360,7 @@ RectangularFile.prototype.parse = function () {
   });
 };
 RectangularFile.prototype.parseLine = function (brokenTabs, lineNumber, line) {
-  console.log("parseLine not overridden");
+  throw "parseLine function not overridden";
 };
 RectangularFile.prototype.endOfFile = function () {
   console.log("endOfFile not overridden");
@@ -533,13 +533,15 @@ RectangularGeneExpression.prototype.CopyNumberInsert =
         " expressionStrings!";
   }
 
+  var bulk = CopyNumber.rawCollection().initializeUnorderedBulkOp();
+
   for (var index in sampleLabels) {
     var baseline_progression = "baseline";
     if (sampleLabels[index].match(/pro/gi)) {
       baseline_progression = "progression";
     }
 
-    CopyNumber.insert({
+    bulk.insert({
       study_label: this.submission.options.study_label,
       collaborations: [this.submission.options.collaboration_label],
       sample_label: sampleLabels[index],
@@ -549,6 +551,16 @@ RectangularGeneExpression.prototype.CopyNumberInsert =
       value: parseFloat(expressionStrings[index]),
     });
   }
+
+  var deferred = Q.defer();
+  bulk.execute(function (error, result) {
+    if (error) {
+      deferred.reject(error);
+    } else {
+      deferred.resolve();
+    }
+  });
+  return deferred.promise;
 };
 
 
@@ -787,7 +799,7 @@ CopyNumberExpression.prototype.parseLine =
     if (this.isSimulation) {
       this.gene_count++;
     } else {
-      this.CopyNumberInsert.call(this, gene_label,
+      return this.CopyNumberInsert.call(this, gene_label,
           this.sampleLabels, expressionStrings);
     }
   }
