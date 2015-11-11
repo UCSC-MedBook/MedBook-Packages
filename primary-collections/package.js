@@ -26,6 +26,9 @@ Package.onUse(function(api) {
   api.addFiles('CopyNumber.js');
   api.export("CopyNumber");
 
+  api.addFiles('ExportedFiles.js');
+  api.export("ExportedFiles");
+
   api.export('Studies');
   api.export('Collabs'); // it won't work when called Collaborations
   api.export('Collaboration');

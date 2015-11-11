@@ -430,12 +430,14 @@ var jobSchema = new SimpleSchema({
   // fields needed to insert a Job
   name: {
     type: String,
+    // TODO: depend on Jobs package
     allowedValues: [
       "ParseWranglerFile",
       "SubmitWranglerFile",
       "SubmitWranglerSubmission",
       "FinishWranglerSubmission",
       "RunLimma",
+      "ExportFile",
     ],
   },
   user_id: { type: Meteor.ObjectID },
