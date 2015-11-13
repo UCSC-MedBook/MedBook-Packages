@@ -4536,6 +4536,13 @@ var utils = utils || {};
             return -1;
         }
 
+        // if exactly one is "small cell"
+        if ((valA == 'small cell') && (valB != 'small cell')) {
+            return -1;
+        } else if ((valA != 'small cell') && (valB == 'small cell')) {
+            return 1;
+        }
+
         // if at least one is "exclude"
         switch (valA + valB) {
             case "excludenull":
@@ -7401,12 +7408,21 @@ var medbookDataLoader = medbookDataLoader || {};
 
             var datatype;
             var fields = eventId.split('_v');
-            fields.pop();
+            var version = fields.pop();
             var rootName = fields.join('_v');
+            var suffix = "";
             if (utils.endsWith(rootName, '_kinase_viper')) {
                 datatype = 'kinase target activity';
+                // suffix = '_kinase_viper';
+                // eventId = rootName.replace(suffix,"");
             } else if (utils.endsWith(rootName, '_tf_viper') || utils.beginsWith(rootName, 'tf_viper_')) {
                 datatype = 'tf target activity';
+                // suffix = '_tf_viper';
+                // eventId = rootName.replace(suffix,"");
+            } else if (utils.endsWith(rootName, '_mvl_drug_sensitivity') || utils.beginsWith(rootName, 'mvl_drug_sensitivity_')) {
+                datatype = 'mvl drug sensitivity';
+                // suffix = '_mvl_drug_sensitivity';
+                // eventId = rootName.replace(suffix,"");
             } else {
                 datatype = 'expression signature';
             }
@@ -7415,7 +7431,7 @@ var medbookDataLoader = medbookDataLoader || {};
 
             // add event if DNE
             if (eventObj == null) {
-                eventObj = mdl.loadEventBySampleData(OD_eventAlbum, eventId, '', datatype, 'numeric', {});
+                eventObj = mdl.loadEventBySampleData(OD_eventAlbum, eventId, suffix, datatype, 'numeric', {});
                 eventObj.metadata.setWeightVector([], "expression data");
             }
 
@@ -7434,6 +7450,8 @@ var medbookDataLoader = medbookDataLoader || {};
             datatype = 'kinase target activity';
         } else if (utils.endsWith(obj['name'], '_tf_viper') || utils.beginsWith(obj['name'], 'tf_viper_')) {
             datatype = 'tf target activity';
+        } else if (utils.endsWith(obj['name'], '_mvl_drug_sensitivity') || utils.beginsWith(obj['name'], 'mvl_drug_sensitivity_')) {
+            datatype = 'mvl drug sensitivity';
         } else {
             datatype = "expression signature";
         }
@@ -9471,9 +9489,22 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
         var rowLabels = svg.selectAll(".rowLabel").data(rowNames).enter().append("text").text(function(d) {
             var eventObj = eventAlbum.getEvent(d);
             var displayName = eventObj.metadata.displayName;
-            if (eventObj.metadata.datatype === "datatype label") {
+            var datatype = eventObj.metadata.datatype;
+            if (datatype === "datatype label") {
                 displayName = displayName.toUpperCase();
             }
+
+            // TODO hack to shorten signature names to remove type
+            if (datatype === "mvl drug sensitivity") {
+                displayName = d.replace("_mvl_drug_sensitivity", "");
+            } else if (datatype === "tf target activity") {
+                displayName = d.replace("_tf_viper", "");
+            } else if (datatype === "kinase target activity") {
+                displayName = d.replace("_kinase_viper", "");
+            }
+
+            // remove version number
+            displayName = displayName.replace(/_v\d+$/, "");
 
             if (!_.isUndefined(taggedEvents)) {
                 var tag = taggedEvents[d];
@@ -9783,7 +9814,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 attributes['sampleId'] = d['id'];
                 attributes['val'] = d['val'];
                 icon = utils.createSvgRectElement(x, y, rx, ry, width, height, attributes);
-            } else if (utils.isObjInArray(["expression signature", "kinase target activity", "tf target activity"], eventAlbum.getEvent(d['eventId']).metadata.datatype)) {
+            } else if (utils.isObjInArray(["expression signature", "kinase target activity", "tf target activity", "mvl drug sensitivity"], eventAlbum.getEvent(d['eventId']).metadata.datatype)) {
                 attributes['class'] = "signature";
                 attributes['eventId'] = d['eventId'];
                 attributes['sampleId'] = d['id'];
