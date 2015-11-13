@@ -7,10 +7,34 @@ Wrangler.wrangleSampleLabel = function (text) {
     proIfPro = "Pro";
   }
 
+  var matches;
+  var firstMatch;
+  var replicateNumber = "";
+
   // try to match something like "DTB-000"
-  var matches = text.match(/DTB-[0-9][0-9][0-9]/g);
+  matches = text.match(/DTB-[0-9][0-9][0-9]/g);
   if (matches) {
-    return matches[0] + proIfPro;
+    if (text.match(/duplicate/gi)) {
+      if (proIfPro === "") {
+        replicateNumber = "Dup";
+      } else {
+        replicateNumber = "2";
+      }
+    }
+
+    var baselineProWithNum = text.match(/(baseline|progression)[0-9]/gi);
+    if (baselineProWithNum) {
+      replicateNumber = baselineProWithNum[0].match(/[0-9]/)[0];
+      if (proIfPro === "") {
+        if (replicateNumber === "2") {
+          replicateNumber = "Dup";
+        } else {
+          throw "Unclear what to do with third BL duplicate for " + text;
+        }
+      }
+    }
+
+    return matches[0] + proIfPro + replicateNumber;
   }
 
   // match weird .vcf file names (e.g. "DTB-OH-014-Pro-AC.anno.fix.vcf")
@@ -39,10 +63,10 @@ Wrangler.wrangleSampleLabel = function (text) {
   // DTB_097_Pro5_T ==> DTB-097Pro5
   matches = text.match(/DTB_[0-9]{3}_(BL|Pro)([0-9]|)_T/g);
   if (matches) {
-    var firstMatch = matches[0];
+    firstMatch = matches[0];
     var numbers = firstMatch.match(/[0-9]{3}/g)[0];
 
-    var replicateNumber = "";
+    replicateNumber = "";
     // NOTE: no | after [0-9]
     var replicateMatches = firstMatch.match(/(BL|Pro)([0-9])/g);
     if (replicateMatches) {

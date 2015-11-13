@@ -372,7 +372,7 @@ var normalizationSlugsAndNames = [
   { "value": "counts", "label": "Quantile normalized counts" },
   { "value": "fpkm", "label": "FPKM" },
   { "value": "tpm", "label": "TPM" },
-  { "value": "rsem_quan_log2", "label": "RSEM log(2)" },
+  { "value": "rsem_quan_log2", "label": "Quantile normalized counts log2" },
 ];
 var geneExpressionSchema = new SimpleSchema({
   "normalization": {
@@ -514,8 +514,14 @@ RectangularGeneExpression.prototype.Expression2Insert =
   for (var index in sampleLabels) {
     var value = expressionStrings[index];
     var normalization = this.wranglerFile.options.normalization;
-    var setAttribute = "samples." + sampleLabels[index] + "." + normalization;
-    setObject[setAttribute] = parseFloat(value);
+    var exceptNormalization = "samples." + sampleLabels[index] + ".";
+    var parsedValue = parseFloat(value);
+    setObject[exceptNormalization + normalization] = parsedValue;
+
+    if (normalization === 'counts') {
+      var log2Value = Math.log(parsedValue) / Math.LN2;
+      setObject[exceptNormalization + 'rsem_quan_log2'] = log2Value;
+    }
   }
   Expression2.upsert({
     gene: gene,
@@ -583,7 +589,7 @@ function parseSampleLabel(possibleOptions) {
 }
 function parseSampleUUID(possibleOptions, submission_id) {
   for (var i in possibleOptions) {
-    var label = wrangleSampleUUID(possibleOptions[i], submission_id);
+    var label = Wrangler.wrangleSampleUUID(possibleOptions[i], submission_id);
     if (label) {
       return label;
     }
@@ -665,11 +671,12 @@ BD2KSampleLabelMap.prototype.parseLine =
     if (lineNumber === 1) {
       this.headerLine = brokenTabs;
     } else {
-      var sample_label = brokenTabs[this.headerLine.indexOf("Sample_Name")];
+      var original_sample_label =
+          brokenTabs[this.headerLine.indexOf("Sample_Name")];
       var sample_uuid = brokenTabs[this.headerLine.indexOf("Sample_UUID")];
 
       // some error checking
-      if (!sample_label) {
+      if (!original_sample_label) {
         throw "No column with header 'Sample_Name'";
       }
       if (!sample_uuid) {
@@ -680,7 +687,8 @@ BD2KSampleLabelMap.prototype.parseLine =
         submission_type: "gene_expression",
         document_type: "sample_label_map",
         contents: {
-          sample_label: sample_label,
+          original_sample_label: original_sample_label,
+          sample_label: Wrangler.wrangleSampleLabel(original_sample_label),
           sample_uuid: sample_uuid,
         },
       });
