@@ -369,7 +369,7 @@ RectangularFile.prototype.endOfFile = function () {
 
 var normalizationSlugsAndNames = [
   { "value": "raw_counts", "label": "Raw counts" },
-  { "value": "counts", "label": "Quantile normalized counts" },
+  { "value": "quantile_counts", "label": "Quantile normalized counts" },
   { "value": "fpkm", "label": "FPKM" },
   { "value": "tpm", "label": "TPM" },
   { "value": "rsem_quan_log2", "label": "Quantile normalized counts log2" },
@@ -518,7 +518,7 @@ RectangularGeneExpression.prototype.Expression2Insert =
     var parsedValue = parseFloat(value);
     setObject[exceptNormalization + normalization] = parsedValue;
 
-    if (normalization === 'counts') {
+    if (normalization === 'quantile_counts') {
       var log2Value = Math.log(parsedValue) / Math.LN2;
       setObject[exceptNormalization + 'rsem_quan_log2'] = log2Value;
     }
