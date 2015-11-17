@@ -367,24 +367,6 @@ RectangularFile.prototype.endOfFile = function () {
 };
 
 
-var normalizationSlugsAndNames = [
-  { "value": "raw_counts", "label": "Raw counts" },
-  { "value": "quantile_counts", "label": "Quantile normalized counts" },
-  { "value": "fpkm", "label": "FPKM" },
-  { "value": "tpm", "label": "TPM" },
-  { "value": "rsem_quan_log2", "label": "Quantile normalized counts log2" },
-];
-var geneExpressionSchema = new SimpleSchema({
-  "normalization": {
-    type: String,
-    allowedValues: _.pluck(normalizationSlugsAndNames, "value"),
-    autoform: {
-      options: normalizationSlugsAndNames,
-    },
-  },
-});
-
-
 function RectangularGeneExpression (wrangler_file_id, isSimulation) {
   RectangularFile.call(this, wrangler_file_id, isSimulation);
 
@@ -459,8 +441,8 @@ function RectangularGeneExpression (wrangler_file_id, isSimulation) {
     }
   }
 
-  // NOTE: I'm keeping this here to show the testing I did to make sure
-  // my above code works
+  // // NOTE: I'm keeping this here to show the testing I did to make sure
+  // // my above code works.
   // console.log("about to do union");
   // var oldValidGenes = _.union(genesStrings, expressionStrings);
   // oldValidGenes.sort();
@@ -568,6 +550,15 @@ RectangularGeneExpression.prototype.CopyNumberInsert =
   });
   return deferred.promise;
 };
+RectangularGeneExpression.prototype.getNormalizationLabel =
+    function (collection) {
+  // mapping from 'quantile_counts' to 'Quantile normalized counts'
+  var normalizationOptions = collection.simpleSchema().schema()
+      .normalization.autoform.options;
+  return _.findWhere(normalizationOptions, {
+    value: this.wranglerFile.options.normalization
+  }).label;
+};
 
 
 function BD2KGeneExpression (wrangler_file_id, isSimulation) {
@@ -576,7 +567,7 @@ function BD2KGeneExpression (wrangler_file_id, isSimulation) {
 BD2KGeneExpression.prototype =
     Object.create(RectangularGeneExpression.prototype);
 BD2KGeneExpression.prototype.constructor = BD2KGeneExpression;
-BD2KGeneExpression.schema = geneExpressionSchema;
+BD2KGeneExpression.schema = GeneExpression.simpleSchema().pick('normalization');
 BD2KGeneExpression.description = "Single patient gene expression (BD2K pipeline)";
 function parseSampleLabel(possibleOptions) {
   for (var i in possibleOptions) {
@@ -645,12 +636,14 @@ BD2KGeneExpression.prototype.parseLine =
 };
 BD2KGeneExpression.prototype.endOfFile = function () {
   if (this.isSimulation) {
+    var normalization = this.getNormalizationLabel.call(this, GeneExpression);
+
     this.insertWranglerDocument.call(this, {
       submission_type: "gene_expression",
       document_type: "sample_normalization",
       contents: {
         sample_label: this.sample_label,
-        normalization: this.wranglerFile.options.normalization,
+        normalization: normalization,
         gene_count: this.gene_count,
       },
     });
@@ -755,13 +748,15 @@ TCGAGeneExpression.prototype.parseLine =
 };
 TCGAGeneExpression.prototype.endOfFile = function () {
   if (this.isSimulation) {
+    var normalization = this.getNormalizationLabel.call(this, GeneExpression);
+
     for (var index in this.sampleLabels) {
       this.insertWranglerDocument.call(this, {
         submission_type: "gene_expression",
         document_type: "sample_normalization",
         contents: {
           sample_label: this.sampleLabels[index],
-          normalization: this.wranglerFile.options.normalization,
+          normalization: normalization,
           gene_count: this.gene_count,
         },
       });
@@ -814,13 +809,15 @@ CopyNumberExpression.prototype.parseLine =
 };
 CopyNumberExpression.prototype.endOfFile = function () {
   if (this.isSimulation) {
+    var normalization = this.getNormalizationLabel.call(this, CopyNumber);
+
     for (var index in this.sampleLabels) {
       this.insertWranglerDocument.call(this, {
         submission_type: "gene_expression",
         document_type: "sample_normalization",
         contents: {
           sample_label: this.sampleLabels[index],
-          normalization: "gistic",
+          normalization: normalization,
           gene_count: this.gene_count,
         },
       });
@@ -878,7 +875,7 @@ BasicClinical.prototype.parseLine =
     	site: study_site,
     	Patient_ID: "CHOC-patient-label", // NOTE: hardcoded
     	age: age,
-    	On_Study_Date: ISODate("2015-06-04T00:00:00Z"), // NOTE: hardcoded
+    	On_Study_Date: new Date(),
     	Study_ID: this.submission.options.study_label,
     };
 
@@ -892,13 +889,17 @@ BasicClinical.prototype.parseLine =
 };
 BasicClinical.prototype.endOfFile = function () {
   if (this.isSimulation) {
+
+
+
+
     for (var index in this.sampleLabels) {
       this.insertWranglerDocument.call(this, {
         submission_type: "gene_expression",
         document_type: "sample_normalization",
         contents: {
           sample_label: this.sampleLabels[index],
-          normalization: this.wranglerFile.options.normalization,
+          normalization: normalization,
           gene_count: this.gene_count,
         },
       });

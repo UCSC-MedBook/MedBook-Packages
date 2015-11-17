@@ -10,24 +10,30 @@ Package.describe({
   documentation: 'README.md'
 });
 
+function addCollectionFile(api, collectionName) {
+  api.addFiles(collectionName + '.js');
+  api.export(collectionName);
+}
+
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
-  api.use('aldeed:autoform@4.2.2 || 5.0.0');
   api.use('aldeed:simple-schema@1.3.3');
   api.use('aldeed:collection2@2.3.3');
+  api.use('aldeed:autoform@4.2.2 || 5.0.0');
   api.use('underscore');
 
   api.addFiles('primary_collections.js');
 
-  // symbol exports
-
   // already have their own files
-  api.addFiles('CopyNumber.js');
-  api.export("CopyNumber");
+  addCollectionFile(api, 'CopyNumber');
+  addCollectionFile(api, 'GeneExpression');
 
-  api.addFiles('ExportedFiles.js');
-  api.export("ExportedFiles");
+  addCollectionFile(api, 'Jobs');
+
+  // application-specific
+  addCollectionFile(api, 'ExportedFiles');
+
 
   // Blobs
   api.use('cfs:gridfs@0.0.33');

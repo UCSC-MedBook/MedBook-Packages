@@ -395,108 +395,7 @@ mutationSchema.fieldOrder = [
 
 
 
-// var geneExpressionSchema = new SimpleSchema([
-//   studyAndCollaboration,
-//   {
-//     "gene_label": { type: String },
-//     "sample_label": { type: String },
-//
-//     "value": { type: Number, decimal: true },
-//   }
-// ]);
-// geneExpressionSchema.fieldOrder = [
-//   "gene_label",
-//   "sample_label",
-//   "normalization",
-//   "value",
-// ];
-//
-// // This is updated after importing new data from Wrangler
-// var geneExpressionSummarySchema = new SimpleSchema([
-//   studyAndCollaboration,
-//   {
-//     "gene_label": { type: String },
-//     "study_label": { type: String },
-//     "normalization": {
-//       type: String,
-//       allowedValues: _.pluck(normalizationSlugsAndNames, "value"),
-//     },
-//     "mean": { type: Number, decimal: true },
-//     "variance": { type: Number, decimal: true },
-//   }
-// ]);
 
-var jobSchema = new SimpleSchema({
-  // fields needed to insert a Job
-  name: {
-    type: String,
-    // TODO: depend on Jobs package
-    allowedValues: [
-      "ParseWranglerFile",
-      "SubmitWranglerFile",
-      "SubmitWranglerSubmission",
-      "FinishWranglerSubmission",
-      "RunLimma",
-      "ExportFile",
-    ],
-  },
-  user_id: { type: Meteor.ObjectID },
-  args: { // input
-    type: Object,
-    blackbox: true,
-  },
-
-  // optional fields
-  "prerequisite_job_ids": {
-    type: [Meteor.ObjectID],
-    defaultValue: [],
-  },
-
-  // don't include this in input obviously...
-  output: {
-    type: Object,
-    blackbox: true,
-    optional: true,
-  },
-
-  // automatically generated fields
-  "date_created": {
-    type: Date,
-    // https://github.com/aldeed/meteor-collection2#autovalue
-    autoValue: function() {
-      if (this.isInsert) {
-        return new Date();
-      } else if (this.isUpsert) {
-        return { $setOnInsert: new Date() };
-      } else {
-        this.unset();  // Prevent user from supplying their own value
-      }
-    },
-  },
-  "date_modified": {
-    type: Date,
-    autoValue: function () {
-      if (this.isSet) {
-        return;
-      }
-      return new Date();
-    },
-  },
-  "status": {
-    type: String,
-    allowedValues: [
-      "waiting",
-      "running",
-      "done",
-      "error",
-    ],
-    defaultValue: "waiting",
-  },
-  "retry_count": { type: Number, defaultValue: 0 },
-  // can be set even if status is not "error"
-  "error_description": { type: String, optional: true },
-  stack_trace: { type: String, optional: true },
-});
 
 var qualityControlPlotSchema = new SimpleSchema([
   biologicalSourceSchema,
@@ -598,12 +497,6 @@ CohortSignatures.attachSchema(cohortSignatureSchema);
 Mutations = new Meteor.Collection("mutations");
 Mutations.attachSchema(mutationSchema);
 
-// GeneExpression = new Meteor.Collection("gene_expression");
-// GeneExpression.attachSchema(geneExpressionSchema);
-//
-// GeneExpressionSummary = new Meteor.Collection("gene_expression_summary");
-// GeneExpressionSummary.attachSchema(geneExpressionSummarySchema);
-
 // Pathways = new Meteor.Collection("pathways");
 // Pathways.attachSchema(pathwaySchema);
 //
@@ -624,18 +517,11 @@ Contrast.attachSchema(contrastSchema);
 
 // not really data
 
-Jobs = new Meteor.Collection("jobs");
-Jobs.attachSchema(jobSchema);
-
-
-
-
-
 QualityControlPlots = new Meteor.Collection("quality_control_plots");
 QualityControlPlots.attachSchema(qualityControlPlotSchema);
 
 // noooo there are no schemas for these
-Expression2 = new Meteor.Collection("expression2");
+
 Genes = new Meteor.Collection("genes");
 Clinical_Info = new Meteor.Collection("Clinical_Info");
 
