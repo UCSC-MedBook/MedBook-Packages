@@ -56,7 +56,7 @@ WranglerDocuments.insert({
 // ...
 ```
 
-// insert image here
+![panel_example](images/panel_example.png?raw=true "Title")
 
 credit: http://getbootstrap.com/components/
 
