@@ -1,4 +1,18 @@
-# WranglerDocuments
+# Wrangler collections
+
+This package contains definitions for Wrangler-specific collections as well as file handler definitions. A file handler reads a file uploaded in Wrangler and either create WranglerDocuments for review or writes to the database.
+
+
+## Installation
+
+In your Meteor app directory, enter:
+
+```
+$ meteor add aldeed:simple-schema
+```
+
+
+## WranglerDocuments
 
 Wrangler documents are generated when Wrangler 'peeks' at the file. They describe and summarize various parts of the file.
 
