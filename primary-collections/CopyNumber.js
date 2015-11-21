@@ -1,3 +1,5 @@
+console.log("Don't use me yet!");
+
 CopyNumber = new Meteor.Collection("copy_number");
 
 // same pattern as GeneExpression

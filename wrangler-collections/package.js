@@ -15,22 +15,28 @@ Npm.depends({"binary-search": "1.2.0"});
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.3');
 
+  api.use('underscore');
   api.use('aldeed:simple-schema@1.3.3');
   api.use('aldeed:autoform@5.5.1');
-
   api.use('medbook:primary-collections@0.0.3');
-  api.use('underscore');
 
-  api.addFiles('Wrangler.js');
+  api.addFiles([
+    'fileHandlers/FileHandler.js',
+    'fileHandlers/RectangularFile.js',
+    'fileHandlers/RectangularGeneAssay.js',
+    'fileHandlers/BD2KGeneExpression.js',
+  ], 'server');
+  api.export('WranglerFileTypes', 'server');
 
-  api.addFiles('WranglerFileTypes.js');
-  api.addFiles('wrangler-collections.js');
-  api.addFiles('createIndexes.js', 'server');
-
+  api.addFiles('Wrangler.js'); // both
   api.export('Wrangler');
-  api.export("WranglerFileTypes", "server");
-  api.export("WranglerFileTypeSchemas", "client");
 
+  // api.addFiles('WranglerFileTypes.js');
+
+  // api.addFiles('createIndexes.js', 'server');
+
+
+  api.addFiles('wrangler-collections.js');
   api.export('WranglerSubmissions');
   api.export('WranglerDocuments');
   api.export('WranglerFiles');

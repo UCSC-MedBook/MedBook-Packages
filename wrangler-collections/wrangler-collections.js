@@ -22,7 +22,7 @@ WranglerSubmissions.attachSchema(new SimpleSchema({
   },
 }));
 
-var fileTypeNames = _.map(WranglerFileTypes, function (value, file_type) {
+var fileTypeNames = _.map(Wrangler.fileTypes, function (value, file_type) {
   return {
     file_type: file_type,
     description: value.description,
@@ -32,6 +32,15 @@ WranglerFiles = new Meteor.Collection("wrangler_files");
 WranglerFiles.attachSchema(new SimpleSchema({
   submission_id: { type: Meteor.ObjectID },
   user_id: { type: Meteor.ObjectID },
+
+  submission_type: {
+    type: String,
+    allowedValues: [
+      "gene_expression",
+    ],
+    optional: true,
+  },
+
   blob_id: { type: Meteor.ObjectID },
   blob_name: { type: String },
   blob_text_sample: { type: String, optional: true },
@@ -82,46 +91,19 @@ WranglerDocuments = new Meteor.Collection("wrangler_documents");
 WranglerDocuments.attachSchema(new SimpleSchema({
   submission_id: { type: Meteor.ObjectID },
   user_id: { type: Meteor.ObjectID },
-  submission_type: {
-    type: String,
-    allowedValues: [
-      "mutations",
-      "gene_expression",
-      // "rectangular_gene_expression",
-      // "superpathway",
-    ],
-  },
+  wrangler_file_id: { type: Meteor.ObjectID, optional: true },
   document_type: {
     type: String,
     allowedValues: [
-      "prospective_document",
-      "sample_normalization",
-      "sample_label_map",
-      "gene_label_map",
-      // "sample_label",
-      // "gene_label",
+      'mapped_genes',
+      'ignored_genes',
+      'sample_normalization',
     ],
-  },
-  collection_name: {
-    type: String,
-    allowedValues: [
-      "mutations",
-    ],
-    // custom: function () {
-    //   // TODO: don't allow if document_type is not "prospective_document"
-    //   if (!this.value && // if it's set it's not required again (duh)
-    //       (this.field("document_type").value === "prospective_document")) {
-    //     return "required";
-    //   }
-    // },
-    optional: true,
   },
   contents: {
     type: Object,
     blackbox: true,
   },
-  wrangler_file_id: { type: Meteor.ObjectID, optional: true },
-  inserted_into_database: { type: Boolean, optional: true },
 }));
 
 

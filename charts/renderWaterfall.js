@@ -151,8 +151,6 @@ Charts.renderWaterfall = function(svg, theData, context) {
         }
       });
 
-
-
   // threshold lines
   if (context.upper_threshold_value !== undefined
       && context.lower_threshold_value !== undefined) {

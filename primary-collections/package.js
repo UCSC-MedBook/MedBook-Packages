@@ -10,11 +10,6 @@ Package.describe({
   documentation: 'README.md'
 });
 
-function addCollectionFile(api, collectionName) {
-  api.addFiles(collectionName + '.js');
-  api.export(collectionName);
-}
-
 Package.onUse(function(api) {
   api.versionsFrom('1.1.0.2');
 
@@ -26,13 +21,16 @@ Package.onUse(function(api) {
   api.addFiles('primary_collections.js');
 
   // already have their own files
-  addCollectionFile(api, 'CopyNumber');
-  addCollectionFile(api, 'GeneExpression');
+  api.addFiles('GeneExpression.js');
+  api.export('GeneExpression');
+  api.export('Expression2');
 
-  addCollectionFile(api, 'Jobs');
+  api.addFiles('Jobs.js', 'server');
+  api.export('Jobs', 'server');
 
   // application-specific
-  addCollectionFile(api, 'ExportedFiles');
+  api.addFiles('ExportedFiles.js');
+  api.export('ExportedFiles');
 
 
   // Blobs
@@ -54,8 +52,6 @@ Package.onUse(function(api) {
   api.export('SuperpathwayElements');
   api.export('SuperpathwayInteractions');
   api.export('Mutations');
-  api.export('GeneExpression');
-  api.export("Expression2");
   api.export("Genes");
   api.export('Jobs');
   api.export('Contrast');

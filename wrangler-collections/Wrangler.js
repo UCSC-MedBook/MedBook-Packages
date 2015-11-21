@@ -86,19 +86,44 @@ Wrangler.wrangleSampleLabel = function (text) {
   }
 };
 
-Wrangler.wrangleSampleUUID = function (text, submission_id) {
-  var sample_label;
-
-  WranglerDocuments.find({
-    submission_id: submission_id,
-    document_type: "sample_label_map",
-  }).forEach(function (wranglerDoc) {
-    // check if sample_uuid in text
-    var index = text.indexOf(wranglerDoc.contents.sample_uuid);
-    if (index >= 0) {
-      sample_label = wranglerDoc.contents.sample_label;
+Wrangler.findSampleLabel = function (possibleOptions) {
+  for (var i in possibleOptions) {
+    var label = Wrangler.wrangleSampleLabel(possibleOptions[i]);
+    if (label) {
+      return label;
     }
-  });
+  }
+};
 
-  return sample_label;
+// for BD2KGeneExpression schema
+var geneExpressionValues = GeneExpression.simpleSchema().schema();
+var normalizationKeys = _.filter(Object.keys(geneExpressionValues),
+    function (value) {
+  // check if it has 'values.' at the beginning
+  return value.slice(0, 7) === 'values.';
+});
+var allowedValues = _.map(normalizationKeys, function (value) {
+  // 'values.raw_counts' ==> 'raw_counts'
+  return value.slice(7);
+});
+var options = _.map(allowedValues, function (normalization) {
+  return {
+    value: normalization,
+    label: geneExpressionValues['values.' + normalization].label,
+  };
+});
+
+Wrangler.fileTypes = {
+  BD2KGeneExpression: {
+    description: "Single patient gene expression (BD2K pipeline)",
+    schema: new SimpleSchema({
+      normalization: {
+        type: String,
+        allowedValues: allowedValues,
+        autoform: {
+          options: options,
+        },
+      }
+    }),
+  }
 };
