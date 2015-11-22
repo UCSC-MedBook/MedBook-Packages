@@ -89,9 +89,8 @@ BD2KGeneExpression.prototype.parseLine =
             gene: originalGeneLabel
           }
         });
-      } else {
-        return; // ignore the gene
       }
+      return; // ignore the gene
     } else if (mappedGeneLabel !== originalGeneLabel) {
       if (this.isSimulation) {
         this.insertWranglerDocument.call(this, {
