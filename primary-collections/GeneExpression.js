@@ -5,6 +5,7 @@ var normalValue = {
   type: Number,
   decimal: true,
   optional: true,
+  min: 0,
 };
 
 GeneExpression.attachSchema(new SimpleSchema({
@@ -27,7 +28,6 @@ GeneExpression.attachSchema(new SimpleSchema({
       }, normalValue),
       quantile_counts_log: _.extend({
         label: "Quantile normalized counts log2",
-        min: 0,
         max: 100,
         autoValue: function () {
           var quantileCounts = this.siblingField('quantile_counts');
