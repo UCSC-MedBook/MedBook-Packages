@@ -1,5 +1,5 @@
-RectangularGeneAssay = function (wrangler_file_id, isSimulation) {
-  RectangularFile.call(this, wrangler_file_id, isSimulation);
+RectangularGeneAssay = function (options) {
+  RectangularFile.call(this, options);
 
   var self = this;
 

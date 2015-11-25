@@ -25,6 +25,7 @@ Package.onUse(function(api) {
     'fileHandlers/RectangularFile.js',
     'fileHandlers/RectangularGeneAssay.js',
     'fileHandlers/BD2KGeneExpression.js',
+    'fileHandlers/HGNCGeneList.js',
   ], 'server');
   api.export('WranglerFileTypes', 'server');
 

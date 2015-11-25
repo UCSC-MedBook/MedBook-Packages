@@ -1,5 +1,5 @@
-RectangularFile = function (wrangler_file_id, isSimulation) {
-  FileHandler.call(this, wrangler_file_id, isSimulation);
+RectangularFile = function (options) {
+  FileHandler.call(this, options);
 };
 
 RectangularFile.prototype = Object.create(FileHandler.prototype);

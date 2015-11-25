@@ -1,5 +1,8 @@
-function BD2KGeneExpression (wrangler_file_id, isSimulation) {
-  RectangularGeneAssay.call(this, wrangler_file_id, isSimulation);
+// TODO: change this to accept options instead of wrangler_file_id
+function BD2KGeneExpression (wrangler_file_id) {
+  RectangularGeneAssay.call(this, {
+    wrangler_file_id: wrangler_file_id
+  });
 
   this.setSubmissionType.call(this, 'gene_expression');
 }
@@ -71,7 +74,7 @@ BD2KGeneExpression.prototype.parseLine =
   }
 
   if (lineNumber === 1) { // header line
-    if (this.isSimulation) {
+    if (this.wranglerPeek) {
       this.gene_count = 0;
     }
 
@@ -82,7 +85,7 @@ BD2KGeneExpression.prototype.parseLine =
 
     // make sure the user knows we're ignoring/mapping the gene if applicable
     if (!mappedGeneLabel) {
-      if (this.isSimulation) {
+      if (this.wranglerPeek) {
         this.insertWranglerDocument.call(this, {
           document_type: 'ignored_genes',
           contents: {
@@ -92,7 +95,7 @@ BD2KGeneExpression.prototype.parseLine =
       }
       return; // ignore the gene
     } else if (mappedGeneLabel !== originalGeneLabel) {
-      if (this.isSimulation) {
+      if (this.wranglerPeek) {
         this.insertWranglerDocument.call(this, {
           document_type: 'mapped_genes',
           contents: {
@@ -106,7 +109,7 @@ BD2KGeneExpression.prototype.parseLine =
     var expressionString = brokenTabs[1];
     this.validateNumberStrings.call(this, [expressionString]);
 
-    if (this.isSimulation) {
+    if (this.wranglerPeek) {
       this.gene_count++;
     } else {
       var setObject = {};
@@ -127,7 +130,7 @@ BD2KGeneExpression.prototype.parseLine =
 };
 
 BD2KGeneExpression.prototype.endOfFile = function () {
-  if (this.isSimulation) {
+  if (this.wranglerPeek) {
     var normalization_description = GeneExpression.simpleSchema()
         .schema()['values.' + this.wranglerFile.options.normalization].label;
 

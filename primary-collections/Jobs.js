@@ -12,6 +12,7 @@ Jobs.attachSchema(new SimpleSchema({
       "FinishWranglerSubmission",
       "RunLimma",
       "ExportFile",
+      "ReloadGenesCollection",
     ],
   },
   user_id: { type: Meteor.ObjectID },
@@ -26,7 +27,6 @@ Jobs.attachSchema(new SimpleSchema({
     defaultValue: [],
   },
 
-  // don't include this in input obviously...
   output: {
     type: Object,
     blackbox: true,
@@ -59,6 +59,7 @@ Jobs.attachSchema(new SimpleSchema({
   "status": {
     type: String,
     allowedValues: [
+      "creating",
       "waiting",
       "running",
       "done",
@@ -71,3 +72,19 @@ Jobs.attachSchema(new SimpleSchema({
   "error_description": { type: String, optional: true },
   stack_trace: { type: String, optional: true },
 }));
+
+function onlyAdminCollaboration (user_id, doc) {
+  var user = Meteor.users.findOne(user_id);
+
+  return user.profile &&
+      user.profile.collaborations instanceof Array &&
+      user.profile.collaborations.indexOf("admin") >= 0 &&
+      doc.status === "creating" || doc.status === "waiting";
+}
+
+Jobs.allow({
+  insert: onlyAdminCollaboration,
+  update: onlyAdminCollaboration,
+  remove: onlyAdminCollaboration,
+  fetch: ["status"],
+});
