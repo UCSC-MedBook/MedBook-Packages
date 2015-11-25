@@ -522,7 +522,6 @@ QualityControlPlots.attachSchema(qualityControlPlotSchema);
 
 // noooo there are no schemas for these
 
-Genes = new Meteor.Collection("genes");
 Clinical_Info = new Meteor.Collection("Clinical_Info");
 
 Studies = new Meteor.Collection("studies");

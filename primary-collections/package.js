@@ -32,6 +32,9 @@ Package.onUse(function(api) {
   api.addFiles('ExportedFiles.js');
   api.export('ExportedFiles');
 
+  api.addFiles('Genes.js');
+  api.export('Genes');
+
 
   // Blobs
   api.use('cfs:gridfs@0.0.33');
