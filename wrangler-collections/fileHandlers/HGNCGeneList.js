@@ -16,28 +16,21 @@ function makeArray(obj, attribute) {
 
   var originalValue = obj[attribute];
   if (originalValue) {
-    // first we deal with the matches that are inside quotes
-    // (they're either longer strings or have a comma in the middle somewhere)
+    // all of the values are either in quotes or not in quotes
     var inQuotes = originalValue.match(/"[^"]+"/g);
     if (inQuotes) {
       for (var index in inQuotes) {
         var value = inQuotes[index];
 
-        // don't deal with them later
-        originalValue = originalValue.replace(value, "");
-
         // trim off the quotes on either end
         matches.push(value.slice(1, value.length - 1));
       }
+    } else {
+      var split = originalValue.split(",");
+      _.each(split, function (value) {
+        matches.push(value.trim());
+      });
     }
-
-    // get the rest of the matches, trim, and add to matches
-    _.each(originalValue.split(","), function (value) {
-      var trimmed = value.trim();
-      if (trimmed !== "") {
-        matches.push(trimmed);
-      }
-    });
 
     // switch from string to array in original object
     obj[attribute] = matches;
