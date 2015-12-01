@@ -25,8 +25,8 @@ Package.onUse(function(api) {
   api.export('GeneExpression');
   api.export('Expression2');
 
-  api.addFiles('Jobs.js', 'server');
-  api.export('Jobs', 'server');
+  api.addFiles('Jobs.js');
+  api.export('Jobs');
 
   // application-specific
   api.addFiles('ExportedFiles.js');
