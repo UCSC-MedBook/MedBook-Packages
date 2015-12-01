@@ -7,8 +7,8 @@ Genes.attachSchema(new SimpleSchema({
   previous_names: { type: [String], optional: true },
   previous_labels: { type: [String], optional: true },
 
-  label_synonyms: { type: [String], optional: true },
-  name_synonymes: { type: [String], optional: true },
+  synonym_names: { type: [String], optional: true },
+  synonym_labels: { type: [String], optional: true },
 
   // TODO: ask Robert whether pseudogenes have this defined
   chromosome: { type: String, optional: true }, // ex. 15q11.2

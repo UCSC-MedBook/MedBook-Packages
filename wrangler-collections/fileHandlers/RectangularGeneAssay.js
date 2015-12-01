@@ -5,11 +5,10 @@ RectangularGeneAssay = function (options) {
 
   this.geneMapping = {}; // for use in validateGeneLabel
   function addGeneMapping (attribute, newValue) {
-    // TODO: add this back in when we fix the genes collection
-    // if (self.geneMapping[attribute]) {
-    //   console.log('geneMapping[' + attribute + '] overridden from ' +
-    //       self.geneMapping[attribute] + ' to ' + newValue);
-    // }
+    if (self.geneMapping[attribute]) {
+      console.log('geneMapping[' + attribute + '] overridden from ' +
+          self.geneMapping[attribute] + ' to ' + newValue);
+    }
 
     // prefer mapping gene ==> gene
     if (self.geneMapping[attribute] !== attribute) {
@@ -18,28 +17,37 @@ RectangularGeneAssay = function (options) {
   }
 
   console.log('loading valid genes');
-  Genes.find({
-        gene: {$exists: true},
-        status: "Approved"
-      })
-    .forEach(function (doc) {
-      addGeneMapping(doc.gene, doc.gene);
 
-      // same thing twice with doc.previous, doc.synonym
-      var index;
+  // this.geneMapping["asdf"] = "asdf"
+  Genes.find({}).forEach(function (doc) {
+    addGeneMapping(doc.gene_label, doc.gene_label);
+  });
 
-      if (doc.previous && doc.previous[0] !== '') { // genes table is weird...
-        for (index in doc.previous) {
-          addGeneMapping(doc.previous[index], doc.gene);
-        }
+  // only map from previous/synonym if not already set
+  Genes.find({}).forEach(function (doc) {
+    // same thing twice with doc.previous_labels, doc.synonym_labels
+    var index;
+    var newLabel;
+
+    for (index in doc.previous_labels) {
+      newLabel = doc.previous_labels[index];
+      if (self.geneMapping[newLabel] !== undefined) {
+        addGeneMapping(newLabel, doc.gene_label);
+      } else {
+        console.log("already defined:", newLabel, " (", self.geneMapping[newLabel], " = ", doc.gene_label,")");
       }
+    }
 
-      if (doc.synonym && doc.synonym[0] !== '') { // genes table is weird...
-        for (index in doc.synonym) {
-          addGeneMapping(doc.synonym[index], doc.gene);
-        }
+    for (index in doc.synonym_labels) {
+      newLabel = doc.synonym_labels[index];
+      if (self.geneMapping[newLabel] !== undefined) {
+        addGeneMapping(newLabel, doc.gene_label);
+      } else {
+        console.log("already defined:", newLabel, " (", self.geneMapping[newLabel], " = ", doc.gene_label,")");
       }
-    });
+    }
+  });
+
   console.log("done loading valid genes");
 };
 

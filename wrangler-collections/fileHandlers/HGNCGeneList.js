@@ -50,8 +50,8 @@ HGNCGeneList.prototype.parseLine =
       gene_name: "Approved Name",
       previous_names: "Previous Name",
       previous_labels: "Previous Symbols",
-      label_synonyms: "Synonyms",
-      name_synonymes: "Name Synonyms",
+      synonym_labels: "Synonyms",
+      synonym_names: "Name Synonyms",
       chromosome: "Chromosome",
       hgnc_id: "HGNC ID",
       status: "Status", // NOTE: this field is removed before inserting
@@ -82,8 +82,8 @@ HGNCGeneList.prototype.parseLine =
       geneObject.status = undefined;
       makeArray(geneObject, "previous_names");
       makeArray(geneObject, "previous_labels");
-      makeArray(geneObject, "label_synonyms");
-      makeArray(geneObject, "name_synonymes");
+      makeArray(geneObject, "synonym_labels");
+      makeArray(geneObject, "synonym_names");
       Genes.insert(geneObject);
       this.genesCreated += 1;
     }
