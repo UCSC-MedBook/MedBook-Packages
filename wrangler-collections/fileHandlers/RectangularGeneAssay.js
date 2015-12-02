@@ -23,30 +23,18 @@ RectangularGeneAssay = function (options) {
     addGeneMapping(doc.gene_label, doc.gene_label);
   });
 
-  // only map from previous/synonym if not already set
-  Genes.find({}).forEach(function (doc) {
-    // same thing twice with doc.previous_labels, doc.synonym_labels
-    var index;
-    var newLabel;
-
-    for (index in doc.previous_labels) {
-      newLabel = doc.previous_labels[index];
-      if (self.geneMapping[newLabel] !== undefined) {
-        addGeneMapping(newLabel, doc.gene_label);
-      } else {
-        console.log("already defined:", newLabel, " (", self.geneMapping[newLabel], " = ", doc.gene_label,")");
+  function addMappingsInArray(arrayAttribute, doc) {
+    for (var index in doc[arrayAttribute]) {
+      var value = doc[arrayAttribute][index];
+      if (!self.geneMapping[value]) {
+        addGeneMapping(value, doc.gene_label);
       }
     }
+  }
 
-    for (index in doc.synonym_labels) {
-      newLabel = doc.synonym_labels[index];
-      if (self.geneMapping[newLabel] !== undefined) {
-        addGeneMapping(newLabel, doc.gene_label);
-      } else {
-        console.log("already defined:", newLabel, " (", self.geneMapping[newLabel], " = ", doc.gene_label,")");
-      }
-    }
-  });
+  // map synonym_labels to respective gene_labels, then previous_labels
+  Genes.find({}).forEach(_.partial(addMappingsInArray, "synonym_labels"));
+  Genes.find({}).forEach(_.partial(addMappingsInArray, "previous_labels"));
 
   console.log("done loading valid genes");
 };
