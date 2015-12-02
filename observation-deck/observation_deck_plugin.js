@@ -9374,7 +9374,10 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 boundaries[datatype]["count"] = boundaries[datatype]["last"] - boundaries[datatype]["first"] + 1;
             });
 
-            var sessionGeneList = getSession("geneList");
+            // get non-correlator gene lists
+            var sessionGeneList = getSession("geneList") || [];
+            sessionGeneList = sessionGeneList.concat(getSession("cohort_tab_genelist_widget"));
+
             var rowNames_copy = rowNames.slice();
             rowNames_copy.reverse();
             var taggedEvents = {};
