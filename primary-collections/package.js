@@ -25,6 +25,9 @@ Package.onUse(function(api) {
   api.export('GeneExpression');
   api.export('Expression2');
 
+  // api.addFiles('GeneExpressionSummary.js');
+  // api.export('GeneExpressionSummary');
+
   api.addFiles('Jobs.js');
   api.export('Jobs');
 
