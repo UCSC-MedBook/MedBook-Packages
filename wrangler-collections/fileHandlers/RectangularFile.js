@@ -65,7 +65,8 @@ RectangularFile.prototype.parse = function () {
 
       // I guess we should parse the line eventually...
       Q.resolve(self.parseLine.call(self, brokenTabs, thisLineNumber, line))
-        .then(deferred.resolve);
+        .then(deferred.resolve)
+        .catch(deferred.reject);
     }, reject));
 
     bylineStream.on('end', Meteor.bindEnvironment(function () {

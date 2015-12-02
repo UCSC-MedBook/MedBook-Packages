@@ -80,6 +80,13 @@ BD2KGeneExpression.prototype.parseLine =
 
     this.setSampleLabel.call(this, brokenTabs[1]);
   } else { // rest of file
+    // NOTE: this is to update expression2, which will be deprecated soon
+    if (!this.wranglerPeek) {
+      // insert into expression2 without mapping or anything
+      Expression2Insert.call(this, brokenTabs[0], [this.sample_label], [brokenTabs[1]]);
+    }
+
+    // map and insert into GeneExpression
     var originalGeneLabel = brokenTabs[0];
     var mappedGeneLabel = this.geneMapping[originalGeneLabel];
 
@@ -148,11 +155,11 @@ BD2KGeneExpression.prototype.endOfFile = function () {
 WranglerFileTypes.BD2KGeneExpression = BD2KGeneExpression;
 
 GeneExpression.rawCollection().ensureIndex({
-study_label: 1,
-collaborations: 1,
-gene_label: 1,
-sample_label: 1,
-baseline_progression: 1,
+  study_label: 1,
+  collaborations: 1,
+  gene_label: 1,
+  sample_label: 1,
+  baseline_progression: 1,
 }, function (error, result) {
   console.log("ensuredIndex:", result);
 });

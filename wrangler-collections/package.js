@@ -21,7 +21,7 @@ Package.onUse(function(api) {
   api.use('medbook:primary-collections@0.0.3');
 
   api.addFiles([
-    'fileHandlers/underscoreExtras.js',
+    'fileHandlers/globals.js',
     'fileHandlers/FileHandler.js',
     'fileHandlers/RectangularFile.js',
     'fileHandlers/RectangularGeneAssay.js',
