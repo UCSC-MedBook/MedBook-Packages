@@ -46,25 +46,25 @@ BD2KGeneExpression.prototype.setSampleLabel = function (valuesHeading) {
   ];
 
   // try to wrangle sample label
-  this.sample_label = Wrangler.findSampleLabel(possibleStrings);
+  this.sampleLabel = Wrangler.findSampleLabel(possibleStrings);
 
-  if (this.sample_label.match(/pro/gi)) {
+  if (this.sampleLabel.match(/pro/gi)) {
     this.baseline_progression = 'progression';
   } else {
     this.baseline_progression = 'baseline';
   }
 
   // // try to wrangle sample uuid
-  // if (!this.sample_label) {
-  //   this.sample_label =
+  // if (!this.sampleLabel) {
+  //   this.sampleLabel =
   //       parseSampleUUID(possibleStrings, this.blob.metadata.submission_id);
   // }
 
-  if (!this.sample_label) {
+  if (!this.sampleLabel) {
     throw "Error: could not parse sample label from header line or file name";
   }
 
-  console.log("this.sample_label:", this.sample_label);
+  console.log("this.sampleLabel:", this.sampleLabel);
 };
 
 BD2KGeneExpression.prototype.parseLine =
@@ -79,11 +79,35 @@ BD2KGeneExpression.prototype.parseLine =
     }
 
     this.setSampleLabel.call(this, brokenTabs[1]);
+
+    // check to see if gene_expression already has data like this
+    if (this.wranglerPeek) {
+      // TODO: search for collaboration, study
+      // NOTE: currently any user can figure out if a certain
+      //       sample has gene_expression data.
+      var query = {
+        sample_label: this.sampleLabel,
+      };
+      var normalization = this.wranglerFile.options.normalization;
+      query["values." + normalization] = { $exists: true };
+
+      if (GeneExpression.findOne(query)) {
+        console.log("inside if statement");
+        this.insertWranglerDocument.call(this, {
+          document_type: 'gene_expression_data_exists',
+          contents: {
+            file_name: this.blob.original.name,
+            sample_label: this.sampleLabel,
+            normalization: getNormalizationLabel(normalization),
+          }
+        });
+      }
+    }
   } else { // rest of file
     // NOTE: this is to update expression2, which will be deprecated soon
     if (!this.wranglerPeek) {
       // insert into expression2 without mapping or anything
-      Expression2Insert.call(this, brokenTabs[0], [this.sample_label], [brokenTabs[1]]);
+      Expression2Insert.call(this, brokenTabs[0], [this.sampleLabel], [brokenTabs[1]]);
     }
 
     // map and insert into GeneExpression
@@ -127,7 +151,7 @@ BD2KGeneExpression.prototype.parseLine =
         study_label: this.submission.options.study_label,
         collaborations: [this.submission.options.collaboration_label],
         gene_label: mappedGeneLabel,
-        sample_label: this.sample_label,
+        sample_label: this.sampleLabel,
         baseline_progression: this.baseline_progression,
       }, {
         $set: setObject
@@ -138,14 +162,13 @@ BD2KGeneExpression.prototype.parseLine =
 
 BD2KGeneExpression.prototype.endOfFile = function () {
   if (this.wranglerPeek) {
-    var normalization_description = GeneExpression.simpleSchema()
-        .schema()['values.' + this.wranglerFile.options.normalization].label;
+    var normalization = this.wranglerFile.options.normalization;
 
     this.insertWranglerDocument.call(this, {
       document_type: 'sample_normalization',
       contents: {
-        sample_label: this.sample_label,
-        normalization_description: normalization_description,
+        sample_label: this.sampleLabel,
+        normalization_description: getNormalizationLabel(normalization),
         gene_count: this.gene_count,
       }
     });

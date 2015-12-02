@@ -34,3 +34,7 @@ Expression2Insert = function(gene, sampleLabels, expressionStrings) {
     $set: setObject
   });
 };
+
+getNormalizationLabel = function (slug) {
+  return GeneExpression.simpleSchema().schema()['values.' + slug].label;
+};

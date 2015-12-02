@@ -95,9 +95,10 @@ WranglerDocuments.attachSchema(new SimpleSchema({
   document_type: {
     type: String,
     allowedValues: [
-      'mapped_genes',
-      'ignored_genes',
-      'sample_normalization',
+      "mapped_genes",
+      "ignored_genes",
+      "sample_normalization",
+      "gene_expression_data_exists"
     ],
   },
   contents: {
