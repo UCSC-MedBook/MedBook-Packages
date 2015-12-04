@@ -100,6 +100,7 @@ var signaturesSchema = new SimpleSchema({
   "type": { type: String },
   "algorithm": { type: String },
   "label": { type: String },
+  "contrast_id": { type: Meteor.ObjectID, optional: true },
   "gene_label": { type: String, optional: true },
   "dense_weights": { type: [geneValuePair], optional: true },
   "sparse_weights": { type: [geneValuePair], optional: true },
