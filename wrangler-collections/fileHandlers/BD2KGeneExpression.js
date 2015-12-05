@@ -11,32 +11,36 @@ BD2KGeneExpression.prototype =
     Object.create(RectangularGeneAssay.prototype);
 BD2KGeneExpression.prototype.constructor = BD2KGeneExpression;
 
-// function parseSampleUUID(possibleOptions, submission_id) {
-//   for (var i in possibleOptions) {
-//     var label = Wrangler.wrangleSampleUUID(possibleOptions[i], submission_id);
-//     if (label) {
-//       return label;
-//     }
-//   }
-//   return null;
-// }
+function wrangleSampleUUID (text, submission_id) {
+  var sample_label;
 
-// function wrangleSampleUUID (text, submission_id) {
-//   var sample_label;
-//
-//   WranglerDocuments.find({
-//     submission_id: submission_id,
-//     document_type: "sample_label_map",
-//   }).forEach(function (wranglerDoc) {
-//     // check if sample_uuid in text
-//     var index = text.indexOf(wranglerDoc.contents.sample_uuid);
-//     if (index >= 0) {
-//       sample_label = wranglerDoc.contents.sample_label;
-//     }
-//   });
-//
-//   return sample_label;
-// };
+  WranglerDocuments.find({
+    submission_id: submission_id,
+    document_type: "sample_label_map",
+  }).forEach(function (wranglerDoc) {
+    // check if sample_uuid in text
+    var index = text.indexOf(wranglerDoc.contents.sample_uuid);
+    if (index >= 0) {
+      if (sample_label) {
+        throw "two sample label mappings for same UUID: " +
+            wranglerDoc.contents.sample_uuid;
+      }
+
+      sample_label = wranglerDoc.contents.sample_label;
+    }
+  });
+
+  return sample_label;
+}
+
+function parseSampleUUID(possibleOptions, submission_id) {
+  for (var i in possibleOptions) {
+    var label = wrangleSampleUUID(possibleOptions[i], submission_id);
+    if (label) {
+      return label;
+    }
+  }
+}
 
 // valuesHeading = heading of second columnn in file
 BD2KGeneExpression.prototype.setSampleLabel = function (valuesHeading) {
@@ -48,20 +52,22 @@ BD2KGeneExpression.prototype.setSampleLabel = function (valuesHeading) {
   // try to wrangle sample label
   this.sampleLabel = Wrangler.findSampleLabel(possibleStrings);
 
+  // if that doesn't work, maybe it's a UUID
+  if (!this.sampleLabel) {
+    this.sampleLabel =
+        parseSampleUUID(possibleStrings, this.blob.metadata.submission_id);
+  }
+
+  if (!this.sampleLabel) {
+    // NOTE: this throw sometimes doesn't work if this console.log isn't here
+    console.log("couldn't find a sample label :(");
+    throw "Error: could not parse sample label from header line or file name";
+  }
+
   if (this.sampleLabel.match(/pro/gi)) {
     this.baseline_progression = 'progression';
   } else {
     this.baseline_progression = 'baseline';
-  }
-
-  // // try to wrangle sample uuid
-  // if (!this.sampleLabel) {
-  //   this.sampleLabel =
-  //       parseSampleUUID(possibleStrings, this.blob.metadata.submission_id);
-  // }
-
-  if (!this.sampleLabel) {
-    throw "Error: could not parse sample label from header line or file name";
   }
 
   console.log("this.sampleLabel:", this.sampleLabel);
@@ -76,6 +82,11 @@ BD2KGeneExpression.prototype.parseLine =
   if (lineNumber === 1) { // header line
     if (this.wranglerPeek) {
       this.gene_count = 0;
+    }
+
+    if (brokenTabs.length !== 2) {
+      throw "expected 2 column tab file, got " + brokenTabs.length + " column" +
+          " tab file";
     }
 
     this.setSampleLabel.call(this, brokenTabs[1]);

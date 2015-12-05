@@ -1,6 +1,10 @@
 Wrangler = {};
 
 Wrangler.wrangleSampleLabel = function (text) {
+  if (!text) {
+    throw new Error("called wrangleSampleLabel with undefined");
+  }
+
   // TODO: what if it's ProR3 or something?
   var proIfPro = "";
   if (text.match(/pro/gi)) {
@@ -125,5 +129,8 @@ Wrangler.fileTypes = {
         },
       }
     }),
-  }
+  },
+  BD2KSampleLabelMap: {
+    description: "Sample label mapping (BD2K pipeline)",
+  },
 };

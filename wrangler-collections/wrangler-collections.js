@@ -98,7 +98,8 @@ WranglerDocuments.attachSchema(new SimpleSchema({
       "mapped_genes",
       "ignored_genes",
       "sample_normalization",
-      "gene_expression_data_exists"
+      "gene_expression_data_exists",
+      "sample_label_map",
     ],
   },
   contents: {

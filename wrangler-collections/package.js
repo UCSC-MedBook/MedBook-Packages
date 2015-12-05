@@ -1,6 +1,6 @@
 Package.describe({
   name: 'medbook:wrangler-collections',
-  version: '0.0.4',
+  version: '0.0.5',
   // Brief, one-line summary of the package.
   summary: 'Collections and such relating to Wrangler',
   // URL to the Git repository containing the source code for this package.
@@ -26,6 +26,7 @@ Package.onUse(function(api) {
     'fileHandlers/RectangularFile.js',
     'fileHandlers/RectangularGeneAssay.js',
     'fileHandlers/BD2KGeneExpression.js',
+    'fileHandlers/BD2KSampleLabelMap.js',
     'fileHandlers/HGNCGeneList.js',
   ], 'server');
   api.export('WranglerFileTypes', 'server');
