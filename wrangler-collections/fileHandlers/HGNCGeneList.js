@@ -53,6 +53,8 @@ HGNCGeneList.prototype.parseLine =
       synonym_labels: "Synonyms",
       synonym_names: "Name Synonyms",
       chromosome: "Chromosome",
+      locus_type: "Locus Type",
+      locus_group: "Locus Group",
       hgnc_id: "HGNC ID",
       status: "Status", // NOTE: this field is removed before inserting
     };
