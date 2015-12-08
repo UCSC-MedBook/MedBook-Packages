@@ -1,6 +1,6 @@
 // TODO: change this to accept options instead of wrangler_file_id
 function BD2KSampleLabelMap (wrangler_file_id) {
-  RectangularGeneAssay.call(this, {
+  RectangularFile.call(this, {
     wrangler_file_id: wrangler_file_id
   });
 
@@ -8,8 +8,7 @@ function BD2KSampleLabelMap (wrangler_file_id) {
   // this.setSubmissionType.call(this, 'gene_expression');
 }
 
-BD2KSampleLabelMap.prototype =
-    Object.create(RectangularGeneAssay.prototype);
+BD2KSampleLabelMap.prototype = Object.create(RectangularFile.prototype);
 BD2KSampleLabelMap.prototype.constructor = BD2KSampleLabelMap;
 
 BD2KSampleLabelMap.prototype.parseLine =

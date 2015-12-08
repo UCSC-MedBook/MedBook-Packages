@@ -11,67 +11,45 @@ BD2KGeneExpression.prototype =
     Object.create(RectangularGeneAssay.prototype);
 BD2KGeneExpression.prototype.constructor = BD2KGeneExpression;
 
-function wrangleSampleUUID (text, submission_id) {
-  var sample_label;
+function wrangleSampleUUID (text) {
+  var mappingDocument;
 
   WranglerDocuments.find({
-    submission_id: submission_id,
+    user_id: this.wranglerFile.user_id,
     document_type: "sample_label_map",
   }).forEach(function (wranglerDoc) {
     // check if sample_uuid in text
     var index = text.indexOf(wranglerDoc.contents.sample_uuid);
     if (index >= 0) {
-      if (sample_label) {
-        throw "two sample label mappings for same UUID: " +
+      if (mappingDocument) {
+        throw "Two sample label mappings for same UUID: " +
             wranglerDoc.contents.sample_uuid;
       }
 
-      sample_label = wranglerDoc.contents.sample_label;
+      mappingDocument = wranglerDoc;
     }
   });
 
-  return sample_label;
+  if (mappingDocument) {
+    if (mappingDocument.submission_id !== this.wranglerFile.submission_id) {
+      this.insertWranglerDocument.call(this, {
+        document_type: "sample_label_map",
+        contents: mappingDocument.contents,
+      });
+    }
+
+    return mappingDocument.contents.sample_label;
+  }
 }
 
-function parseSampleUUID(possibleOptions, submission_id) {
+function parseSampleUUID(possibleOptions) {
   for (var i in possibleOptions) {
-    var label = wrangleSampleUUID(possibleOptions[i], submission_id);
+    var label = wrangleSampleUUID.call(this, possibleOptions[i]);
     if (label) {
       return label;
     }
   }
 }
-
-// valuesHeading = heading of second columnn in file
-BD2KGeneExpression.prototype.setSampleLabel = function (valuesHeading) {
-  var possibleStrings = [
-    valuesHeading,
-    this.blob.original.name
-  ];
-
-  // try to wrangle sample label
-  this.sampleLabel = Wrangler.findSampleLabel(possibleStrings);
-
-  // if that doesn't work, maybe it's a UUID
-  if (!this.sampleLabel) {
-    this.sampleLabel =
-        parseSampleUUID(possibleStrings, this.blob.metadata.submission_id);
-  }
-
-  if (!this.sampleLabel) {
-    // NOTE: this throw sometimes doesn't work if this console.log isn't here
-    console.log("couldn't find a sample label :(");
-    throw "Error: could not parse sample label from header line or file name";
-  }
-
-  if (this.sampleLabel.match(/pro/gi)) {
-    this.baseline_progression = 'progression';
-  } else {
-    this.baseline_progression = 'baseline';
-  }
-
-  console.log("this.sampleLabel:", this.sampleLabel);
-};
 
 BD2KGeneExpression.prototype.parseLine =
     function (brokenTabs, lineNumber, line) {
@@ -80,19 +58,43 @@ BD2KGeneExpression.prototype.parseLine =
   }
 
   if (lineNumber === 1) { // header line
+    if (brokenTabs.length !== 2) {
+      throw "Expected 2 column tab file, got " + brokenTabs.length +
+          " column tab file";
+    }
+
+    // try to wrangle sample label
+    var possibleStrings = [
+      brokenTabs[1],
+      this.blob.original.name
+    ];
+    this.sampleLabel = Wrangler.findSampleLabel(possibleStrings);
+
+    // if that doesn't work, maybe it's a UUID
+    if (!this.sampleLabel && this.wranglerFile) {
+      this.sampleLabel = parseSampleUUID.call(this, possibleStrings,
+          this.blob.metadata.submission_id);
+    }
+
+    if (!this.sampleLabel) {
+      // NOTE: this throw sometimes doesn't work if this console.log isn't here
+      console.log("couldn't find a sample label :(");
+      throw "Could not parse sample label from header line or file name";
+    }
+
+    if (this.sampleLabel.match(/pro/gi)) {
+      this.baseline_progression = 'progression';
+    } else {
+      this.baseline_progression = 'baseline';
+    }
+
+    console.log("this.sampleLabel:", this.sampleLabel);
+
     if (this.wranglerPeek) {
       this.gene_count = 0;
-    }
 
-    if (brokenTabs.length !== 2) {
-      throw "expected 2 column tab file, got " + brokenTabs.length + " column" +
-          " tab file";
-    }
+      // check to see if gene_expression already has data like this
 
-    this.setSampleLabel.call(this, brokenTabs[1]);
-
-    // check to see if gene_expression already has data like this
-    if (this.wranglerPeek) {
       // TODO: search for collaboration, study
       // NOTE: currently any user can figure out if a certain
       //       sample has gene_expression data.
@@ -103,7 +105,6 @@ BD2KGeneExpression.prototype.parseLine =
       query["values." + normalization] = { $exists: true };
 
       if (GeneExpression.findOne(query)) {
-        console.log("inside if statement");
         this.insertWranglerDocument.call(this, {
           document_type: 'gene_expression_data_exists',
           contents: {
@@ -158,7 +159,7 @@ BD2KGeneExpression.prototype.parseLine =
       setObject['values.' + this.wranglerFile.options.normalization] =
           parseFloat(expressionString);
 
-      var added = GeneExpression.upsert({
+      GeneExpression.upsert({
         study_label: this.submission.options.study_label,
         collaborations: [this.submission.options.collaboration_label],
         gene_label: mappedGeneLabel,
