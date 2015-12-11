@@ -5,7 +5,7 @@ var networkSchema = new SimpleSchema({
     type: [
       // https://github.com/aldeed/meteor-simple-schema/blob/master/README.md#combining-simpleschemas
       new SimpleSchema([
-        SuperpathwayElements.simpleSchema(),
+        NetworkElements.simpleSchema(),
         {
           "position": {
             type: new SimpleSchema({
@@ -19,7 +19,7 @@ var networkSchema = new SimpleSchema({
     ]
   },
   "interactions": {
-    type: [ SuperpathwayInteractions.simpleSchema() ],
+    type: [ NetworkInteractions.simpleSchema() ],
     optional: true,
   },
 });
