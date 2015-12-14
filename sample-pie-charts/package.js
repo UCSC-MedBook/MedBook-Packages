@@ -1,7 +1,8 @@
 Package.describe({
+  name: "medbook:samplePieCharts",
   summary: "Draw sample pie chart clinical data summaries.",
-  version: "1.0.0",
-  git: ""
+  version: "0.0.1",
+  git: "https://github.com/UCSC-MedBook/MedBook-Packages.git"
 });
 
 Package.onUse(function(api) {
