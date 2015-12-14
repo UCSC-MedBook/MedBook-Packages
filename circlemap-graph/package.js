@@ -13,7 +13,7 @@ Package.describe({
 Package.onUse(function(api) {
     api.versionsFrom('1.1.0.2');
 
-    api.use("alisalaah:jquery-contextmenu");
+    api.use("alisalaah:jquery-contextmenu@1.6.6");
 
     api.export('circleMapGraph', 'client');
     api.addFiles('circlemap-graph.js');
@@ -21,6 +21,6 @@ Package.onUse(function(api) {
 
 Package.onTest(function(api) {
     api.use('tinytest');
-    api.use('circlemap-graph');
+//    api.use('circlemap-graph');
     api.addFiles('circlemap-graph-tests.js');
 });

@@ -14,7 +14,7 @@ Package.onUse(function(api) {
   console.log("Package.onUse for select2genelist");
   api.versionsFrom('1.1.0.2');
 //  api.use('ecmascript');
-  api.use(['natestrauser:select2']);
+  api.use(['medbook:api@0.2.4', 'natestrauser:select2@4.0.0_1']);
 
   api.addFiles('select2genelist.js', 'client');
   api.export('geneListWidget', 'client');
@@ -23,6 +23,6 @@ Package.onUse(function(api) {
 Package.onTest(function(api) {
   api.use('ecmascript');
   api.use('tinytest');
-  api.use('select2genelist');
+  // api.use('select2genelist');
   api.addFiles('select2genelist-tests.js');
 });

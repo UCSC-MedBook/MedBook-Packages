@@ -13,6 +13,6 @@ Package.onUse(function(api) {
 
 Package.onTest(function(api) {
   api.use('tinytest');
-  api.use('sample-pie-charts');
+  // api.use('sample-pie-charts');
   api.addFiles('sample-pie-charts-tests.js');
 });
