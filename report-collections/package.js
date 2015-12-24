@@ -23,6 +23,7 @@ Package.onUse(function(api) {
   api.export('SignatureReports');
   api.export('PathwayReports');
   api.export('GeneReports');
+  api.export("ClinicalEvidenceSummaries");
 });
 
 Package.onTest(function(api) {
