@@ -1,6 +1,7 @@
 Package.describe({
 	name : 'medbook:circlemap-graph',
-    version : '0.1.0',
+    version : '0.2.0',
+	// 0.2.0 - Add drugbank and pubmed linkouts
     // Brief, one-line summary of the package.
     summary : 'Draw a network graph with circlemaps as nodes.',
     // URL to the Git repository containing the source code for this package.

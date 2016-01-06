@@ -10543,10 +10543,14 @@ var graphData = {};
         if ('value' in data) {
             this.value = parseFloat(data['value']);
         } else {
-            this.value = 3;
+            this.value = 1;
         }
         if ('relation' in data) {
             this.relation = data['relation'];
+        }
+
+        if ("pubmed_id" in data) {
+            this.pubmed = data["pubmed_id"];
         }
     };
 
@@ -10568,13 +10572,16 @@ var graphData = {};
         /**
          * Get all the node names in the graph.
          */
-        this.getAllNodeNames = function() {
-            var nodeNames = new Array();
-            for (var i = 0, length = this.nodes.length; i < length; i++) {
-                var nodeData = this.nodes[i];
+        this.getAllNodeNames = function(excludeGroups) {
+            var excludeGroups = excludeGroups || [];
+            var nodeNames = [];
+            _.each(this.nodes, function(nodeData) {
                 var nodeName = nodeData['name'];
-                nodeNames.push(nodeName);
-            }
+                var group = nodeData['group'];
+                if (!_.contains(excludeGroups, group)) {
+                    nodeNames.push(nodeName);
+                }
+            });
             return nodeNames;
         };
 
@@ -12770,6 +12777,53 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
     cmGraph.setup = function() {
         // context menu
         // uses medialize's jQuery-contextMenu
+
+        // TODO contextMenu for "link" elements
+        $.contextMenu({
+            selector : ".link",
+            trigger : 'right',
+            // trigger : 'left',
+            callback : function(key, options) {
+                // default callback
+                var elem = this[0];
+                console.log('elem', elem);
+            },
+            build : function($trigger, contextmenuEvent) {
+                var d3Trigger = d3.select($trigger[0]);
+                var linkData = d3Trigger.data()[0];
+                console.log("linkData", linkData);
+                var items = {
+                    'title' : {
+                        name : function() {
+                            var label = linkData.source.name + " " + linkData.relation + " " + linkData.target.name;
+                            return label;
+                        },
+                        icon : null,
+                        disabled : function() {
+                            var isNotDisabled = (linkData.relation === "-drug target|");
+                            return !isNotDisabled;
+                        },
+                        callback : function(key, opt) {
+                            var url;
+                            switch(linkData.relation) {
+                                case "-drug target|":
+                                    url = "https://www.ncbi.nlm.nih.gov/pubmed/?term=" + linkData.pubmed;
+                                    break;
+                                default:
+                                    console.log("no url assigned!");
+                            }
+                            window.open(url, "_edgeLinkOut");
+                        }
+                    }
+                    // ,
+                    // "sep1" : "---------"
+                };
+                return {
+                    "items" : items
+                };
+            }
+        });
+
         $.contextMenu({
             selector : ".circleMapRingG",
             trigger : 'right',
@@ -12844,7 +12898,14 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
             },
             build : function($trigger, contextmenuEvent) {
                 console.log("context menu for node");
-                var circleMapSvgElem = utils.extractFromJq($trigger).getElementsByTagName("svg")[0];
+                var trigger = utils.extractFromJq($trigger);
+                var circleMapSvgElem = trigger.getElementsByTagName("svg")[0];
+                var isCircleMap = true;
+                if (_.isUndefined(circleMapSvgElem)) {
+                    // what if no circleMap SVG ????
+                    circleMapSvgElem = trigger;
+                    isCircleMap = false;
+                }
                 var nodeName = circleMapSvgElem.getAttribute("name");
                 var nodeType = circleMapSvgElem.getAttribute("nodeType");
                 var items = {
@@ -12854,13 +12915,22 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                         },
                         icon : null,
                         disabled : function(key, opt) {
-                            var disabled = (nodeType === "protein") ? false : true;
+                            var disabled = (_.contains(["protein", "drug"], nodeType)) ? false : true;
                             return disabled;
                         },
                         callback : function(key, opt) {
-                            // TODO link-out to PatientCare geneReport
-                            console.log("nodeName", nodeName);
-                            window.open("/PatientCare/geneReport/" + nodeName, "_parent");
+                            var url;
+                            switch(nodeType) {
+                                case "drug":
+                                    url = "https://www.drugbank.ca/unearth/q?searcher=drugs&query=" + nodeName;
+                                    break;
+                                case "protein":
+                                    url = "/PatientCare/geneReport/" + nodeName;
+                                    break;
+                                default:
+                                    console.log("no url assigned!");
+                            }
+                            window.open(url, "_nodeLinkOut");
                         }
                     },
                     "sep1" : "---------",
@@ -12869,7 +12939,9 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                             return "toggle node size";
                         },
                         icon : null,
-                        disabled : false,
+                        disabled : function(key, opt) {
+                            return !isCircleMap;
+                        },
                         callback : function(key, opt) {
                             if (cmGraph.circleMapMode) {
                                 // var circleMapSvgElem = document.getElementById('circleMapSvg' + d['name']);
@@ -12942,7 +13014,9 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                     'toggle_opacity' : {
                         name : "toggle opacity",
                         icon : null,
-                        disabled : false,
+                        disabled : function(key, opt) {
+                            return !isCircleMap;
+                        },
                         callback : function(key, opt) {
                             var circleMapGElement = circleMapSvgElem.getElementsByClassName("circleMapG")[0];
                             var d3circleMapGElement = d3.select(circleMapGElement);
@@ -13254,7 +13328,7 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
 
         // reset circleMapSvg class elements by creating circleMap elements for each query feature.
         var svgNodeLayer = svg.select('#nodeLayer');
-        var nodeNames = graph.getAllNodeNames();
+        var nodeNames = graph.getAllNodeNames(["drug"]);
         if (circleDataLoaded) {
             cmGraph.drawCircleMaps(nodeNames, svgNodeLayer, 100, true);
         }
@@ -13284,7 +13358,7 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         });
 
         linkSelection.style("stroke-width", function(d) {
-            return d.value;
+            return (3 * d.value);
         });
 
         // http://www.w3.org/TR/SVG/painting.html#StrokeProperties
@@ -13301,7 +13375,7 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         linkSelection.on('mouseover', function(d, i) {
             // mouseover event for link
             var linkElement = document.getElementById('link' + i);
-            var decorations = cmGraph.getLinkDecorations(d.relation, d.value * 3);
+            var decorations = cmGraph.getLinkDecorations(d.relation, d.value * 3 * 3);
             var styleString = "";
 
             for (var key in decorations) {
@@ -13313,7 +13387,7 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
         }).on('mouseout', function(d, i) {
             // mouseout event for link
             var linkElement = document.getElementById('link' + i);
-            var decorations = cmGraph.getLinkDecorations(d.relation, d.value);
+            var decorations = cmGraph.getLinkDecorations(d.relation, d.value * 3);
             var styleString = "";
 
             for (var key in decorations) {
@@ -13334,6 +13408,9 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
             nodeSelection.each(function(d) {
                 // add attribute to the node data
                 var circleMapSvgElement = document.getElementById('circleMapSvg' + d['name']);
+                if (_.isNull(circleMapSvgElement)) {
+                    return;
+                }
                 circleMapSvgElement.setAttributeNS(null, "nodeType", d.group);
                 var circleMapGElement = circleMapSvgElement.getElementsByClassName("circleMapG");
                 circleMapGElement[0].setAttributeNS(null, 'transform', cmGraph.smallScale);
@@ -13342,8 +13419,16 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
 
                 // pull node to front
                 var circleMapSvgElement = document.getElementById('circleMapSvg' + d['name']);
-                var nodeGelem = circleMapSvgElement.parentNode;
-                utils.pullElemToFront(nodeGelem);
+                if (_.isNull(circleMapSvgElement)) {
+                    var name = d["name"];
+                    var elem = d3.selectAll(".node").filter("." + name)[0][0];
+                    elem.setAttributeNS(null, "name", d.name);
+                    elem.setAttributeNS(null, "nodeType", d.group);
+                    utils.pullElemToFront(elem);
+                } else {
+                    var nodeGelem = circleMapSvgElement.parentNode;
+                    utils.pullElemToFront(nodeGelem);
+                }
             });
         } else {
             // mouse events for sbgn nodes
