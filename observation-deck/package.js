@@ -1,14 +1,15 @@
 Package.describe({
 	name : 'medbook:observation-deck',
     summary : 'Observation Deck visualizes multiple data types for a group of samples.',
-    version : '0.1.1',
+    version : '0.1.2',
+	// v0.1.2: stop packing most dependencies into plugin. Do api.use() instead.
 	// v0.1.1: dev_mode context menu checkbox to lock an event row
     git : 'https://github.com/UCSC-MedBook/MedBook-Packages.git'
 });
 
 Package.onUse(function(api) {
     api.versionsFrom('0.9.0');
-    api.use(['jquery']);
+    api.use(['jquery',"d3js:d3@3.4.13","alisalaah:jquery-contextmenu@1.6.6","sergeyt:typeahead@0.0.11"]);
 
     api.export('observation_deck', 'client');
     api.export('u', 'client');
