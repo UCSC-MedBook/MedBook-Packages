@@ -2453,8 +2453,8 @@
  *
  * Version: git-master
  *
- * Authors: Rodney Rehm, Addy Osmani (patches for FF)
- * Web: http://medialize.github.com/jQuery-contextMenu/
+ * Authors: Björn Brala (SWIS.nl), Rodney Rehm, Addy Osmani (patches for FF)
+ * Web: http://swisnl.github.io/jQuery-contextMenu/
  *
  * Licensed under
  *   MIT License http://www.opensource.org/licenses/mit-license
@@ -8696,13 +8696,57 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                         },
                         "items" : {
                             // TODO UI controls for dev features go here
+                            // http://swisnl.github.io/jQuery-contextMenu/demo/input.html
+                            "lock_item" : {
+                                "name" : "lock item",
+                                "type" : "checkbox",
+                                "selected" : false,
+                                "icon" : null,
+                                "disabled" : false,
+                                "callback" : function(key, opt) {
+                                    console.log("event", eventId, datatype);
+                                }
+                            }
                         }
                     },
                     "sep2" : "---------",
                     "reset" : createResetContextMenuItem(config)
                 };
                 return {
-                    'items' : items
+                    'items' : items,
+                    "events" : {
+                        "show" : function(opt) {
+                            // this is the trigger element
+                            var $trigger = this;
+                            // import states from data store
+                            $.contextMenu.setInputValues(opt, $trigger.data());
+                            // this basically fills the input commands from an object
+                            // like {name: "foo", yesno: true, radio: "3", &hellip;}
+                        },
+                        "hide" : function(opt) {
+                            // this is the trigger element
+                            var $trigger = this;
+                            // export states to data store
+                            $.contextMenu.getInputValues(opt, $trigger.data());
+                            // this basically dumps the input commands' values to an object
+                            // like {name: "foo", yesno: true, radio: "3", &hellip;}
+                            var eventId = eventObj.metadata.id;
+                            var eventType = eventObj.metadata.datatype;
+                            var sessionLockedEvents = getSession("lockedEvents") || {};
+                            if (_.isUndefined(sessionLockedEvents[eventType])) {
+                                sessionLockedEvents[eventType] = [];
+                            }
+                            if ($trigger.data()["lock_item"]) {
+                                // add event if true
+                                sessionLockedEvents[eventType].push(eventId);
+                                sessionLockedEvents[eventType] = _.uniq(sessionLockedEvents[eventType]);
+                            } else {
+                                // remove event if false
+                                sessionLockedEvents[eventType] = _.without(sessionLockedEvents[eventType], eventId);
+                            }
+                            setSession("lockedEvents", sessionLockedEvents);
+                        }
+                    }
                 };
             }
         });

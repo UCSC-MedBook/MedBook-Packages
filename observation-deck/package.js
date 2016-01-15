@@ -1,7 +1,8 @@
 Package.describe({
 	name : 'medbook:observation-deck',
     summary : 'Observation Deck visualizes multiple data types for a group of samples.',
-    version : '0.1.0',
+    version : '0.1.1',
+	// v0.1.1: dev_mode context menu checkbox to lock an event row
     git : 'https://github.com/UCSC-MedBook/MedBook-Packages.git'
 });
 
