@@ -3954,7 +3954,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
     var resetObsDeck = function(config) {
         console.log("!! RESETTING OBS DECK !!");
         resetConfig(config);
-        resetSession(['pivotSettings', "subscriptionPaging", "geneList"]);
+        resetSession(['pivotSettings', "subscriptionPaging", "geneList", "focusGenes", "lockedEvents"]);
         setSession("pivotSettings", "");
 
         var containerDivElem = document.getElementById(config['containerDivId']);
@@ -4573,9 +4573,21 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                             // this is the trigger element
                             var $trigger = this;
                             // import states from data store
-                            $.contextMenu.setInputValues(opt, $trigger.data());
+
+                            var sessionLockedEvents = getSession("lockedEvents") || {};
+
+                            var eventId = eventObj.metadata.id;
+                            var eventType = eventObj.metadata.datatype;
+
+                            var isLocked = _.contains(sessionLockedEvents[eventType], eventId);
+                            console.log("isLocked", isLocked);
+
+                            // $.contextMenu.setInputValues(opt, $trigger.data());
                             // this basically fills the input commands from an object
                             // like {name: "foo", yesno: true, radio: "3", &hellip;}
+                            $.contextMenu.setInputValues(opt, {
+                                "lock_item" : isLocked
+                            });
                         },
                         "hide" : function(opt) {
                             // this is the trigger element
