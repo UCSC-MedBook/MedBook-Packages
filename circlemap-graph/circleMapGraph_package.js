@@ -12925,7 +12925,14 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                                     url = "https://www.drugbank.ca/unearth/q?searcher=drugs&query=" + nodeName;
                                     break;
                                 case "protein":
+                                    // retain the current queryString
+                                    var currentUrl = window.location.href;
+                                    var queryString = currentUrl.split("?", 2)[1];
+                                    // console.log("queryString", queryString);
                                     url = "/PatientCare/geneReport/" + nodeName;
+                                    if (! _.isUndefined(queryString)) {
+                                        url = url + "?" + queryString;
+                                    }
                                     break;
                                 default:
                                     console.log("no url assigned!");
