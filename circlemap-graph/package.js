@@ -1,6 +1,7 @@
 Package.describe({
 	name : 'medbook:circlemap-graph',
-    version : '0.2.1',
+    version : '0.2.2',
+	// 0.2.2 - save zoom and opacity of nodes when sorting rings
 	// 0.2.1 - retain query string when linking out from protein node
 	// 0.2.0 - Add drugbank and pubmed linkouts
     // Brief, one-line summary of the package.
