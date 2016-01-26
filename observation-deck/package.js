@@ -1,7 +1,8 @@
 Package.describe({
 	name : 'medbook:observation-deck',
     summary : 'Observation Deck visualizes multiple data types for a group of samples.',
-    version : '0.1.3',
+    version : '0.1.4',
+	// v0.1.4: accept contrast data to create a clinical event row
 	// v0.1.3: fixed: Some medbook session vars were not cleared when resetting.
 	// v0.1.2: stop packing most dependencies into plugin. Do api.use() instead.
 	// v0.1.1: dev_mode context menu checkbox to lock an event row
