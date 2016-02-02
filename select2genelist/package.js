@@ -1,28 +1,26 @@
 Package.describe({
-	name: 'medbook:select2genelist',
-  version: '0.0.1',
-  // Brief, one-line summary of the package.
-  summary: 'A select2 widget that gives gene symbol suggestions.',
-  // URL to the Git repository containing the source code for this package.
-  git: 'https://github.com/UCSC-MedBook/MedBook-Packages.git',
-  // By default, Meteor will default to using README.md for documentation.
-  // To avoid submitting documentation, set this field to null.
-  documentation: 'README.md'
+    name: 'medbook:select2genelist',
+    version : '0.1.0',
+    // v0.1.0 - Include the template into the package.
+	summary : 'A select2 widget that gives gene symbol suggestions via an included http method.',
+    git : 'https://github.com/UCSC-MedBook/MedBook-Packages.git',
+    documentation : 'README.md'
 });
 
 Package.onUse(function(api) {
-  console.log("Package.onUse for select2genelist");
-  api.versionsFrom('1.1.0.2');
-//  api.use('ecmascript');
-  api.use(['medbook:api@0.2.4', 'natestrauser:select2@4.0.0_1']);
+    api.versionsFrom('1.2.1');
+    api.use(["templating@1.1.1", 'cfs:http-methods@0.0.27', 'natestrauser:select2@4.0.0_1']);
 
-  api.addFiles('select2genelist.js', 'client');
-  api.export('geneListWidget', 'client');
+    api.addFiles('http_methods.js', 'server');
+    api.addFiles(['select2genelist.js', 'template.html', 'template.js'], 'client');
+
+    // expose template
+    api.export(["geneListTemplate"], ["client"]);
 });
 
 Package.onTest(function(api) {
-  api.use('ecmascript');
-  api.use('tinytest');
-  // api.use('select2genelist');
-  api.addFiles('select2genelist-tests.js');
+    api.use('ecmascript');
+    api.use('tinytest');
+    // api.use('select2genelist');
+    api.addFiles('select2genelist-tests.js');
 });

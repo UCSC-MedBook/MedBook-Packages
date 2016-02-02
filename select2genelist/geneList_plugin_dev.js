@@ -41,7 +41,7 @@ geneListWidget = ( typeof geneListWidget === "undefined") ? {} : geneListWidget;
     };
 
     /**
-     * Setup the the select tag as a select2 widget.
+     * Setup the select tag as a select2 widget.
      * @param {Object} cssSelector
      * @param {Object} options
      */
