@@ -2,14 +2,15 @@ Package.describe({
     name : 'medbook:geneset-selector',
     version : '0.0.1',
 	// v0.0.1 - Pulled out server and client components of the geneset selector from medbook:api to this package.
-    summary : 'Template to select a geneset. Also provides access to GeneSets collection.',
+    // published with "meteor publish --release 1.1.0.2"
+	summary : 'Template to select a geneset. Also provides access to GeneSets collection.',
     git : '',
     documentation : 'README.md'
 });
 
 Package.onUse(function(api) {
-    api.versionsFrom('METEOR@1.1.0.2');
-    api.use(["templating@1.0.0"]);
+    api.versionsFrom('1.1.0.2');
+    api.use(["templating"]);
 
     api.addFiles(["collection.js"], ["server", "client"]);
     api.addFiles(["publish.js"], ["server"]);
@@ -23,7 +24,6 @@ Package.onUse(function(api) {
 });
 
 Package.onTest(function(api) {
-    api.use('ecmascript');
     api.use('tinytest');
     api.addFiles('geneset-selector-tests.js');
 });
