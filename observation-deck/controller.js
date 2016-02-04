@@ -1,6 +1,6 @@
-CorrelatorController = RouteController.extend({
+obsDeckRouteControllerSettings = {
     waitOn : function() {
-        var s = '<--- CorrelatorController.waitOn in controller.js';
+        var s = '<--- obsDeckRouteControllerSettings.waitOn in controller.js';
         var studyID = Session.get("studyID");
         var selectedContrast = Session.get("selectedContrast");
         var pivotSettings = Session.get("pivotSettings");
@@ -38,4 +38,7 @@ CorrelatorController = RouteController.extend({
     action : function() {
         this.render();
     }
-});
+};
+
+// In the app, use the RouteController settings like this:
+// CohortController = RouteController.extend(obsDeckRouteControllerSettings);
