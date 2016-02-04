@@ -16,13 +16,21 @@ Package.onUse(function(api) {
     // delete .version and versions.json files
     // "meteor publish --release 1.1.0.2"
 
-    api.use(["templating", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6", "sergeyt:typeahead@0.0.11"], "client");
+    api.use(["templating", "iron:router@1.0.7", "medbook:primary-collections@0.0.8", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6", "sergeyt:typeahead@0.0.11"], "client");
 
     api.addFiles(["collection.js"], ["server", "client"]);
-    api.addFiles(["publish.js"], ["server"]);
-    api.addFiles(['observation-deck.js', "template.html", "template.js"], ["client"]);
+    api.addFiles(["publish_correlator.js", "publish_expression.js"], ["server"]);
+    api.addFiles(["controller.js", 'observation-deck.js', "template.html", "template.js"], ["client"]);
 
-    api.export(["obsDeckTemplate", 'observation_deck', 'u'], ["client"]);
+    // expose template
+    // api.export(["obsDeckTemplate", 'observation_deck', 'u'], ["client"]);
+    api.export(["obsDeckTemplate"], ["client"]);
+
+    // expose collections
+    api.export(["ClinicalEvents", "SignatureScores", "Correlator", "Signature"], ["client", "server"]);
+
+    // expose RouteController
+    api.export(["CorrelatorController"], ["client", "server"]);
 });
 
 Package.onTest(function(api) {
