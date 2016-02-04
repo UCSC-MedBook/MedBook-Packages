@@ -15,9 +15,12 @@ Template.genesetSelector.events({
 
         var cookieGenes = [];
 
-        // very hacky
-        if (!_.isUndefined(observation_deck)) {
+        try {
+            // error if observation_deck object DNE
             cookieGenes = observation_deck.getCookieEvents();
+        } catch (err) {
+            console.log("ERROR", err.name, err.message);
+        } finally {
         }
         console.log('cookieGenes', cookieGenes);
 

@@ -1,9 +1,10 @@
 Package.describe({
     name : 'medbook:geneset-selector',
-    version : '0.0.1',
-	// v0.0.1 - Pulled out server and client components of the geneset selector from medbook:api to this package.
+    version : '0.0.2',
+    // v0.0.2 - correctly detect if obs-deck object is available
+    // v0.0.1 - Pulled out server and client components of the geneset selector from medbook:api to this package.
     // published with "meteor publish --release 1.1.0.2"
-	summary : 'Template to select a geneset. Also provides access to GeneSets collection.',
+    summary : 'Template to select a geneset. Also provides access to GeneSets collection.',
     git : '',
     documentation : 'README.md'
 });
