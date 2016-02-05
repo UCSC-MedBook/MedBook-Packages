@@ -1,0 +1,14 @@
+<template name="contrastSelectorTemplate">
+    <div id="contrastSelectorDiv" style="float:left" width=200 title="contrast">
+        <select id="contrastSelectTag" width="200"	  >
+            <option value="">Select a contrast</option>
+            {{#each contrast}}
+            <option {{isSelected}} value="{{_id}}"> {{name}} </option>
+            {{else}}
+            <li class="contrast-item empty">
+                No Contrasts defined yet.
+            </li>
+            {{/each}}
+        </select>
+    </div>
+</template>

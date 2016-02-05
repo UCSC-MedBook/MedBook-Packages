@@ -1,0 +1,14 @@
+<template name="studySelectorTemplate">
+    <div id="studySelectorDiv" class="studies-panel" style="float:left">
+        {{#with studies}}
+        <select id="studySelector" class="span1-12" title="study">
+            <option value="">Select a Study ...</option>
+            {{#each this}}
+            <option  value="{{id}}" selected={{selected}}>{{short_name}}</option>
+            {{/each}}
+        </select>
+        {{else}}
+        No studies yet.
+        {{/with}}
+    </div>
+</template>
