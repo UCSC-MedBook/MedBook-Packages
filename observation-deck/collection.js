@@ -1,8 +1,9 @@
 ClinicalEvents = new Meteor.Collection('clinical_events');
 Correlator = new Meteor.Collection('correlator');
 Signature = new Meteor.Collection("signature");
-SignatureScores = new Meteor.Collection("signature_scores");
+Contrast = new Meteor.Collection("contrast");
 
 // defined in medbook:primary-collections
-// Expression2
-// Mutations
+// Expression2 = new Meteor.Collection("expression2");
+// Mutations = new Meteor.Collection("mutations");
+// SignatureScores = new Meteor.Collection("signature_scores");

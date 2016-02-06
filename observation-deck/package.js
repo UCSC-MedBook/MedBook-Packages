@@ -16,7 +16,7 @@ Package.onUse(function(api) {
     // delete .version and versions.json files
     // "meteor publish --release 1.1.0.2"
 
-    api.use(["templating", "medbook:primary-collections@0.0.8", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6", "sergeyt:typeahead@0.0.11"], "client");
+    api.use(["templating", "medbook:primary-collections@0.0.15", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6", "sergeyt:typeahead@0.0.11"], "client");
 
     api.addFiles(["collection.js"], ["server", "client"]);
     api.addFiles(["publish_correlator.js", "publish_expression.js"], ["server"]);
@@ -29,7 +29,8 @@ Package.onUse(function(api) {
     api.export(["obsDeckTemplate"], ["client"]);
 
     // expose collections
-    api.export(["ClinicalEvents", "SignatureScores", "Correlator", "Signature"], ["client", "server"]);
+    // api.export(["ClinicalEvents", "SignatureScores", "Correlator", "Signature"], ["client", "server"]);
+    api.export(["Contrast", "ClinicalEvents", "Correlator", "Signature"], ["client", "server"]);
 
     // expose RouteController settings object
     api.export(["obsDeckRouteControllerSettings"], ["client"]);
