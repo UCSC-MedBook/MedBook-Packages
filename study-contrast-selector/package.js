@@ -1,7 +1,7 @@
 Package.describe({
     name : 'medbook:study-contrast-selector',
     version : '0.0.1',
-    // v0.0.1 - (move UI elements out of workbench app)
+    // v0.0.1 - (move UI elements for study and contrast selection out of workbench app)
     summary : 'Controls for selecting study and contrast.',
     git : 'https://github.com/UCSC-MedBook/MedBook-Packages.git',
     documentation : 'README.md'
@@ -12,7 +12,8 @@ Package.onUse(function(api) {
     // to publish:
     // delete .version and versions.json files
     // "meteor publish --release 1.1.0.2"
-    api.use(["templating"]);
+    // api.use(["templating"]);
+    api.use(["templating", "medbook:primary-collections@0.0.15"]);
 
     api.addFiles(["studySelectorTemplate.html", "studySelectorTemplate.js", "contrastSelectorTemplate.html", "contrastSelectorTemplate.js"], ["client"]);
 
