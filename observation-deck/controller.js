@@ -28,8 +28,8 @@ obsDeckRouteControllerSettings = {
             pVersion = pivotSettings['version'];
         }
 
-        // publish in /server/publish/correlator.js
         Meteor.subscribe("correlatorResults", pName, pDatatype, pVersion, studyID, selectedContrast, pagingConfig, sessionGeneLists, lockedEvents);
+        Meteor.subscribe("geneAnnotation", _.union.apply(this, _.values(sessionGeneLists)), studyID);
     },
 
     data : function() {

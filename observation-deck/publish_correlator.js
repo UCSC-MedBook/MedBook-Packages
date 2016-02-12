@@ -350,7 +350,7 @@ var classifyLockedEvents = function(lockedEventsObj) {
  */
 // Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVersion, Study_ID, selectedContrast, pagingConfig, nonCorrGeneList) {
 Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVersion, Study_ID, selectedContrast, pagingConfig, sessionGeneLists, lockedEvents) {
-    var s = "<--- publish correlatorResults in server/publish/correlator.js";
+    var s = "<--- publish correlatorResults in publish_correlator.js";
     console.log("	", "BEGIN", s);
     var pageSize = 5;
     var cursors = [];
