@@ -27,6 +27,7 @@ Template.obsDeckTemplate.rendered = function() {
         var mutDocList = Mutations.find().fetch();
         var signatureScoresDoclist = SignatureScores.find().fetch();
         var sigIdsDocList = Signature.find().fetch();
+        var geneAnnotationDocList = GeneAnnotation.find().fetch();
 
         // okay to access Session variable here w.r.t churning?
         // var sessionGeneList = Session.get("geneList") || [];
@@ -61,7 +62,8 @@ Template.obsDeckTemplate.rendered = function() {
                     'contrast' : contrastDocs[0],
                     'clinical' : clinDocList,
                     'expression' : expDocList,
-                    'mutation' : mutDocList
+                    'mutation' : mutDocList,
+                    "geneAnnotation" : geneAnnotationDocList
                 },
                 'signature' : {
                     'expression' : {

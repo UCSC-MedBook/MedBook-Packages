@@ -1466,19 +1466,17 @@ var eventData = eventData || {};
             // Extract the gene symbols. They are without suffix.
             pEventId = pEventId.replace(/_mRNA$/, "");
             var pivotSortedEventObjs = this.getPivotSortedEvents(pEventId);
-            // console.log("pivotSortedEventObjs", utils.prettyJson(pivotSortedEventObjs));
             var pivotSortedEvents = [];
-            for (var j = 0; j < pivotSortedEventObjs.length; j++) {
-                var pivotSortedEventObj = pivotSortedEventObjs[j];
+
+            _.each(pivotSortedEventObjs, function(pivotSortedEventObj) {
                 pivotSortedEvents.push(pivotSortedEventObj['key']);
-            }
+            });
 
             // iterate through datatypes
             var groupedEvents = this.getEventIdsByType();
-            var pivotedDatatypes = utils.getKeys(groupedEvents);
-            pivotedDatatypes = utils.removeA(pivotedDatatypes, "clinical data");
+            var orderedDatatypes = getOrderedDatatypes(_.keys(groupedEvents));
 
-            for (var datatype in groupedEvents) {
+            _.each(orderedDatatypes, function(datatype) {
                 var orderedEvents = [];
 
                 // suffixed ids here
@@ -1486,25 +1484,24 @@ var eventData = eventData || {};
                 if (pivotSortedEvents.length == 0) {
                     console.log('pivotSortedEvents.length == 0 for ' + datatype);
                     result[datatype] = unorderedEvents;
-                    continue;
+                    return;
                 }
 
                 // add scored events in the datatype
-                for (var i = 0; i < pivotSortedEvents.length; i++) {
+                _.each(pivotSortedEvents, function(eventId) {
                     var eventId = this.getSuffixedEventId(pivotSortedEvents[i], datatype);
                     if (utils.isObjInArray(unorderedEvents, eventId)) {
                         orderedEvents.push(eventId);
                     }
-                }
+                }, this);
 
                 // add the unscored events from the datatype group
-                // if (! utils.isObjInArray(pivotedDatatypes, datatype)) {
                 orderedEvents = orderedEvents.concat(unorderedEvents);
                 orderedEvents = utils.eliminateDuplicates(orderedEvents);
-                // }
 
                 result[datatype] = orderedEvents;
-            }
+            }, this);
+
             return result;
         };
 
@@ -1530,6 +1527,26 @@ var eventData = eventData || {};
         };
 
         /**
+         * Place the datatypes into a preferred ordering for viz
+         */
+        var getOrderedDatatypes = function(datatypes) {
+            var preferredOrdering = ["clinical data", "expression data", "mutation call", "gistic_copy_number", "kinase target activity", "tf target activity", "expression signature", "mvl drug sensitivity", "datatype label"];
+
+            // expected datatypes
+            var list1 = _.filter(preferredOrdering, function(datatype) {
+                return _.contains(datatypes, datatype);
+            });
+
+            // unexpected datatypes
+            var list2 = _.reject(datatypes, function(datatype) {
+                return _.contains(preferredOrdering, datatype);
+            });
+
+            var orderedDatatypes = list1.concat(list2);
+            return orderedDatatypes;
+        };
+
+        /**
          * multi-sorting of events
          */
         this.multisortEvents = function(rowSortSteps, colSortSteps) {
@@ -1539,16 +1556,20 @@ var eventData = eventData || {};
             // default ordering
             var groupedEvents = this.getEventIdsByType();
             console.log("groupedEvents", groupedEvents);
+
+            var orderedDatatypes = getOrderedDatatypes(_.keys(groupedEvents));
+
             var eventList = [];
-            for (var datatype in groupedEvents) {
+            _.each(orderedDatatypes, function(datatype) {
                 if (datatype === 'datatype label') {
-                    continue;
+                    return;
                 }
+                // add datatype row labels to datatype event lists
                 var datatypeEventList = groupedEvents[datatype];
                 datatypeEventList.unshift(datatype + "(+)");
                 datatypeEventList.push(datatype + "(-)");
                 eventList = eventList.concat(datatypeEventList);
-            }
+            });
 
             // bubble up colSort events
             var bubbledUpEvents = [];
@@ -1629,7 +1650,8 @@ var eventData = eventData || {};
 
                     // assemble all datatypes together
                     var eventList = bubbledUpEvents.slice(0);
-                    for (var datatype in groupedEvents) {
+
+                    _.each(orderedDatatypes, function(datatype) {
                         if (datatype === scoredDatatype) {
                             eventList = eventList.concat(processedExpressionEventList);
                         } else {
@@ -1643,7 +1665,7 @@ var eventData = eventData || {};
                                 }
                             }
                         }
-                    }
+                    });
 
                     rowNames = eventList;
                     console.log('rowNames.length', rowNames.length, rowNames);
@@ -2184,10 +2206,10 @@ var eventData = eventData || {};
                     var missingData = {};
                     for (var k = 0; k < missingSampleIds.length; k++) {
                         var id = missingSampleIds[k];
-                        if (eventId === "patientSamples"){
-                          missingData[id] = "other patient";
+                        if (eventId === "patientSamples") {
+                            missingData[id] = "other patient";
                         } else {
-                          missingData[id] = value;
+                            missingData[id] = value;
                         }
                     }
                     // add data
@@ -2883,6 +2905,56 @@ var medbookDataLoader = medbookDataLoader || {};
             'allowedValues' : allowedValues
         }, data);
         return eventObj;
+    };
+
+    /**
+     * gaData looks like this:
+     {
+     "_id": {
+     "_str": "56bd09c433cbfe5c8a00ae49"
+     },
+     "collaborations": [
+     "WCDT"
+     ],
+     "gene_label": "MDM4",
+     "sample_label": "DTB-005",
+     "study_label": "prad_wcdt",
+     "gistic_copy_number": 0.23
+     }
+     */
+    mdl.mongoGeneAnnotationData = function(gaData, OD_eventAlbum) {
+        _.each(gaData, function(data) {
+            // remove unused fields
+            delete data["_id"];
+            delete data["collaborations"];
+            delete data["study_label"];
+
+            var gene = data["gene_label"];
+            delete data["gene_label"];
+
+            var sample = data["sample_label"];
+            delete data["sample_label"];
+
+            // remaining keys should be datatypes
+            _.each(_.keys(data), function(datatype) {
+                var value = data[datatype];
+
+                // get eventObj
+                var suffix = "_" + datatype;
+                var eventId = gene + suffix;
+                var eventObj = OD_eventAlbum.getEvent(eventId);
+                // create event if DNE
+                if (eventObj == null) {
+                    eventObj = mdl.loadEventBySampleData(OD_eventAlbum, eventId, "", datatype, 'numeric', []);
+                    eventObj.metadata.displayName = gene;
+                }
+
+                // add data to eventObj
+                var dataObj = {};
+                dataObj[sample] = value;
+                eventObj.data.setData(dataObj);
+            });
+        });
     };
 
     /**
@@ -3672,7 +3744,10 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
         // data passed in as mongo documents
         if ('mongoData' in config) {
             var mongoData = config['mongoData'];
-            // TODO load contrast data
+            // TODO load gene annotation data
+            if ("geneAnnotation" in mongoData) {
+                dataLoader.mongoGeneAnnotationData(mongoData['geneAnnotation'], od_eventAlbum);
+            }
             if ("contrast" in mongoData) {
                 dataLoader.mongoContrastData(mongoData['contrast'], od_eventAlbum);
             }
@@ -5854,64 +5929,14 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     attributes['val'] = d['val'].sort();
 
                     icon = createMutTypeSvg(x, y, rx, ry, width, height, attributes);
-                } else if (false & eventAlbum.getEvent(d['eventId']).metadata.datatype === "datatype label") {
-                    // datatype label cells
-                    var eventId = d["eventId"];
-                    var datatype;
-                    var headOrTail;
-                    if (utils.endsWith(eventId, "(+)")) {
-                        datatype = eventId.replace("(+)", "");
-                        headOrTail = "head";
-                    } else {
-                        datatype = eventId.replace("(-)", "");
-                        headOrTail = "tail";
-                    }
-                    attributes['class'] = "datatype";
-                    attributes['eventId'] = datatype;
-                    attributes["fill"] = rowLabelColorMapper(datatype);
-                    var colNameIndex = colNameMapping[colName];
-                    if (colNameIndex == 0) {
-                        attributes["stroke-width"] = "0px";
-                        group.onclick = function() {
-                            var upOrDown = (headOrTail === "head") ? "down" : "up";
-                            setDatatypePaging(datatype, headOrTail, upOrDown);
-                        };
-                        attributes["points"] = getUpArrowPointsList(x, y, width, height).join(" ");
-
-                        icon = utils.createSVGPolygonElement(attributes);
-                    } else if (colNameIndex == 1) {
-                        attributes["stroke-width"] = "0px";
-                        group.onclick = function() {
-                            var upOrDown = (headOrTail === "head") ? "up" : "down";
-                            setDatatypePaging(datatype, headOrTail, upOrDown);
-                        };
-                        attributes["points"] = getDownArrowPointsList(x, y, width, height).join(" ");
-                        icon = utils.createSVGPolygonElement(attributes);
-                    } else if (colNameIndex == 2) {
-                        icon = document.createElementNS(utils.svgNamespaceUri, "g");
-                        attributes["stroke-width"] = "0px";
-                        group.onclick = function() {
-                            setDatatypePaging(datatype, headOrTail, "0");
-                        };
-                        var bar;
-                        var arrow;
-                        if (headOrTail === "head") {
-                            bar = utils.createSvgRectElement(x, y, 0, 0, width, 2, attributes);
-                            attributes["points"] = getUpArrowPointsList(x, y, width, height).join(" ");
-                            arrow = utils.createSVGPolygonElement(attributes);
-                        } else {
-                            bar = utils.createSvgRectElement(x, y + height - 3, 0, 0, width, 2, attributes);
-                            attributes["points"] = getDownArrowPointsList(x, y + 1, width, height - 2).join(" ");
-                            arrow = utils.createSVGPolygonElement(attributes);
-                        }
-                        icon.appendChild(bar);
-                        icon.appendChild(arrow);
-                    } else {
-                        attributes["stroke-width"] = "0px";
-                        attributes["fill"] = rowLabelColorMapper(datatype);
-                        icon = utils.createSvgRectElement(x, (1 + y + (height / 2)), 0, 0, width, 2, attributes);
-                    }
-                } else if (true & eventAlbum.getEvent(d['eventId']).metadata.datatype === "datatype label") {
+                } else if (eventAlbum.getEvent(d['eventId']).metadata.datatype !== "datatype label") {
+                    // for generalized numeric datatype
+                    attributes['class'] = eventAlbum.getEvent(d['eventId']).metadata.datatype;
+                    attributes['eventId'] = d['eventId'];
+                    attributes['sampleId'] = d['id'];
+                    attributes['val'] = d['val'];
+                    icon = utils.createSvgRectElement(x, y, rx, ry, width, height, attributes);
+                } else if (eventAlbum.getEvent(d['eventId']).metadata.datatype === "datatype label") {
                     var eventId = d["eventId"];
                     var datatype;
                     var headOrTail;

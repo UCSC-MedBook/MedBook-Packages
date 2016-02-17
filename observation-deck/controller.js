@@ -29,7 +29,6 @@ obsDeckRouteControllerSettings = {
         }
 
         Meteor.subscribe("correlatorResults", pName, pDatatype, pVersion, studyID, selectedContrast, pagingConfig, sessionGeneLists, lockedEvents);
-        Meteor.subscribe("geneAnnotation", _.union.apply(this, _.values(sessionGeneLists)), studyID);
     },
 
     data : function() {

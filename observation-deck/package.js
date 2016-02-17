@@ -1,7 +1,8 @@
 Package.describe({
     name : 'medbook:observation-deck',
     summary : 'Observation Deck visualizes multiple data types for a group of samples.',
-    version : '0.2.0',
+    version : '0.2.1',
+    // v0.2.1: add geneAnntotation data (gistic copy number)
     // v0.2.0: include collection, publish, and template files
     // v0.1.4: accept contrast data to create a clinical event row
     // v0.1.3: fixed: Some medbook session vars were not cleared when resetting.
@@ -19,7 +20,7 @@ Package.onUse(function(api) {
     api.use(["templating", "medbook:primary-collections@0.0.15", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6", "sergeyt:typeahead@0.0.11"], "client");
 
     api.addFiles(["collection.js"], ["server", "client"]);
-    api.addFiles(["publish_correlator.js", "publish_expression.js", "publish_gene_annotation.js"], ["server"]);
+    api.addFiles(["publish_correlator.js", "publish_expression.js"], ["server"]);
     api.addFiles(["controller.js", 'observation-deck.js', "template.html", "template.js"], ["client"]);
 
     // expose observation-deck object

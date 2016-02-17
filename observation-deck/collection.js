@@ -7,3 +7,4 @@ Contrast = new Meteor.Collection("contrast");
 // Expression2 = new Meteor.Collection("expression2");
 // Mutations = new Meteor.Collection("mutations");
 // SignatureScores = new Meteor.Collection("signature_scores");
+// GeneAnnotation = new Meteor.Collection("gene_annotation");

@@ -442,19 +442,15 @@ Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVers
     if (eventsByType.hasOwnProperty("expression") || nonCorrGeneList.length != 0 || classifiedLockedEvents["expression"].length > 0) {
         var corrExpEvents = eventsByType["expression"];
         var geneList = _.pluck(corrExpEvents, "name");
-        // console.log("geneList", geneList.length, s);
 
         // add nonCorrGeneList to the results
         geneList = geneList.concat(nonCorrGeneList);
-        // console.log("geneList", geneList.length, "after adding nonCorrGeneList", s);
 
         var mappedList = _.map(classifiedLockedEvents["expression"], function(eventName) {
             return eventName.replace(/_mRNA$/, "");
         });
 
         var expressionGeneList = _.union(geneList, mappedList);
-
-        // console.log("expressionGeneList", expressionGeneList);
 
         var expression2Cursor = Expression2.find({
             'gene' : {
@@ -464,8 +460,7 @@ Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVers
         });
         cursors.push(expression2Cursor);
 
-        // console.log("expression2Cursor", expression2Cursor.fetch().length, s);
-
+        // mutation cursor
         mappedList = _.map(classifiedLockedEvents["mutation"], function(eventName) {
             return eventName.replace(/_mutation$/, "");
         });
@@ -475,9 +470,35 @@ Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVers
         var mutationsCursor = Mutations.find({
             "gene_label" : {
                 "$in" : mutationGeneList
-            }
+            },
+            "study_label" : Study_ID
         });
         cursors.push(mutationsCursor);
+
+        // geneAnnotation cursor
+        mappedList = _.map(classifiedLockedEvents["gistic_copy_number"], function(eventName) {
+            return eventName.replace(/_gistic_copy_number$/, "");
+        });
+
+        var geneAnnotationGeneList = _.union(geneList, mappedList);
+
+        var selector = {
+            "gene_label" : {
+                "$in" : geneAnnotationGeneList
+            },
+            "study_label" : Study_ID
+        };
+
+        var options = {
+            "fields" : {
+                "collaborations" : false,
+                "study_label" : false
+            }
+        };
+
+        var geneAnnotationCursor = GeneAnnotation.find(selector, options);
+        cursors.push(geneAnnotationCursor);
+
     }
 
     // get signature scores from Mongo collection
