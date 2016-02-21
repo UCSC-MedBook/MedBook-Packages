@@ -78,6 +78,7 @@ Template.obsDeckTemplate.rendered = function() {
                 "rowTitleCallback" : function(eventId, config) {
                     var eventObj = config['eventAlbum'].getEvent(eventId);
                     var datatype = eventObj.metadata['datatype'];
+                    datatype = datatype.toLowerCase();
                     console.log(eventId, datatype);
                     if (datatype === 'expression data') {
                         // mRNA url: /wb/gene/<gene name>
@@ -87,6 +88,16 @@ Template.obsDeckTemplate.rendered = function() {
                     } else if (datatype === 'mutation call') {
                         // mRNA url: /wb/gene/<gene name>
                         var gene = eventId.replace('_mutation', '');
+                        var url = '/wb/gene/' + gene;
+                        window.open(url, "_self");
+                    } else if (datatype === 'mutation impact score') {
+                        // mRNA url: /wb/gene/<gene name>
+                        var gene = eventId.replace('_mutation_impact_score', '');
+                        var url = '/wb/gene/' + gene;
+                        window.open(url, "_self");
+                    } else if (datatype === 'gistic_copy_number') {
+                        // mRNA url: /wb/gene/<gene name>
+                        var gene = eventId.replace('_gistic_copy_number', '');
                         var url = '/wb/gene/' + gene;
                         window.open(url, "_self");
                     } else if (datatype === 'clinical data') {

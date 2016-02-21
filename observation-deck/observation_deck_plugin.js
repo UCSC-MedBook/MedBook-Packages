@@ -1530,7 +1530,7 @@ var eventData = eventData || {};
          * Place the datatypes into a preferred ordering for viz
          */
         var getOrderedDatatypes = function(datatypes) {
-            var preferredOrdering = ["clinical data", "expression data", "mutation call", "gistic_copy_number", "kinase target activity", "tf target activity", "expression signature", "mvl drug sensitivity", "datatype label"];
+            var preferredOrdering = ["clinical data", "expression data", "mutation call", "mutation impact score", "gistic_copy_number", "kinase target activity", "tf target activity", "expression signature", "mvl drug sensitivity", "datatype label"];
 
             // expected datatypes
             var list1 = _.filter(preferredOrdering, function(datatype) {
@@ -3204,17 +3204,91 @@ var medbookDataLoader = medbookDataLoader || {};
 
         var impactScoresMap = OD_eventAlbum.ordinalScoring[allowed_values];
 
+        var mutTypeByGene = {};
+        var impactScoreByGene = {};
+        // for (var i = 0, length = collection.length; i < length; i++) {
+        _.each(collection, function(element) {
+            var doc = element;
+
+            var sample = doc["sample_label"];
+            var gene = doc["gene_label"];
+            var type = doc["mutation_type"];
+
+            // handle mutation type
+            if (! _.isUndefined(type)) {
+                type = type.toLowerCase();
+                if (! utils.hasOwnProperty(mutTypeByGene, gene)) {
+                    mutTypeByGene[gene] = {};
+                }
+
+                if (! utils.hasOwnProperty(mutTypeByGene[gene], sample)) {
+                    mutTypeByGene[gene][sample] = [];
+                }
+
+                var findResult = _.findWhere(mutTypeByGene[gene][sample], type);
+                if (_.isUndefined(findResult)) {
+                    mutTypeByGene[gene][sample].push(type);
+                }
+            }
+            // handle impact score
+            var impact_assessor = (_.contains(_.keys(doc), "mutation_impact_assessor")) ? doc["mutation_impact_assessor"] : null;
+            if (!_.isNull(impact_assessor) && impact_assessor.toLowerCase() === "chasm") {
+                var chasmScore = doc["chasm_driver_score"];
+
+                if (_.isUndefined(impactScoreByGene[gene])) {
+                    impactScoreByGene[gene] = {};
+                }
+
+                if (_.isUndefined(impactScoreByGene[gene][sample])) {
+                    impactScoreByGene[gene][sample] = 1;
+                }
+
+                if (impactScoreByGene[gene][sample] > chasmScore) {
+                    impactScoreByGene[gene][sample] = chasmScore;
+                }
+            } else {
+                console.log("NO CHASM for", sample, gene);
+            }
+        });
+        console.log("mutTypeByGene", mutTypeByGene);
+        console.log("impactScoreByGene", impactScoreByGene);
+
+        // mutation type - add to event album
+        var suffix = "_mutation";
+        _.each(_.keys(mutTypeByGene), function(gene) {
+            var sampleData = mutTypeByGene[gene];
+            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', allowed_values, sampleData);
+        });
+
+        // mutation impact
+        suffix = "_mutation_impact_score";
+        allowed_values = "chasm";
+        _.each(_.keys(impactScoreByGene), function(gene) {
+            var sampleData = impactScoreByGene[gene];
+            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation impact score', allowed_values, sampleData);
+        });
+
+        return null;
+    };
+
+    /**
+     * data about mutation type
+     */
+    mdl.mongoMutationData_old = function(collection, OD_eventAlbum) {
+        // iter over doc ... each doc is a mutation call
+        var allowed_values = "mutation type";
+
+        var impactScoresMap = OD_eventAlbum.ordinalScoring[allowed_values];
+
         var mutByGene = {};
         // for (var i = 0, length = collection.length; i < length; i++) {
         _.each(collection, function(element) {
             var doc = element;
 
-            var variantCallData = {};
-
             var sample = doc["sample_label"];
             var gene = doc["gene_label"];
-            var type = variantCallData["mutType"] = doc["mutation_type"];
-            // var impact = variantCallData["impact"] = doc["effect_impact"];
+            var type = doc["mutation_type"];
+            var impact_assessor = (_.contains(_.keys(doc), "mutation_impact_assessor")) ? doc["mutation_impact_assessor"] : null;
 
             if (! utils.hasOwnProperty(mutByGene, gene)) {
                 mutByGene[gene] = {};
@@ -4419,7 +4493,8 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                         icon : null,
                         disabled : function() {
                             var result = true;
-                            if ((titleCallback != null) && (utils.isObjInArray(["mutation call", 'expression data', 'clinical data', 'expression signature', 'kinase target activity', "tf target activity"], datatype))) {
+                            var enableDatatypes = ["mutation impact score", "gistic_copy_number", "mutation call", 'expression data', 'clinical data', 'expression signature', 'kinase target activity', "tf target activity"];
+                            if ((titleCallback != null) && (_.contains(enableDatatypes, datatype))) {
                                 result = false;
                             }
 
@@ -5169,10 +5244,14 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 } else if (allowedValues == 'expression') {
                     // shared expression color mapper
                     colorMappers[eventId] = expressionColorMapper;
+                } else if (allowedValues === "chasm") {
+                    // -log p-val color mapping
+                    colorMappers[eventId] = utils.centeredRgbaColorMapper(false, 0.5, 0, 1);
                 } else if (eventAlbum.ordinalScoring.hasOwnProperty(allowedValues)) {
                     // ordinal data
                     colorMappers[eventId] = ordinalColorMappers[allowedValues];
                 } else {
+                    // default to categoric mapping
                     var colorMapper = d3.scale.category10();
                     colorMappers[eventId] = colorMapper;
                 }

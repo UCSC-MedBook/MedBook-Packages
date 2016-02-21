@@ -1,7 +1,8 @@
 Package.describe({
     name : 'medbook:observation-deck',
     summary : 'Observation Deck visualizes multiple data types for a group of samples.',
-    version : '0.2.1',
+    version : '0.2.2',
+	// v0.2.2: add gistic copy number and chasm mutation impact
     // v0.2.1: add geneAnntotation data (gistic copy number)
     // v0.2.0: include collection, publish, and template files
     // v0.1.4: accept contrast data to create a clinical event row
