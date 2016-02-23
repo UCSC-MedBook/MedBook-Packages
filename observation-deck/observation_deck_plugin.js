@@ -1392,6 +1392,7 @@ var eventData = eventData || {};
                 };
 
             }
+            console.log("pivot dict", this.pivot);
             return this;
         };
 
@@ -1409,6 +1410,7 @@ var eventData = eventData || {};
                     'scores' : pivotScores
                 };
             }
+            console.log("pivot array", this.pivot);
             return this;
         };
 
@@ -1422,27 +1424,28 @@ var eventData = eventData || {};
             }
             var sortedEvents = [];
             var recordedEvents = {};
-            for (var i = 0, length = this.pivot.scores.length; i < length; i++) {
-                var scoreObj = this.pivot.scores[i];
+            _.each(this.pivot.scores, function(scoreObj) {
                 var eventId1 = scoreObj['eventId1'];
                 var eventId2 = scoreObj['eventId2'];
                 var score = scoreObj['score'];
 
                 var key;
                 var val = score;
+                console.log("pEventId", pEventId);
                 pEventId = pEventId.replace(/_mRNA$/, "");
+                pEventId = pEventId.replace(/_mutation$/, "");
                 if (eventId1 === pEventId) {
                     key = eventId2;
                 } else if (eventId2 === pEventId) {
                     key = eventId1;
                 } else {
                     // filter by pEventId
-                    continue;
+                    return;
                 }
 
                 if (utils.hasOwnProperty(recordedEvents, key)) {
                     // duplicate event
-                    continue;
+                    return;
                 }
 
                 sortedEvents.push({
@@ -1451,7 +1454,7 @@ var eventData = eventData || {};
                 });
 
                 recordedEvents[key] = 1;
-            }
+            });
             sortedEvents = sortedEvents.sort(utils.sort_by('val'));
             return sortedEvents;
         };
@@ -1466,8 +1469,8 @@ var eventData = eventData || {};
             // Extract the gene symbols. They are without suffix.
             pEventId = pEventId.replace(/_mRNA$/, "");
             var pivotSortedEventObjs = this.getPivotSortedEvents(pEventId);
-            var pivotSortedEvents = [];
 
+            var pivotSortedEvents = [];
             _.each(pivotSortedEventObjs, function(pivotSortedEventObj) {
                 pivotSortedEvents.push(pivotSortedEventObj['key']);
             });
@@ -1476,11 +1479,14 @@ var eventData = eventData || {};
             var groupedEvents = this.getEventIdsByType();
             var orderedDatatypes = getOrderedDatatypes(_.keys(groupedEvents));
 
+            // preferred order of submatrices
             _.each(orderedDatatypes, function(datatype) {
                 var orderedEvents = [];
 
                 // suffixed ids here
                 var unorderedEvents = groupedEvents[datatype];
+
+                // no pivot sorted events available
                 if (pivotSortedEvents.length == 0) {
                     console.log('pivotSortedEvents.length == 0 for ' + datatype);
                     result[datatype] = unorderedEvents;
@@ -1489,7 +1495,7 @@ var eventData = eventData || {};
 
                 // add scored events in the datatype
                 _.each(pivotSortedEvents, function(eventId) {
-                    var eventId = this.getSuffixedEventId(pivotSortedEvents[i], datatype);
+                    var eventId = this.getSuffixedEventId(eventId, datatype);
                     if (utils.isObjInArray(unorderedEvents, eventId)) {
                         orderedEvents.push(eventId);
                     }
@@ -3213,10 +3219,21 @@ var medbookDataLoader = medbookDataLoader || {};
             var sample = doc["sample_label"];
             var gene = doc["gene_label"];
             var type = doc["mutation_type"];
+            var sequenceOntology = doc["sequence_ontology"];
+            // from http://www.cravat.us/help.jsp?chapter=help_user_account&article=top#sequence_ontology
+            // SY	Synonymous Variant
+            // SL	Stop Lost
+            // SG	Stop Gained
+            // MS	Missense Variant
+            // II	Inframe Insertion
+            // FI	Frameshift Insertion
+            // ID	Inframe Deletion
+            // FD	Frameshift Deletion
+            // CS	Complex Substitution
 
-            // handle mutation type
-            if (! _.isUndefined(type)) {
-                type = type.toLowerCase();
+            // handle sequenceOntology
+            if (! _.isUndefined(sequenceOntology)) {
+                sequenceOntology = sequenceOntology.toLowerCase();
                 if (! utils.hasOwnProperty(mutTypeByGene, gene)) {
                     mutTypeByGene[gene] = {};
                 }
@@ -3225,9 +3242,9 @@ var medbookDataLoader = medbookDataLoader || {};
                     mutTypeByGene[gene][sample] = [];
                 }
 
-                var findResult = _.findWhere(mutTypeByGene[gene][sample], type);
+                var findResult = _.findWhere(mutTypeByGene[gene][sample], sequenceOntology);
                 if (_.isUndefined(findResult)) {
-                    mutTypeByGene[gene][sample].push(type);
+                    mutTypeByGene[gene][sample].push(sequenceOntology);
                 }
             }
             // handle impact score
@@ -4485,7 +4502,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
 
                 var pivotable = (eventObj.metadata.weightedGeneVector.length);
 
-                var pivotable_dataypes = ["clinical data", "expression data", 'expression signature', 'kinase target activity', "tf target activity"];
+                var pivotable_dataypes = ["clinical data", "expression data", 'expression signature', 'kinase target activity', "tf target activity", "mutation call"];
 
                 var items = {
                     'title' : {
@@ -4552,6 +4569,10 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                                     mName = eventId;
                                     mVersion = 1;
                                     datatype = "clinical";
+                                } else if (datatype === "mutation call") {
+                                    mName = eventObj.metadata.displayName;
+                                    mVersion = 1;
+                                    datatype = "mutation";
                                 }
 
                                 var pivotSessionSettings = {
@@ -5528,7 +5549,8 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             var taggedEvents = {};
             var scoredEvents = _.pluck(eventAlbum.getPivotSortedEvents(pivotEventId), "key");
             _.each(_.keys(boundaries), function(datatype) {
-                if (datatype !== "clinical data" && datatype !== "mutation call") {
+                var skippedDatatypes = ["clinical data", "mutation call", "mutation impact score", "gistic_copy_number"];
+                if (! _.contains(skippedDatatypes, datatype)) {
                     var data = boundaries[datatype];
                     var datatypeNames = [];
                     var suffix = eventAlbum.datatypeSuffixMapping[datatype];
@@ -5738,13 +5760,12 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             if (pivotEventId != null) {
                 pivotScoresMap = {};
                 var pivotSortedEvents = eventAlbum.getPivotSortedEvents(pivotEventId);
-                for (var i = 0, lengthi = pivotSortedEvents.length; i < lengthi; i++) {
-                    var pivotObj = pivotSortedEvents[i];
+                _.each(pivotSortedEvents, function(pivotObj) {
                     var key = pivotObj["key"];
                     var val = pivotObj["val"];
                     pivotScoresMap[key] = val;
-                    // console.log(pivotEventId, key);
-                }
+                    // console.log(val, key, pivotEventId);
+                });
             }
 
             rowLabels.append("title").text(function(d, i) {
@@ -5852,17 +5873,17 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             iconGroup.appendChild(utils.createSvgRectElement(x, y, rx, ry, width, height, attributes));
             delete attributes["stroke-width"];
 
-            if ((utils.isObjInArray(types, "ins")) || (utils.isObjInArray(types, "complex"))) {
+            if ((utils.isObjInArray(types, "sg")) || (utils.isObjInArray(types, "ins")) || (utils.isObjInArray(types, "complex"))) {
                 attributes["fill"] = "red";
                 var topHalfIcon = utils.createSvgRectElement(x, y, rx, ry, width, height / 2, attributes);
                 iconGroup.appendChild(topHalfIcon);
             }
-            if ((utils.isObjInArray(types, "del")) || (utils.isObjInArray(types, "complex"))) {
+            if ((utils.isObjInArray(types, "ss")) || (utils.isObjInArray(types, "del")) || (utils.isObjInArray(types, "complex"))) {
                 attributes["fill"] = "blue";
                 var bottomHalfIcon = utils.createSvgRectElement(x, y + height / 2, rx, ry, width, height / 2, attributes);
                 iconGroup.appendChild(bottomHalfIcon);
             }
-            if ((utils.isObjInArray(types, "snp")) || (utils.isObjInArray(types, "complex"))) {
+            if ((utils.isObjInArray(types, "ms")) || (utils.isObjInArray(types, "snp")) || (utils.isObjInArray(types, "complex"))) {
                 attributes["fill"] = "green";
                 var centeredCircleIcon = utils.createSvgCircleElement(x + width / 2, y + height / 2, height / 4, attributes);
                 iconGroup.appendChild(centeredCircleIcon);
@@ -6193,7 +6214,21 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     return s;
                 } else {
                     // var s = "r:" + d['eventId'] + "\n\nc:" + d['id'] + "\n\nval:" + d['val'] + "\n\nval_orig:" + d['val_orig'];
-                    var s = "event: " + d['eventId'] + "\nsample: " + d['id'] + "\nvalue: " + d['val'];
+                    var eventId = d["eventId"];
+                    var id = d["id"];
+                    var val = d["val"];
+                    if (datatype === "mutation call" && !_.isNull(val)) {
+                        _.each(val, function(code, index) {
+                            if (code === "ms") {
+                                val[index] = "missense";
+                            } else if (code === "sg") {
+                                val[index] = "stop gained";
+                            } else if (code === "ss") {
+                                val[index] = "ss";
+                            }
+                        });
+                    }
+                    var s = "event: " + eventId + "\nsample: " + id + "\nvalue: " + val;
                     return s;
                 }
             });

@@ -1,7 +1,6 @@
 /**
  * event handlers and helpers
  */
-
 Template.obsDeckTemplate.events({});
 
 Template.obsDeckTemplate.helpers({});

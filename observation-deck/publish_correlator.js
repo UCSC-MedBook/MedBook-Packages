@@ -190,9 +190,12 @@ var getCorrelatorIds_forSign = function(pivotName, pivotDatatype, pivotVersion, 
         var headIds = groupedIds[group].slice(start, end);
         idsForThisGroup = (headIds);
 
+        //console.log(group, start, end, idsForThisGroup);
+
         // take anti-correlated events from the bottom of the list
         // clinical events are scored via ANOVA, so there is no implied direction
-        if (pivotDatatype !== "clinical") {
+        //console.log("pivotDatatype", pivotDatatype);
+        if ((pivotDatatype !== "clinical") && (pivotDatatype !== "mutation")) {
             groupedIds[group].reverse();
             start = skipCounts["tail"];
             end = start + pageSize;
@@ -387,7 +390,7 @@ Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVers
     // console.log("nonCorrSigNames", nonCorrSigNames);
 
     // get correlator scores from Mongo collection
-    if (pivotDatatype !== "clinical") {
+    if ((pivotDatatype !== "clinical") && (pivotDatatype !== "mutation")) {
         // unexpected versioning
         pivotVersion = 5;
     }
@@ -419,7 +422,7 @@ Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVers
     var expr_ids_top = getCorrelatorIds_forExpr(pivotName, pivotDatatype, pivotVersion, "desc", pageSize, skipCount["expression data"]["head"]);
     correlatorIds = correlatorIds.concat(expr_ids_top);
 
-    if (pivotDatatype !== "clinical") {
+    if ((pivotDatatype !== "clinical") && (pivotDatatype !== "mutation")) {
         var expr_ids_bottom = getCorrelatorIds_forExpr(pivotName, pivotDatatype, pivotVersion, "asc", pageSize, skipCount["expression data"]["tail"]);
         correlatorIds = correlatorIds.concat(expr_ids_bottom);
     }
@@ -467,12 +470,54 @@ Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVers
 
         var mutationGeneList = _.union(geneList, mappedList);
 
-        var mutationsCursor = Mutations.find({
+        var mutationsSelector = {
             "gene_label" : {
                 "$in" : mutationGeneList
             },
             "study_label" : Study_ID
-        });
+        };
+
+        var mutationsOptions = {
+            "fields" : {
+                "_id" : true,
+                // "chromosome" : false,
+                // "start_position" : false,
+                // "strand" : false,
+                // "reference_allele" : false,
+                // "variant_allele" : false,
+                "sample_label" : true,
+                "gene_label" : true,
+                "sequence_ontology" : true,
+                // "protein_change" : false,
+                // "chasm_driver_p_value" : false,
+                // "chasm_driver_fdr" : false,
+                // "vest_pathogenicity_p_value" : false,
+                // "vest_pathogenicity_fdr" : false,
+                // "db_snp_label" : false,
+                "mutation_caller" : true,
+                "biological_source" : true,
+                "mutation_impact_assessor" : true,
+                "mutation_type" : true,
+                "study_label" : true,
+                // "reference_transcript" : false,
+                // "reference_strand" : false,
+                "protein_change" : true,
+                // "chasm_transcript" : false,
+                "chasm_driver_score" : true
+                // "chasm_driver_p_value" : false,
+                // "chasm_driver_fdr" : false,
+                // "vest_transcript" : false,
+                // "vest_pathogenicity_p_value" : false,
+                // "vest_score_missense" : false,
+                // "vest_score_frameshift_indels" : false,
+                // "vest_score_inframe_indels" : false,
+                // "vest_score_stop_gain" : false,
+                // "vest_score_stop_loss" : false,
+                // "vest_score_splice_site" : false
+            }
+        };
+
+        var mutationsCursor = Mutations.find(mutationsSelector, mutationsOptions);
         cursors.push(mutationsCursor);
 
         // geneAnnotation cursor
@@ -482,21 +527,21 @@ Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVers
 
         var geneAnnotationGeneList = _.union(geneList, mappedList);
 
-        var selector = {
+        var geneAnnotationSelector = {
             "gene_label" : {
                 "$in" : geneAnnotationGeneList
             },
             "study_label" : Study_ID
         };
 
-        var options = {
+        var geneAnnotationOptions = {
             "fields" : {
                 "collaborations" : false,
                 "study_label" : false
             }
         };
 
-        var geneAnnotationCursor = GeneAnnotation.find(selector, options);
+        var geneAnnotationCursor = GeneAnnotation.find(geneAnnotationSelector, geneAnnotationOptions);
         cursors.push(geneAnnotationCursor);
 
     }
