@@ -1,7 +1,8 @@
 Package.describe({
     name : 'medbook:observation-deck',
     summary : 'Observation Deck visualizes multiple data types for a group of samples.',
-    version : '0.2.3',
+    version : '0.2.4',
+	// v0.2.4: ignore silent mutations (sequence_ontology = SY)
     // v0.2.3: visualize mutation calls with oncoprint-style graphics depending upos sequence ontology
     // v0.2.2: add gistic copy number and chasm mutation impact
     // v0.2.1: add geneAnntotation data (gistic copy number)

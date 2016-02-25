@@ -474,7 +474,11 @@ Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVers
             "gene_label" : {
                 "$in" : mutationGeneList
             },
-            "study_label" : Study_ID
+            "study_label" : Study_ID,
+            "sequence_ontology" : {
+            	// ignore silent mutations
+                "$ne" : "SY"
+            }
         };
 
         var mutationsOptions = {

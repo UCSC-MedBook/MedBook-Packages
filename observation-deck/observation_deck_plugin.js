@@ -3218,7 +3218,7 @@ var medbookDataLoader = medbookDataLoader || {};
 
             var sample = doc["sample_label"];
             var gene = doc["gene_label"];
-            var type = doc["mutation_type"];
+            // var type = doc["mutation_type"];
             var sequenceOntology = doc["sequence_ontology"];
             // from http://www.cravat.us/help.jsp?chapter=help_user_account&article=top#sequence_ontology
             // SY	Synonymous Variant
@@ -3231,9 +3231,24 @@ var medbookDataLoader = medbookDataLoader || {};
             // FD	Frameshift Deletion
             // CS	Complex Substitution
 
+            var effectMapping = {
+                "SY" : "silent",
+                "SL" : "snp",
+                "SG" : "snp",
+                "MS" : "snp",
+                "II" : "ins",
+                "FI" : "ins",
+                "ID" : "del",
+                "FD" : "del",
+                "CS" : "snp",
+                "SS" : "snp" // not confirmed by documentation
+            };
+
+            var effect = effectMapping[sequenceOntology];
+
             // handle sequenceOntology
-            if (! _.isUndefined(sequenceOntology)) {
-                sequenceOntology = sequenceOntology.toLowerCase();
+            if (! _.isUndefined(effect)) {
+                effect = effect.toLowerCase();
                 if (! utils.hasOwnProperty(mutTypeByGene, gene)) {
                     mutTypeByGene[gene] = {};
                 }
@@ -3242,9 +3257,9 @@ var medbookDataLoader = medbookDataLoader || {};
                     mutTypeByGene[gene][sample] = [];
                 }
 
-                var findResult = _.findWhere(mutTypeByGene[gene][sample], sequenceOntology);
+                var findResult = _.findWhere(mutTypeByGene[gene][sample], effect);
                 if (_.isUndefined(findResult)) {
-                    mutTypeByGene[gene][sample].push(sequenceOntology);
+                    mutTypeByGene[gene][sample].push(effect);
                 }
             }
             // handle impact score
@@ -6218,15 +6233,19 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     var id = d["id"];
                     var val = d["val"];
                     if (datatype === "mutation call" && !_.isNull(val)) {
+                        var mutList = [];
                         _.each(val, function(code, index) {
                             if (code === "ms") {
-                                val[index] = "missense";
+                                mutList.push("missense");
                             } else if (code === "sg") {
-                                val[index] = "stop gained";
+                                mutList.push("stop gained");
                             } else if (code === "ss") {
-                                val[index] = "ss";
+                                mutList.push("ss");
+                            } else {
+                                mutList.push(code);
                             }
                         });
+                        val = mutList;
                     }
                     var s = "event: " + eventId + "\nsample: " + id + "\nvalue: " + val;
                     return s;
