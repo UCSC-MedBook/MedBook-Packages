@@ -1,3 +1,25 @@
+/**
+ * for use with circleMapHallmarksModeTemplate
+ */
+function drawCircleMapGraph_hallmarksMode(sifString, sampleData, centerScores) {
+    console.log("BEGIN drawCircleMapGraph_hallmarksMode");
+    console.log("sifString", sifString);
+    console.log("sampleData", sampleData);
+    console.log("centerScores", centerScores);
+
+    var containerDiv = document.getElementById("render-circle-map-here");
+    circleMapGraph.build({
+        "sifGraphData" : sifString,
+        "hallmarksModeSampleData" : sampleData,
+        "centerScores" : centerScores
+    });
+
+    console.log("END drawCircleMapGraph_hallmarksMode");
+};
+
+/**
+ * for use with circleMapTemplate
+ */
 function drawCircleMapGraph(geneReport, patientSamples, expressionData, viperSignaturesData, targettingDrugsData) {
     console.log("geneReport: ", geneReport);
     console.log("expressionData: ", expressionData);
@@ -6,7 +28,6 @@ function drawCircleMapGraph(geneReport, patientSamples, expressionData, viperSig
     console.log("targettingDrugsData", targettingDrugsData);
 
     if (geneReport.network.elements.length > 0) {
-        // write your code here!
         var containerDiv = document.getElementById("render-circle-map-here");
         circleMapGraph.build({
             "targettingDrugsData" : targettingDrugsData,
@@ -72,5 +93,27 @@ Template.circleMapTemplate.rendered = function() {
             drawCircleMapGraph(geneReport, patientSamples, expressionData, viperSignaturesData, targettingDrugsData);
             first.stop();
         }
+    });
+};
+
+Template.circleMapHallmarksModeTemplate.rendered = function() {
+    const instance = this;
+
+    instance.autorun(function(first) {
+        // get graph data (sif in a string)
+        var sifString = Session.get("sifString");
+
+        // get sample data (TSV in a string, with columns: Gene, Kinases, Mutations, Amps, Dels, TFs)
+        var sampleData = Session.get("hallmarksSampleData");
+
+        // get node center scores
+        var parsedSampleData = d3.tsv.parse(sampleData);
+        var centerScores = {};
+        _.each(parsedSampleData, function(obj) {
+            centerScores[obj["Gene"]] = obj["Kinases"];
+        });
+
+        drawCircleMapGraph_hallmarksMode(sifString, sampleData, centerScores);
+        first.stop();
     });
 };

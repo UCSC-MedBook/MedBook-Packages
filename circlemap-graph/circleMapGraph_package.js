@@ -9034,6 +9034,12 @@ var eventData = eventData || {};
             }
         };
 
+        /**
+         * Specifies the tested sample IDs for a datatype.
+         * Helps to distinguish from untested samples and "none found" data.
+         */
+        this.testedSamples = {};
+
         this.album = {};
 
         /**
@@ -9048,6 +9054,14 @@ var eventData = eventData || {};
          *
          */
         this.pivot = {};
+
+        this.setTestedSamples = function(datatype, testedSamples) {
+            this.testedSamples[datatype] = testedSamples;
+        };
+
+        this.getTestedSamples = function(datatype) {
+            return (this.testedSamples[datatype]);
+        };
 
         this.getSuffixedEventId = function(name, datatype) {
             var suffix = ( datatype in this.datatypeSuffixMapping) ? this.datatypeSuffixMapping[datatype] : "";
@@ -9219,6 +9233,7 @@ var eventData = eventData || {};
                 };
 
             }
+            console.log("pivot dict", this.pivot);
             return this;
         };
 
@@ -9236,6 +9251,7 @@ var eventData = eventData || {};
                     'scores' : pivotScores
                 };
             }
+            console.log("pivot array", this.pivot);
             return this;
         };
 
@@ -9249,27 +9265,28 @@ var eventData = eventData || {};
             }
             var sortedEvents = [];
             var recordedEvents = {};
-            for (var i = 0, length = this.pivot.scores.length; i < length; i++) {
-                var scoreObj = this.pivot.scores[i];
+            _.each(this.pivot.scores, function(scoreObj) {
                 var eventId1 = scoreObj['eventId1'];
                 var eventId2 = scoreObj['eventId2'];
                 var score = scoreObj['score'];
 
                 var key;
                 var val = score;
+                console.log("pEventId", pEventId);
                 pEventId = pEventId.replace(/_mRNA$/, "");
+                pEventId = pEventId.replace(/_mutation$/, "");
                 if (eventId1 === pEventId) {
                     key = eventId2;
                 } else if (eventId2 === pEventId) {
                     key = eventId1;
                 } else {
                     // filter by pEventId
-                    continue;
+                    return;
                 }
 
                 if (utils.hasOwnProperty(recordedEvents, key)) {
                     // duplicate event
-                    continue;
+                    return;
                 }
 
                 sortedEvents.push({
@@ -9278,7 +9295,7 @@ var eventData = eventData || {};
                 });
 
                 recordedEvents[key] = 1;
-            }
+            });
             sortedEvents = sortedEvents.sort(utils.sort_by('val'));
             return sortedEvents;
         };
@@ -9293,45 +9310,45 @@ var eventData = eventData || {};
             // Extract the gene symbols. They are without suffix.
             pEventId = pEventId.replace(/_mRNA$/, "");
             var pivotSortedEventObjs = this.getPivotSortedEvents(pEventId);
-            // console.log("pivotSortedEventObjs", utils.prettyJson(pivotSortedEventObjs));
+
             var pivotSortedEvents = [];
-            for (var j = 0; j < pivotSortedEventObjs.length; j++) {
-                var pivotSortedEventObj = pivotSortedEventObjs[j];
+            _.each(pivotSortedEventObjs, function(pivotSortedEventObj) {
                 pivotSortedEvents.push(pivotSortedEventObj['key']);
-            }
+            });
 
             // iterate through datatypes
             var groupedEvents = this.getEventIdsByType();
-            var pivotedDatatypes = utils.getKeys(groupedEvents);
-            pivotedDatatypes = utils.removeA(pivotedDatatypes, "clinical data");
+            var orderedDatatypes = getOrderedDatatypes(_.keys(groupedEvents));
 
-            for (var datatype in groupedEvents) {
+            // preferred order of submatrices
+            _.each(orderedDatatypes, function(datatype) {
                 var orderedEvents = [];
 
                 // suffixed ids here
                 var unorderedEvents = groupedEvents[datatype];
+
+                // no pivot sorted events available
                 if (pivotSortedEvents.length == 0) {
                     console.log('pivotSortedEvents.length == 0 for ' + datatype);
                     result[datatype] = unorderedEvents;
-                    continue;
+                    return;
                 }
 
                 // add scored events in the datatype
-                for (var i = 0; i < pivotSortedEvents.length; i++) {
-                    var eventId = this.getSuffixedEventId(pivotSortedEvents[i], datatype);
+                _.each(pivotSortedEvents, function(eventId) {
+                    var eventId = this.getSuffixedEventId(eventId, datatype);
                     if (utils.isObjInArray(unorderedEvents, eventId)) {
                         orderedEvents.push(eventId);
                     }
-                }
+                }, this);
 
                 // add the unscored events from the datatype group
-                // if (! utils.isObjInArray(pivotedDatatypes, datatype)) {
                 orderedEvents = orderedEvents.concat(unorderedEvents);
                 orderedEvents = utils.eliminateDuplicates(orderedEvents);
-                // }
 
                 result[datatype] = orderedEvents;
-            }
+            }, this);
+
             return result;
         };
 
@@ -9357,6 +9374,26 @@ var eventData = eventData || {};
         };
 
         /**
+         * Place the datatypes into a preferred ordering for viz
+         */
+        var getOrderedDatatypes = function(datatypes) {
+            var preferredOrdering = ["clinical data", "expression data", "mutation call", "mutation impact score", "gistic_copy_number", "kinase target activity", "tf target activity", "expression signature", "mvl drug sensitivity", "datatype label"];
+
+            // expected datatypes
+            var list1 = _.filter(preferredOrdering, function(datatype) {
+                return _.contains(datatypes, datatype);
+            });
+
+            // unexpected datatypes
+            var list2 = _.reject(datatypes, function(datatype) {
+                return _.contains(preferredOrdering, datatype);
+            });
+
+            var orderedDatatypes = list1.concat(list2);
+            return orderedDatatypes;
+        };
+
+        /**
          * multi-sorting of events
          */
         this.multisortEvents = function(rowSortSteps, colSortSteps) {
@@ -9366,16 +9403,20 @@ var eventData = eventData || {};
             // default ordering
             var groupedEvents = this.getEventIdsByType();
             console.log("groupedEvents", groupedEvents);
+
+            var orderedDatatypes = getOrderedDatatypes(_.keys(groupedEvents));
+
             var eventList = [];
-            for (var datatype in groupedEvents) {
+            _.each(orderedDatatypes, function(datatype) {
                 if (datatype === 'datatype label') {
-                    continue;
+                    return;
                 }
+                // add datatype row labels to datatype event lists
                 var datatypeEventList = groupedEvents[datatype];
                 datatypeEventList.unshift(datatype + "(+)");
                 datatypeEventList.push(datatype + "(-)");
                 eventList = eventList.concat(datatypeEventList);
-            }
+            });
 
             // bubble up colSort events
             var bubbledUpEvents = [];
@@ -9456,7 +9497,8 @@ var eventData = eventData || {};
 
                     // assemble all datatypes together
                     var eventList = bubbledUpEvents.slice(0);
-                    for (var datatype in groupedEvents) {
+
+                    _.each(orderedDatatypes, function(datatype) {
                         if (datatype === scoredDatatype) {
                             eventList = eventList.concat(processedExpressionEventList);
                         } else {
@@ -9470,7 +9512,7 @@ var eventData = eventData || {};
                                 }
                             }
                         }
-                    }
+                    });
 
                     rowNames = eventList;
                     console.log('rowNames.length', rowNames.length, rowNames);
@@ -9996,31 +10038,36 @@ var eventData = eventData || {};
 
             // get all sample IDs for event
             var allEventIdsByCategory = this.getEventIdsByType();
-            for (var i = 0, length = utils.getKeys(allEventIdsByCategory).length; i < length; i++) {
-                var category = utils.getKeys(allEventIdsByCategory)[i];
-                for (var j = 0; j < allEventIdsByCategory[category].length; j++) {
-                    var eventId = allEventIdsByCategory[category][j];
+            _.each(_.keys(allEventIdsByCategory), function(category) {
+                _.each(allEventIdsByCategory[category], function(eventId) {
                     var eventData = this.getEvent(eventId).data;
                     var allEventSampleIds = eventData.getAllSampleIds();
                     if (allAlbumSampleIds.length - allEventSampleIds.length == 0) {
-                        continue;
+                        return;
                     };
 
                     // find missing data
                     var missingSampleIds = utils.keepReplicates(allAlbumSampleIds.concat(allEventSampleIds), 2, true);
                     var missingData = {};
-                    for (var k = 0; k < missingSampleIds.length; k++) {
-                        var id = missingSampleIds[k];
-                        if (eventId === "patientSamples"){
-                          missingData[id] = "other patient";
+                    _.each(missingSampleIds, function(id) {
+                        if (eventId === "patientSamples") {
+                            missingData[id] = "other patient";
+                        // } else if (category === "mutation call") {
+                            // var isTested = _.contains(this.getTestedSamples(category), id);
+                            // if (isTested) {
+                                // missingData[id] = "no call";
+                            // } else {
+                                // missingData[id] = value;
+                            // }
+                            // console.log(isTested, category, id);
                         } else {
-                          missingData[id] = value;
+                            missingData[id] = value;
                         }
-                    }
+                    }, this);
                     // add data
                     this.getEvent(eventId).data.setData(missingData);
-                }
-            }
+                }, this);
+            }, this);
             return this;
         };
 
@@ -10033,11 +10080,9 @@ var eventData = eventData || {};
 
             var datatypeLabelDatatype = "datatype label";
 
-            for (var i = 0, length = datatypes.length; i < length; i++) {
-                var datatype = datatypes[i];
-
+            _.each(datatypes, function(datatype) {
                 if (datatype === datatypeLabelDatatype) {
-                    continue;
+                    return;
                 }
 
                 var pos_suffix = "(+)";
@@ -10060,7 +10105,7 @@ var eventData = eventData || {};
                     'datatype' : datatypeLabelDatatype,
                     'allowedValues' : null
                 }, {});
-            }
+            }, this);
 
             this.fillInMissingSamples(value);
         };
@@ -11260,6 +11305,56 @@ var medbookDataLoader = medbookDataLoader || {};
     };
 
     /**
+     * gaData looks like this:
+     {
+     "_id": {
+     "_str": "56bd09c433cbfe5c8a00ae49"
+     },
+     "collaborations": [
+     "WCDT"
+     ],
+     "gene_label": "MDM4",
+     "sample_label": "DTB-005",
+     "study_label": "prad_wcdt",
+     "gistic_copy_number": 0.23
+     }
+     */
+    mdl.mongoGeneAnnotationData = function(gaData, OD_eventAlbum) {
+        _.each(gaData, function(data) {
+            // remove unused fields
+            delete data["_id"];
+            delete data["collaborations"];
+            delete data["study_label"];
+
+            var gene = data["gene_label"];
+            delete data["gene_label"];
+
+            var sample = data["sample_label"];
+            delete data["sample_label"];
+
+            // remaining keys should be datatypes
+            _.each(_.keys(data), function(datatype) {
+                var value = data[datatype];
+
+                // get eventObj
+                var suffix = "_" + datatype;
+                var eventId = gene + suffix;
+                var eventObj = OD_eventAlbum.getEvent(eventId);
+                // create event if DNE
+                if (eventObj == null) {
+                    eventObj = mdl.loadEventBySampleData(OD_eventAlbum, eventId, "", datatype, 'numeric', []);
+                    eventObj.metadata.displayName = gene;
+                }
+
+                // add data to eventObj
+                var dataObj = {};
+                dataObj[sample] = value;
+                eventObj.data.setData(dataObj);
+            });
+        });
+    };
+
+    /**
      * A contrast is one row of clinical data.
      */
     mdl.mongoContrastData = function(contrastData, OD_eventAlbum) {
@@ -11450,6 +11545,23 @@ var medbookDataLoader = medbookDataLoader || {};
     };
 
     /**
+     * load sample data for hallmarks-of-cancer mode
+     * The expected sample data is a 2D matrix. cols are samples. rows are features.
+     */
+    mdl.hallmarksSampleData = function(sampleData, OD_eventAlbum) {
+        console.log("hallmarksSampleData");
+
+        var parsedSampleData = d3.tsv.parse(sampleData);
+        _.each(parsedSampleData, function(data) {
+            delete data["Kinases"];
+        });
+
+        var processedSampleData = d3.tsv.format(parsedSampleData);
+
+        mdl.genericMatrixData(processedSampleData, "hallmarks", OD_eventAlbum, "numeric");
+    };
+
+    /**
      *Add expression data from mongo collection.
      * @param {Object} collection
      * @param {Object} OD_eventAlbum
@@ -11506,17 +11618,117 @@ var medbookDataLoader = medbookDataLoader || {};
 
         var impactScoresMap = OD_eventAlbum.ordinalScoring[allowed_values];
 
+        var mutTypeByGene = {};
+        var impactScoreByGene = {};
+        // for (var i = 0, length = collection.length; i < length; i++) {
+        _.each(collection, function(element) {
+            var doc = element;
+
+            var sample = doc["sample_label"];
+            var gene = doc["gene_label"];
+            // var type = doc["mutation_type"];
+            var sequenceOntology = doc["sequence_ontology"];
+            // from http://www.cravat.us/help.jsp?chapter=help_user_account&article=top#sequence_ontology
+            // SY	Synonymous Variant
+            // SL	Stop Lost
+            // SG	Stop Gained
+            // MS	Missense Variant
+            // II	Inframe Insertion
+            // FI	Frameshift Insertion
+            // ID	Inframe Deletion
+            // FD	Frameshift Deletion
+            // CS	Complex Substitution
+
+            var effectMapping = {
+                "SY" : "silent",
+                "SL" : "snp",
+                "SG" : "snp",
+                "MS" : "snp",
+                "II" : "ins",
+                "FI" : "ins",
+                "ID" : "del",
+                "FD" : "del",
+                "CS" : "snp",
+                "SS" : "snp" // not confirmed by documentation
+            };
+
+            var effect = effectMapping[sequenceOntology];
+
+            // handle sequenceOntology
+            if (! _.isUndefined(effect)) {
+                effect = effect.toLowerCase();
+                if (! utils.hasOwnProperty(mutTypeByGene, gene)) {
+                    mutTypeByGene[gene] = {};
+                }
+
+                if (! utils.hasOwnProperty(mutTypeByGene[gene], sample)) {
+                    mutTypeByGene[gene][sample] = [];
+                }
+
+                var findResult = _.findWhere(mutTypeByGene[gene][sample], effect);
+                if (_.isUndefined(findResult)) {
+                    mutTypeByGene[gene][sample].push(effect);
+                }
+            }
+            // handle impact score
+            var impact_assessor = (_.contains(_.keys(doc), "mutation_impact_assessor")) ? doc["mutation_impact_assessor"] : null;
+            if (!_.isNull(impact_assessor) && impact_assessor.toLowerCase() === "chasm") {
+                var chasmScore = doc["chasm_driver_score"];
+
+                if (_.isUndefined(impactScoreByGene[gene])) {
+                    impactScoreByGene[gene] = {};
+                }
+
+                if (_.isUndefined(impactScoreByGene[gene][sample])) {
+                    impactScoreByGene[gene][sample] = 1;
+                }
+
+                if (impactScoreByGene[gene][sample] > chasmScore) {
+                    impactScoreByGene[gene][sample] = chasmScore;
+                }
+            } else {
+                console.log("NO CHASM for", sample, gene);
+            }
+        });
+        console.log("mutTypeByGene", mutTypeByGene);
+        console.log("impactScoreByGene", impactScoreByGene);
+
+        // mutation type - add to event album
+        var suffix = "_mutation";
+        _.each(_.keys(mutTypeByGene), function(gene) {
+            var sampleData = mutTypeByGene[gene];
+            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation call', allowed_values, sampleData);
+        });
+
+        // mutation impact
+        suffix = "_mutation_impact_score";
+        allowed_values = "chasm";
+        _.each(_.keys(impactScoreByGene), function(gene) {
+            var sampleData = impactScoreByGene[gene];
+            mdl.loadEventBySampleData(OD_eventAlbum, gene, suffix, 'mutation impact score', allowed_values, sampleData);
+        });
+
+        return null;
+    };
+
+    /**
+     * data about mutation type
+     */
+    mdl.mongoMutationData_old = function(collection, OD_eventAlbum) {
+        // iter over doc ... each doc is a mutation call
+        var allowed_values = "mutation type";
+
+        var impactScoresMap = OD_eventAlbum.ordinalScoring[allowed_values];
+
         var mutByGene = {};
         // for (var i = 0, length = collection.length; i < length; i++) {
         _.each(collection, function(element) {
             var doc = element;
 
-            var variantCallData = {};
-
             var sample = doc["sample_label"];
             var gene = doc["gene_label"];
-            var type = variantCallData["mutType"] = doc["mutation_type"];
-            // var impact = variantCallData["impact"] = doc["effect_impact"];
+            var type = doc["mutation_type"];
+            var impact_assessor = (_.contains(_.keys(doc), "mutation_impact_assessor")) ? doc["mutation_impact_assessor"] : null;
 
             if (! utils.hasOwnProperty(mutByGene, gene)) {
                 mutByGene[gene] = {};
@@ -11916,6 +12128,16 @@ var medbookDataLoader = medbookDataLoader || {};
         OD_eventAlbum.setPivotScores_array(null, pivotScores);
     };
 
+    /**
+     * Set the tested samples for a datatype.
+     * @param {Object} datatype
+     * @param {Object} testedSamples
+     * @param {Object} OD_eventAlbum
+     */
+    mdl.setTestedSamples = function(datatype, testedSamples, OD_eventAlbum) {
+        OD_eventAlbum.setTestedSamples(datatype, testedSamples);
+    };
+
 })(medbookDataLoader);
  // end of medbook_data_load.js
  // end of medbook_data_load.js
@@ -12255,8 +12477,28 @@ var circleMapGenerator = {};
                     });
                 }
 
+                // ring separator
+                var arc = createD3Arc(innerRadius, innerRadius + 0.5, 0, 360);
+                var pathElem = document.createElementNS(utils.svgNamespaceUri, 'path');
+                utils.setElemAttributes(pathElem, {
+                    'd' : arc(),
+                    'fill' : "black"
+                });
+
+                circleMapGroup.appendChild(pathElem);
+
                 innerRadius = innerRadius + ringThickness;
             }
+
+            // outermost ring separator
+            var arc = createD3Arc(fullRadius, fullRadius + 0.5, 0, 360);
+            var pathElem = document.createElementNS(utils.svgNamespaceUri, 'path');
+            utils.setElemAttributes(pathElem, {
+                'd' : arc(),
+                'fill' : "black"
+            });
+
+            circleMapGroup.appendChild(pathElem);
 
             // add a label
             // circleMapGroup.append("svg:text").attr("text-anchor", "middle").attr('dy', ".35em").text(feature);
@@ -12771,6 +13013,12 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
             }
         }
 
+        // hallmarks sample data
+        if (utils.hasOwnProperty(config, "hallmarksModeSampleData")) {
+            medbookDataLoader.hallmarksSampleData(config["hallmarksModeSampleData"], eventAlbum);
+            ringsList.push("hallmarks");
+        }
+
         // expression data
         if (utils.hasOwnProperty(config, "medbookExprData")) {
             medbookDataLoader.mongoExpressionData(config["medbookExprData"], eventAlbum);
@@ -13131,7 +13379,7 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
                                 }
                             }
                         }
-                    },
+                    }
                 };
                 return {
                     'items' : items
@@ -13632,15 +13880,15 @@ circleMapGraph = ( typeof circleMapGraph === "undefined") ? {} : circleMapGraph;
 
         // apply node zoom and transparency on loading
         d3.selectAll(".circleMapG").each(function(d, i) {
-            var circleMapGElem = this;
-            var feature = this.getAttribute("feature");
+            var d3circleMapGElem = d3.select(this);
+            var feature = d3circleMapGElem.attr("feature");
             if (_.contains(cookieObj["zoomedNodes"], feature)) {
-                circleMapGElem.setAttributeNS(null, 'transform', cmGraph.largeScale);
-                circleMapGElem.setAttributeNS(null, 'zoomed', "true");
+                d3circleMapGElem.attr('transform', cmGraph.largeScale);
+                d3circleMapGElem.attr('zoomed', "true");
             }
             if (_.contains(cookieObj["transparentNodes"], feature)) {
-                circleMapGElem.setAttributeNS(null, "opacity", "0.3");
-                circleMapGElem.setAttributeNS(null, "isTransparent", "true");
+                d3circleMapGElem.attr("opacity", "0.3");
+                d3circleMapGElem.attr("isTransparent", "true");
             }
         });
 
