@@ -20,11 +20,15 @@ Template.studySelectorTemplate.events({
  */
 Template.studySelectorTemplate.helpers({
     studies : function() {
-        return Studies.find({}, {
-            sort : {
-                short_name : 1
+        var selectorObj = {};
+        var optionsObj = {
+            "sort" : {
+                "short_name" : 1
             }
-        });
+        };
+        var cursor = Studies.find(selectorObj, optionsObj);
+
+        return cursor;
     },
     selected : function() {
         if (Session.get('studyID') == this.id)
