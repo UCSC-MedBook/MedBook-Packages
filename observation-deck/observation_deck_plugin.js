@@ -1207,6 +1207,12 @@ var eventData = eventData || {};
             }
         };
 
+        /**
+         * Specifies the tested sample IDs for a datatype.
+         * Helps to distinguish from untested samples and "none found" data.
+         */
+        this.testedSamples = {};
+
         this.album = {};
 
         /**
@@ -1221,6 +1227,14 @@ var eventData = eventData || {};
          *
          */
         this.pivot = {};
+
+        this.setTestedSamples = function(datatype, testedSamples) {
+            this.testedSamples[datatype] = testedSamples;
+        };
+
+        this.getTestedSamples = function(datatype) {
+            return (this.testedSamples[datatype]);
+        };
 
         this.getSuffixedEventId = function(name, datatype) {
             var suffix = ( datatype in this.datatypeSuffixMapping) ? this.datatypeSuffixMapping[datatype] : "";
@@ -2197,31 +2211,36 @@ var eventData = eventData || {};
 
             // get all sample IDs for event
             var allEventIdsByCategory = this.getEventIdsByType();
-            for (var i = 0, length = utils.getKeys(allEventIdsByCategory).length; i < length; i++) {
-                var category = utils.getKeys(allEventIdsByCategory)[i];
-                for (var j = 0; j < allEventIdsByCategory[category].length; j++) {
-                    var eventId = allEventIdsByCategory[category][j];
+            _.each(_.keys(allEventIdsByCategory), function(category) {
+                _.each(allEventIdsByCategory[category], function(eventId) {
                     var eventData = this.getEvent(eventId).data;
                     var allEventSampleIds = eventData.getAllSampleIds();
                     if (allAlbumSampleIds.length - allEventSampleIds.length == 0) {
-                        continue;
+                        return;
                     };
 
                     // find missing data
                     var missingSampleIds = utils.keepReplicates(allAlbumSampleIds.concat(allEventSampleIds), 2, true);
                     var missingData = {};
-                    for (var k = 0; k < missingSampleIds.length; k++) {
-                        var id = missingSampleIds[k];
+                    _.each(missingSampleIds, function(id) {
                         if (eventId === "patientSamples") {
                             missingData[id] = "other patient";
+                        // } else if (category === "mutation call") {
+                            // var isTested = _.contains(this.getTestedSamples(category), id);
+                            // if (isTested) {
+                                // missingData[id] = "no call";
+                            // } else {
+                                // missingData[id] = value;
+                            // }
+                            // console.log(isTested, category, id);
                         } else {
                             missingData[id] = value;
                         }
-                    }
+                    }, this);
                     // add data
                     this.getEvent(eventId).data.setData(missingData);
-                }
-            }
+                }, this);
+            }, this);
             return this;
         };
 
@@ -2234,11 +2253,9 @@ var eventData = eventData || {};
 
             var datatypeLabelDatatype = "datatype label";
 
-            for (var i = 0, length = datatypes.length; i < length; i++) {
-                var datatype = datatypes[i];
-
+            _.each(datatypes, function(datatype) {
                 if (datatype === datatypeLabelDatatype) {
-                    continue;
+                    return;
                 }
 
                 var pos_suffix = "(+)";
@@ -2261,7 +2278,7 @@ var eventData = eventData || {};
                     'datatype' : datatypeLabelDatatype,
                     'allowedValues' : null
                 }, {});
-            }
+            }, this);
 
             this.fillInMissingSamples(value);
         };
@@ -3720,6 +3737,16 @@ var medbookDataLoader = medbookDataLoader || {};
         OD_eventAlbum.setPivotScores_array(null, pivotScores);
     };
 
+    /**
+     * Set the tested samples for a datatype.
+     * @param {Object} datatype
+     * @param {Object} testedSamples
+     * @param {Object} OD_eventAlbum
+     */
+    mdl.setTestedSamples = function(datatype, testedSamples, OD_eventAlbum) {
+        OD_eventAlbum.setTestedSamples(datatype, testedSamples);
+    };
+
 })(medbookDataLoader);
 /**
  * chrisw@soe.ucsc.edu
@@ -3866,6 +3893,12 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             if ('mutation' in mongoData) {
                 dataLoader.mongoMutationData(mongoData['mutation'], od_eventAlbum);
             }
+            if ("testedSamples" in mongoData) {
+                var testedSamplesObj = mongoData["testedSamples"];
+                _.each(_.keys(testedSamplesObj), function(datatype) {
+                    dataLoader.setTestedSamples(datatype, testedSamplesObj[datatype], od_eventAlbum);
+                });
+            }
         }
         // delete the data after it has been used to load events
         delete config['mongoData'];
@@ -3940,6 +3973,8 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                 config['eventAlbum'].deleteEvent(deleteEvents[i]);
             }
         }
+
+        console.log("***config", config);
 
         return config;
     };
@@ -5881,24 +5916,29 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             });
 
             var types = attributes["val"];
-            // types.push("complex");
+
+            var sampleId = attributes["sampleId"];
 
             // background of cell
-            attributes["fill"] = "lightgrey";
+            if (_.size(_.intersection(types, ["no call"])) > 0) {
+                attributes["fill"] = "white";
+            } else {
+                attributes["fill"] = "lightgrey";
+            }
             iconGroup.appendChild(utils.createSvgRectElement(x, y, rx, ry, width, height, attributes));
             delete attributes["stroke-width"];
 
-            if ((utils.isObjInArray(types, "sg")) || (utils.isObjInArray(types, "ins")) || (utils.isObjInArray(types, "complex"))) {
+            if (_.size(_.intersection(types, ["sg", "ins", "complex"])) > 0) {
                 attributes["fill"] = "red";
                 var topHalfIcon = utils.createSvgRectElement(x, y, rx, ry, width, height / 2, attributes);
                 iconGroup.appendChild(topHalfIcon);
             }
-            if ((utils.isObjInArray(types, "ss")) || (utils.isObjInArray(types, "del")) || (utils.isObjInArray(types, "complex"))) {
+            if (_.size(_.intersection(types, ["ss", "del", "complex"])) > 0) {
                 attributes["fill"] = "blue";
                 var bottomHalfIcon = utils.createSvgRectElement(x, y + height / 2, rx, ry, width, height / 2, attributes);
                 iconGroup.appendChild(bottomHalfIcon);
             }
-            if ((utils.isObjInArray(types, "ms")) || (utils.isObjInArray(types, "snp")) || (utils.isObjInArray(types, "complex"))) {
+            if (_.size(_.intersection(types, ["ms", "snp", "complex"])) > 0) {
                 attributes["fill"] = "green";
                 var centeredCircleIcon = utils.createSvgCircleElement(x + width / 2, y + height / 2, height / 4, attributes);
                 iconGroup.appendChild(centeredCircleIcon);

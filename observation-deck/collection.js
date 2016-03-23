@@ -3,6 +3,9 @@ Correlator = new Meteor.Collection('correlator');
 Signature = new Meteor.Collection("signature");
 Contrast = new Meteor.Collection("contrast");
 
+// expression3 to replace expression2
+Expression3 = new Meteor.Collection("expression3");
+
 // defined in medbook:primary-collections
 // Expression2 = new Meteor.Collection("expression2");
 // Mutations = new Meteor.Collection("mutations");

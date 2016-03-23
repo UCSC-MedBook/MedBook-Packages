@@ -1,7 +1,9 @@
 Package.describe({
     name : 'medbook:observation-deck',
     summary : 'Observation Deck visualizes multiple data types for a group of samples.',
-    version : '0.2.4',
+    version : '0.2.6',
+    // v0.2.6: use expression3 collection instead of expression2
+	// v0.2.5: update to medbook:primary-collections@0.0.17
 	// v0.2.4: ignore silent mutations (sequence_ontology = SY)
     // v0.2.3: visualize mutation calls with oncoprint-style graphics depending upos sequence ontology
     // v0.2.2: add gistic copy number and chasm mutation impact
@@ -20,7 +22,7 @@ Package.onUse(function(api) {
     // delete .version and versions.json files
     // "meteor publish --release 1.1.0.2"
 
-    api.use(["templating", "medbook:primary-collections@0.0.15", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6", "sergeyt:typeahead@0.0.11"], "client");
+    api.use(["templating", "medbook:primary-collections@0.0.17", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6", "sergeyt:typeahead@0.0.11"], "client");
 
     api.addFiles(["collection.js"], ["server", "client"]);
     api.addFiles(["publish_correlator.js", "publish_expression.js"], ["server"]);

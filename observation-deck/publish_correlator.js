@@ -346,6 +346,48 @@ var classifyLockedEvents = function(lockedEventsObj) {
     return classifiedEvents;
 };
 
+var getStudiesCursor = function(study_ID) {
+    var selectorObj = {
+        "id" : study_ID,
+    };
+    var optionsObj = {
+        "fields" : {
+            "_id" : true,
+            "id" : true,
+            "gene_expression_index" : true
+        }
+    };
+    var cursor = Studies.find(selectorObj, optionsObj);
+    console.log("Studies", cursor.fetch().length, "documents");
+    return cursor;
+};
+
+/**
+ * Return expression data from Expression3 collection.
+ */
+var getExpression3Cursor = function(expressionGeneList, study_ID) {
+    var selectorObj = {
+        "gene_label" : {
+            "$in" : expressionGeneList
+        },
+        "study_label" : study_ID,
+        "rsem_quan_log2" : {
+            "$exists" : true
+        }
+    };
+    var optionsObj = {
+        "fields" : {
+            "_id" : true,
+            "study_label" : true,
+            "gene_label" : true,
+            "rsem_quan_log2" : true
+        }
+    };
+    var cursor = Expression3.find(selectorObj, optionsObj);
+    console.log("Exp3", cursor.fetch().length, "documents");
+    return cursor;
+};
+
 /**
  * correlatorResults publication
  *
@@ -455,13 +497,20 @@ Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVers
 
         var expressionGeneList = _.union(geneList, mappedList);
 
-        var expression2Cursor = Expression2.find({
-            'gene' : {
-                "$in" : expressionGeneList
-            },
-            'Study_ID' : Study_ID
-        });
-        cursors.push(expression2Cursor);
+        // expression2 replaced by expression3
+        // var expression2Cursor = Expression2.find({
+        // 'gene' : {
+        // "$in" : expressionGeneList
+        // },
+        // 'Study_ID' : Study_ID
+        // });
+        // cursors.push(expression2Cursor);
+
+        // var studiesCursor = getStudiesCursor(Study_ID);
+        // cursors.push(studiesCursor);
+
+        var expression3Cursor = getExpression3Cursor(expressionGeneList, Study_ID);
+        cursors.push(expression3Cursor);
 
         // mutation cursor
         mappedList = _.map(classifiedLockedEvents["mutation"], function(eventName) {
@@ -476,7 +525,7 @@ Meteor.publish("correlatorResults", function(pivotName, pivotDatatype, pivotVers
             },
             "study_label" : Study_ID,
             "sequence_ontology" : {
-            	// ignore silent mutations
+                // ignore silent mutations
                 "$ne" : "SY"
             }
         };
