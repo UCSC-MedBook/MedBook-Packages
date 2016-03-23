@@ -397,6 +397,13 @@ var utils = utils || {};
             return 1;
         }
 
+        // if exactly one is "no call"
+        if ((valA == 'no call') && (valB != 'no call')) {
+            return 1;
+        } else if ((valA != 'no call') && (valB == 'no call')) {
+            return -1;
+        }
+
         // if at least one is "exclude"
         switch (valA + valB) {
             case "excludenull":
@@ -1230,6 +1237,7 @@ var eventData = eventData || {};
 
         this.setTestedSamples = function(datatype, testedSamples) {
             this.testedSamples[datatype] = testedSamples;
+            console.log("testedSamples", this.testedSamples);
         };
 
         this.getTestedSamples = function(datatype) {
@@ -2225,14 +2233,15 @@ var eventData = eventData || {};
                     _.each(missingSampleIds, function(id) {
                         if (eventId === "patientSamples") {
                             missingData[id] = "other patient";
-                        // } else if (category === "mutation call") {
-                            // var isTested = _.contains(this.getTestedSamples(category), id);
-                            // if (isTested) {
-                                // missingData[id] = "no call";
-                            // } else {
-                                // missingData[id] = value;
-                            // }
-                            // console.log(isTested, category, id);
+                        } else if (true && category === "mutation call") {
+                            // set to no call for tested samples without mutation call
+                            var isTested = _.contains(this.getTestedSamples(category), id);
+                            if (isTested) {
+                                missingData[id] = ["no call"];
+                            } else {
+                                missingData[id] = value;
+                            }
+                            console.log(isTested, eventId, category, id, missingData[id]);
                         } else {
                             missingData[id] = value;
                         }
@@ -2514,33 +2523,33 @@ var eventData = eventData || {};
          * compare sample scores and return sorted list of sample IDs. If sortType == numeric, then numeric sort.  Else, sort as strings.
          */
         // TODO dead code?
-        this.sortSamples = function(sampleIdList, sortType) {
-            // sortingData has to be an array
-            var sortingData = this.getData(sampleIdList);
-
-            // sort objects
-            var comparator = compareSamplesAsStrings;
-            if (sortType == null) {
-                sortType = 'categoric';
-            } else {
-                sortType = sortType.toLowerCase();
-            }
-
-            if (((sortType == 'numeric') || (sortType == 'expression'))) {
-                comparator = compareSamplesAsNumeric;
-            } else if (sortType == 'date') {
-                comparator = compareSamplesAsDate;
-            }
-            sortingData.sort(comparator);
-
-            // return row names in sorted order
-            var sortedNames = new Array();
-            for (var k = 0; k < sortingData.length; k++) {
-                sortedNames.push(sortingData[k]['id']);
-            }
-
-            return sortedNames;
-        };
+        // this.sortSamples = function(sampleIdList, sortType) {
+        // // sortingData has to be an array
+        // var sortingData = this.getData(sampleIdList);
+        //
+        // // sort objects
+        // var comparator = compareSamplesAsStrings;
+        // if (sortType == null) {
+        // sortType = 'categoric';
+        // } else {
+        // sortType = sortType.toLowerCase();
+        // }
+        //
+        // if (((sortType == 'numeric') || (sortType == 'expression'))) {
+        // comparator = compareSamplesAsNumeric;
+        // } else if (sortType == 'date') {
+        // comparator = compareSamplesAsDate;
+        // }
+        // sortingData.sort(comparator);
+        //
+        // // return row names in sorted order
+        // var sortedNames = new Array();
+        // for (var k = 0; k < sortingData.length; k++) {
+        // sortedNames.push(sortingData[k]['id']);
+        // }
+        //
+        // return sortedNames;
+        // };
 
         /**
          * Select Ids with data that match a value. Restrict to startingIds, if given.
@@ -3168,6 +3177,23 @@ var medbookDataLoader = medbookDataLoader || {};
             eventObj = mdl.loadEventBySampleData(OD_eventAlbum, eventName, '', 'clinical data', 'categoric', []);
         }
         eventObj.data.setData(dataBySample);
+    };
+
+    /**
+     * load sample data for hallmarks-of-cancer mode
+     * The expected sample data is a 2D matrix. cols are samples. rows are features.
+     */
+    mdl.hallmarksSampleData = function(sampleData, OD_eventAlbum) {
+        console.log("hallmarksSampleData");
+
+        var parsedSampleData = d3.tsv.parse(sampleData);
+        _.each(parsedSampleData, function(data) {
+            delete data["Kinases"];
+        });
+
+        var processedSampleData = d3.tsv.format(parsedSampleData);
+
+        mdl.genericMatrixData(processedSampleData, "hallmarks", OD_eventAlbum, "numeric");
     };
 
     /**
@@ -5920,24 +5946,32 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
             var sampleId = attributes["sampleId"];
 
             // background of cell
-            if (_.size(_.intersection(types, ["no call"])) > 0) {
-                attributes["fill"] = "white";
-            } else {
-                attributes["fill"] = "lightgrey";
-            }
+            attributes["fill"] = "lightgrey";
             iconGroup.appendChild(utils.createSvgRectElement(x, y, rx, ry, width, height, attributes));
             delete attributes["stroke-width"];
 
+            // white square for "no call"
+            if (_.size(_.intersection(types, ["no call"])) > 0) {
+                attributes["fill"] = "white";
+                var boxIcon = utils.createSvgRectElement(x, y, rx, ry, width, height, attributes);
+                iconGroup.appendChild(boxIcon);
+            }
+
+            // red half square
             if (_.size(_.intersection(types, ["sg", "ins", "complex"])) > 0) {
                 attributes["fill"] = "red";
                 var topHalfIcon = utils.createSvgRectElement(x, y, rx, ry, width, height / 2, attributes);
                 iconGroup.appendChild(topHalfIcon);
             }
+
+            // blue half square
             if (_.size(_.intersection(types, ["ss", "del", "complex"])) > 0) {
                 attributes["fill"] = "blue";
                 var bottomHalfIcon = utils.createSvgRectElement(x, y + height / 2, rx, ry, width, height / 2, attributes);
                 iconGroup.appendChild(bottomHalfIcon);
             }
+
+            // green dot
             if (_.size(_.intersection(types, ["ms", "snp", "complex"])) > 0) {
                 attributes["fill"] = "green";
                 var centeredCircleIcon = utils.createSvgCircleElement(x + width / 2, y + height / 2, height / 4, attributes);
@@ -6080,7 +6114,7 @@ observation_deck = ( typeof observation_deck === "undefined") ? {} : observation
                     attributes['class'] = "signature";
                     attributes['eventId'] = d['eventId'];
                     attributes['sampleId'] = d['id'];
-                    // val is a list of mutation types
+                    // val should be a list of mutation types
                     attributes['val'] = d['val'].sort();
 
                     icon = createMutTypeSvg(x, y, rx, ry, width, height, attributes);
