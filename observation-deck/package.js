@@ -1,7 +1,8 @@
 Package.describe({
     name : 'medbook:observation-deck',
     summary : 'Observation Deck visualizes multiple data types for a group of samples.',
-    version : '0.2.7',
+    version : '0.2.8',
+    // v0.2.8: publish_clinical_events_index
     // v0.2.7: samples with "no call" for mutation call visualized with white square
     // v0.2.6: use expression3 collection instead of expression2
     // v0.2.5: update to medbook:primary-collections@0.0.17
