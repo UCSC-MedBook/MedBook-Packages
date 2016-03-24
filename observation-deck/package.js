@@ -26,7 +26,7 @@ Package.onUse(function(api) {
     api.use(["templating", "medbook:primary-collections@0.0.17", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6", "sergeyt:typeahead@0.0.11"], "client");
 
     api.addFiles(["collection.js"], ["server", "client"]);
-    api.addFiles(["publish_correlator.js", "publish_expression.js"], ["server"]);
+    api.addFiles(["publish_correlator.js", "publish_expression.js", "publish_clinical_events_index.js"], ["server"]);
     api.addFiles(["controller.js", 'observation-deck.js', "template.html", "template.js"], ["client"]);
 
     // expose observation-deck object
