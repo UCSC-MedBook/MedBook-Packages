@@ -17,6 +17,7 @@ Package.onUse(function(api) {
     // delete .version and versions.json files
     // "meteor publish --release 1.1.0.2"
 
+	// TODO other medbook packages have upgraded to medbook:primary-collections@0.0.17
     api.use(["templating", "medbook:primary-collections@0.0.15", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6"], "client");
 
     api.addFiles(["collection.js"], ["server", "client"]);

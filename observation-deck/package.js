@@ -24,7 +24,7 @@ Package.onUse(function(api) {
     // delete .version and versions.json files
     // "meteor publish --release 1.1.0.2"
 
-    api.use(["templating", "medbook:primary-collections@0.0.17", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6", "sergeyt:typeahead@0.0.11"], "client");
+    api.use(["templating", "medbook:primary-collections@0.0.19", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6", "sergeyt:typeahead@0.0.11"], "client");
 
     api.addFiles(["collection.js"], ["server", "client"]);
     api.addFiles(["publish_correlator.js", "publish_expression.js", "publish_clinical_events_index.js"], ["server"]);

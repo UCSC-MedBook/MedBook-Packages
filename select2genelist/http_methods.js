@@ -1,26 +1,31 @@
+// Genes defined in primary collections
+
 HTTP.methods({
-    genes : function(data) {
-        console.log("IN HTTP Method genes");
+    genes : function() {
+        console.log("IN HTTP Method genes", "query:", this.query.q);
+
+        var regexString = "^" + this.query.q + ".*";
         var items = [];
         var seen = {};
-        Expression.find({
-            gene : {
-                $regex : "^" + this.query.q + ".*"
+
+        Genes.find({
+            gene_label : {
+                $regex : regexString
             }
         }, {
             sort : {
-                gene : 1
+                gene_label : 1
             },
             fields : {
-                "gene" : 1
+                "gene_label" : 1
             }
         }).forEach(function(f) {
-            if (!(f.gene in seen)) {
+            if (!(f.gene_label in seen)) {
                 items.push({
-                    id : f.gene,
-                    text : f.gene
+                    id : f.gene_label,
+                    text : f.gene_label
                 });
-                seen[f.gene] = 1;
+                seen[f.gene_label] = 1;
             }
         });
         items = _.unique(items);
