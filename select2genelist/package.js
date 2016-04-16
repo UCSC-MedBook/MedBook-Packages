@@ -1,6 +1,7 @@
 Package.describe({
     name : 'medbook:select2genelist',
-    version : '0.1.13',
+    version : '0.1.14',
+    // v0.1.14 - use Meteor.absoluteUrl()
     // v0.1.13 - change from getting gene suggestions from Expression collection to Genes collection
     // v0.1.1-12 troubleshooting, finally published with "meteor publish --release 1.1.0.2"
     // v0.1.0 - Include the template into the package.

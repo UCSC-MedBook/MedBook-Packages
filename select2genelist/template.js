@@ -2,7 +2,7 @@ Template.geneListTemplate.rendered = function() {
 
     var options = {
         placeholder : "list of genes",
-        url : "/genes",
+        url : Meteor.absoluteUrl() + "genes",
         // http://localhost:3000/genes?q=MDM
         // response looks like this: {"items":[{"id":"MDM1","text":"MDM1"},{"id":"MDM2","text":"MDM2"},{"id":"MDM4","text":"MDM4"}]}
         // url : "https://api.github.com/search/repositories",
