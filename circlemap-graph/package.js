@@ -1,6 +1,7 @@
 Package.describe({
     name : 'medbook:circlemap-graph',
-    version : '0.3.1',
+    version : '0.3.2',
+    // 0.3.2 - move circleMapGraph obj to its own package
     // 0.3.1 - add circleMapHallmarksModeTemplate
     // 0.3.0 - include collection, publish, and template files
     // 0.2.2 - save zoom and opacity of nodes when sorting rings
@@ -17,12 +18,12 @@ Package.onUse(function(api) {
     // delete .version and versions.json files
     // "meteor publish --release 1.1.0.2"
 
-	// TODO other medbook packages have upgraded to medbook:primary-collections@0.0.17
-    api.use(["templating", "medbook:primary-collections@0.0.15", "d3js:d3@3.5.8", "alisalaah:jquery-contextmenu@1.6.6"], "client");
+    // TODO other medbook packages have upgraded to medbook:primary-collections@0.0.17
+    api.use(["templating", "medbook:primary-collections@0.0.15", "limax:circlemap-graph@0.0.4"], "client");
 
     api.addFiles(["collection.js"], ["server", "client"]);
     api.addFiles(["publish.js"], ["server"]);
-    api.addFiles(["circlemap-graph.js", "template.html", "template.js"], ["client"]);
+    api.addFiles(["template.html", "template.js"], ["client"]);
 
     // expose circleMapGraph object
     // api.export(['circleMapGraph'], 'client');
