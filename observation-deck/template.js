@@ -89,7 +89,7 @@ Template.obsDeckTemplate.rendered = function() {
             "_id" : contrastId
         }).fetch();
 
-		// TODO this should NOT be hard-coded
+        // TODO this should NOT be hard-coded
         var testedSamples = {
             "mutation call" : ["DTB-005", "DTB-009", "DTB-010Pro2", "DTB-011", "DTB-018", "DTB-019", "DTB-020", "DTB-022Pro2", "DTB-023", "DTB-024", "DTB-030", "DTB-034", "DTB-036", "DTB-038", "DTB-039", "DTB-040", "DTB-042", "DTB-046", "DTB-055Pro", "DTB-059", "DTB-060", "DTB-061", "DTB-063", "DTB-063Pro", "DTB-064", "DTB-067Pro", "DTB-069", "DTB-071", "DTB-073", "DTB-073Pro", "DTB-077Pro", "DTB-080", "DTB-080Pro", "DTB-083", "DTB-089", "DTB-089Pro", "DTB-090", "DTB-090Pro", "DTB-091", "DTB-092", "DTB-094", "DTB-095", "DTB-097", "DTB-097Pro", "DTB-098", "DTB-100", "DTB-102", "DTB-111", "DTB-111Pro", "DTB-118", "DTB-121", "DTB-124", "DTB-127", "DTB-128", "DTB-129", "DTB-132", "DTB-135", "DTB-135Pro", "DTB-138", "DTB-140", "DTB-156"]
         };
@@ -97,7 +97,8 @@ Template.obsDeckTemplate.rendered = function() {
         // observation_deck is exposed via observation-deck package
         // build observation deck
         if ((clinDocList.length > 0) || (expDocList.length > 0)) {
-            od_config = observation_deck.buildObservationDeck(divElem, {
+
+            var od_settings = {
                 // gene query service -> http://localhost:3000/genes?q=MAPK
                 "geneQueryUrl" : "/genes?q=",
                 "sigQueryUrl" : "/signatures?q=",
@@ -164,8 +165,13 @@ Template.obsDeckTemplate.rendered = function() {
                 "columnTitleCallback" : function(sampleId, config) {
                     var url = '/wb/patient/' + sampleId;
                     window.open(url, "_self");
-                }
-            });
+                },
+                "meteorSession" : Session
+            };
+
+            // console.log(JSON.stringify(od_settings));
+
+            od_config = observation_deck.buildObservationDeck(divElem, od_settings);
         } else {
             // remove child elements of divElem
             while (divElem.firstChild) {

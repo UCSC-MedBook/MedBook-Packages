@@ -1,7 +1,8 @@
 Package.describe({
     name : 'medbook:observation-deck',
     summary : 'Observation Deck visualizes multiple data types for a group of samples.',
-    version : '0.2.9',
+    version : '0.2.10',
+    // v0.2.10: limax:observation-deck@0.0.7 - new way to pass meteor session to obs-deck
     // v0.2.9: move observation-deck object out to its own package
     // v0.2.8: publish_clinical_events_index
     // v0.2.7: samples with "no call" for mutation call visualized with white square
@@ -25,7 +26,7 @@ Package.onUse(function(api) {
     // delete .version and versions.json files
     // "meteor publish --release 1.1.0.2"
 
-    api.use(["templating", "medbook:primary-collections@0.0.19", "limax:observation-deck@0.0.1"], "client");
+    api.use(["templating", "medbook:primary-collections@0.0.19", "limax:observation-deck@0.0.7"], "client");
 
     api.addFiles(["collection.js"], ["server", "client"]);
     api.addFiles(["publish_correlator.js", "publish_expression.js", "publish_clinical_events_index.js"], ["server"]);
